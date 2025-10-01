@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Repositorio Google Cloud Storage{% endblock %}
+
+{% block extra_css %}
+<style>
+.container { max-width: 1100px; margin: 30px auto; padding: 0 15px; }
+
+h1 {
+    text-align: center;
+    color: var(--metso-dark-gray);
+    font-weight: 600;
+    margin-bottom: 25px;
+    font-family: 'Poppins', sans-serif;
+}
+
+#overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.25);
+    z-index: 9000;
+}
+
+.tools-panel {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    background: var(--metso-white);
+    padding: 15px 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.tools-panel .left, .tools-panel .right { display: flex; align-items: center; gap: 15px; }
+.tools-panel button {
+    background-color: var(--metso-blue);
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+.tools-panel button:hover { background-color: #1f1f70; transform: scale(1.05); }
+
+#folderForm, #uploadForm {
+    display: none;
+    position: fixed;
+    top: 180px; left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+    background: var(--metso-white);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    z-index: 10001;
+    flex-direction: column;
+    gap: 10px;
+}
+#folderForm input[type="text"], #uploadForm input[type="file"] {
+    padding: 8px 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    width: 100%;
+}
+.btn-confirm { background: #38b000; color: #fff; border-radius:6px; padding:7px 12px; }
+.btn-confirm:hover { background: #2d9000; }
+.btn-cancel { background: #e63946; color: #fff; border-radius:6px; padding:7px 12px; }
+.btn-cancel:hover { background: #b02a37; }
+
+.table-wrapper { background: var(--metso-white); border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.05); overflow-x:auto; }
+table { width: 100%; border-collapse: collapse; min-width: 800px; }
+th, td { padding: 12px 15px; text-align: left; }
+th { background: #f7f8fa; color: var(--metso-dark-gray); font-weight: 600; }
+tr:hover { background: #f1f2f6; transition: background 0.2s ease; }
+
+.action-buttons { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.action-buttons a { width: 32px; height: 32px; display: flex; justify-content:center; align-items:center; border-radius: 6px; color: #fff; transition: all 0.2s ease; }
+.view-btn { background: #38b000; } .view-btn:hover { background: #2d9000; }
+.download-btn { background: #ffb703; color:#333; } .download-btn:hover { background: #e0a800; }
+.delete-btn { background: #e63946; } .delete-btn:hover { background: #b02a37; }
+
+.folder-icon { color: #fbbf24; margin-right: 6px; }
+.file-icon { color: #555; margin-right: 6px; }
+.file-type { font-weight: 500; color: #555; }
+.back-link { display:inline-flex; align-items:center; gap:5px; color: #1a73e8; text-decoration:none; margin:15px 0; }
+.back-link:hover { text-decoration:underline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Repositorio</h1>
+    <div id="overlay"></div>
+
+    <div class="tools-panel">
+        <div class="left">
+            <button id="toggleFolderBtn"><i class="fas fa-folder-plus"></i> Nueva Carpeta</button>
+            <button id="toggleUploadBtn"><i class="fas fa-upload"></i> Subir Archivo</button>
+        </div>
+        <div class="right">
+            {% if current_folder %}
+            <a href="?folder={{ parent_folder|default:'' }}" class="back-link"><i class="fas fa-level-up-alt"></i> Volver</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Formularios -->
+    <div id="folderForm">
+        <h3>Nueva Carpeta</h3>
+        <form method="post" action="{% url 'usuario:new_folder' %}">
+            {% csrf_token %}
+            <input type="hidden" name="current_folder" value="{{ current_folder }}">
+            <input type="text" name="folder_name" placeholder="Nombre de la carpeta" required>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button type="submit" class="btn-confirm">Crear</button>
+                <button type="button" class="btn-cancel">Cancelar</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="uploadForm">
+        <h3>Subir Archivo</h3>
+        <form method="post" action="{% url 'usuario:upload_file' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="current_folder" value="{{ current_folder }}">
+            <input type="file" name="file" required>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button type="submit" class="btn-confirm">Subir</button>
+                <button type="button" class="btn-cancel">Cancelar</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabla de archivos -->
+    <div class="table-wrapper mt-3">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th><th>Tipo</th><th>Tamaño</th><th>Fecha de subida</th><th style="text-align:center;">Opciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if folders or files %}
+                    {% for folder in folders %}
+                    <tr class="folder-row" data-folder-id="{{ folder.id }}">
+                        <td>
+                            <i class="fas fa-folder folder-icon"></i>
+                            <a href="?folder={{ folder.id }}">{{ folder.name }}</a>
+                        </td>
+                        <td>Carpeta</td><td>-</td><td>-</td><td style="text-align:center;">-</td>
+                    </tr>
+                    {% endfor %}
+                    {% for file in files %}
+                    <tr>
+                        <td><i class="file-icon" data-filename="{{ file.name }}"></i>{{ file.name }}</td>
+                        <td class="file-type" data-filename="{{ file.name }}">Archivo</td>
+                        <td>{% if file.size %}{{ file.size|filesizeformat }}{% else %}-{% endif %}</td>
+                        <td>{% if file.created_at %}{{ file.created_at|date:"d-m-Y H:i" }}{% else %}-{% endif %}</td>
+                        <td style="text-align:center;">
+                            <div class="action-buttons">
+                                <a class="view-btn" href="{{ file.preview_url }}" target="_blank" title="Ver"><i class="fas fa-eye"></i></a>
+                                <a class="download-btn" href="{% url 'usuario:download_file' file.id %}" title="Descargar"><i class="fas fa-download"></i></a>
+                                <a class="delete-btn" href="{% url 'usuario:delete_file' file.id %}" onclick="return confirm('¿Eliminar {{ file.name }}?')" title="Eliminar"><i class="fas fa-trash"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="5" style="text-align:center;color:#777;">No hay carpetas ni archivos.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    // Iconos dinámicos de archivos
+    const fileIcons = document.querySelectorAll('.file-icon');
+    const fileTypes = document.querySelectorAll('.file-type');
+
+    fileIcons.forEach(iconElement=>{
+        const filename = iconElement.dataset.filename;
+        const ext = filename?.split('.').pop().toLowerCase();
+        let iconClass='fas fa-file', typeLabel='Archivo';
+
+        switch(ext){
+            case 'pdf': iconClass='fas fa-file-pdf'; typeLabel='PDF'; break;
+            case 'doc': case 'docx': iconClass='fas fa-file-word'; typeLabel='Word'; break;
+            case 'xls': case 'xlsx': iconClass='fas fa-file-excel'; typeLabel='Excel'; break;
+            case 'ppt': case 'pptx': iconClass='fas fa-file-powerpoint'; typeLabel='PowerPoint'; break;
+            case 'jpg': case 'jpeg': case 'png': case 'gif': iconClass='fas fa-file-image'; typeLabel='Imagen'; break;
+            case 'zip': case 'rar': case '7z': iconClass='fas fa-file-archive'; typeLabel='Comprimido'; break;
+            case 'txt': iconClass='fas fa-file-alt'; typeLabel='Texto'; break;
+            case 'csv': iconClass='fas fa-file-csv'; typeLabel='CSV'; break;
+            case 'mp3': case 'wav': iconClass='fas fa-file-audio'; typeLabel='Audio'; break;
+            case 'mp4': case 'avi': case 'mov': iconClass='fas fa-file-video'; typeLabel='Video'; break;
+        }
+
+        iconElement.classList.add(...iconClass.split(' '));
+        const typeElement = Array.from(fileTypes).find(e=>e.dataset.filename===filename);
+        if(typeElement) typeElement.textContent=typeLabel;
+    });
+
+    // Formularios flotantes
+    const overlay = document.getElementById('overlay');
+    const folderForm = document.getElementById('folderForm');
+    const uploadForm = document.getElementById('uploadForm');
+    const toggleFolderBtn = document.getElementById('toggleFolderBtn');
+    const toggleUploadBtn = document.getElementById('toggleUploadBtn');
+
+    toggleFolderBtn.addEventListener('click',()=>{ folderForm.style.display='flex'; overlay.style.display='block'; });
+    toggleUploadBtn.addEventListener('click',()=>{ uploadForm.style.display='flex'; overlay.style.display='block'; });
+    overlay.addEventListener('click',()=>{ folderForm.style.display='none'; uploadForm.style.display='none'; overlay.style.display='none'; });
+    folderForm.querySelector('.btn-cancel').addEventListener('click',()=>{ folderForm.style.display='none'; overlay.style.display='none'; });
+    uploadForm.querySelector('.btn-cancel').addEventListener('click',()=>{ uploadForm.style.display='none'; overlay.style.display='none'; });
+});
+</script>
+{% endblock %}

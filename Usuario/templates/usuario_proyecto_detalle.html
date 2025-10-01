@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle del Proyecto{% endblock %}
+
+{% block extra_css %}
+<style>
+.container { max-width: 1000px; margin: 30px auto; padding: 0 15px; }
+h1, h2, h3 { text-align: center; margin-bottom: 25px; font-weight: 600; }
+.section { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.05); margin-bottom: 25px; }
+.stats { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+.stat-box { background: #f7f8fa; padding: 15px 25px; border-radius: 8px; text-align: center; min-width: 140px; }
+.stat-box h3 { margin: 0; font-size: 22px; color: #111; }
+.stat-box p { margin: 0; color: #555; }
+table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+th, td { padding: 10px 12px; border-bottom: 1px solid #ddd; }
+th { background: #f1f2f6; text-align: left; }
+.btn-back { margin-bottom: 20px; display: inline-block; }
+
+/* Gráficos responsivos por porcentaje */
+.grafico-chico {
+    width: 80%;
+    max-width: 500px;
+    height: 250px;
+    margin: 20px auto;
+    display: block;
+}
+.grafico-grande {
+    width: 90%;
+    max-width: 650px;
+    height: 350px;
+    margin: 20px auto;
+    display: block;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>{{ proyecto.nombre }}</h1>
+
+    <!-- 🔙 Botón para volver -->
+    <div class="btn-back">
+        <a href="{% url 'usuario:lista_proyectos' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Volver a proyectos
+        </a>
+    </div>
+
+    <div class="section">
+        <p><strong>Descripción:</strong> {{ proyecto.descripcion }}</p>
+        <p><strong>Fecha de inicio:</strong> {{ proyecto.fecha_inicio|date:"d/m/Y" }}</p>
+        <p><strong>Fecha de fin:</strong> {{ proyecto.fecha_fin|date:"d/m/Y" }}</p>
+    </div>
+
+    <!-- 📊 Estadísticas principales -->
+    <div class="stats">
+        <div class="stat-box">
+            <h3>{{ num_grupos }}</h3>
+            <p>Grupos de trabajo</p>
+        </div>
+        <div class="stat-box">
+            <h3>{{ num_usuarios }}</h3>
+            <p>Integrantes</p>
+        </div>
+        <div class="stat-box">
+            <h3>{{ promedio_miembros|floatformat:1 }}</h3>
+            <p>Promedio por grupo</p>
+        </div>
+        <div class="stat-box">
+            <h3>{{ grupo_max }}</h3>
+            <p>Grupo más grande</p>
+        </div>
+        <div class="stat-box">
+            <h3>{{ grupo_min }}</h3>
+            <p>Grupo más pequeño</p>
+        </div>
+    </div>
+
+    <!-- 👥 Grupos y usuarios -->
+    <div class="section">
+        <h2>Grupos de trabajo</h2>
+        {% for grupo in grupos %}
+        <h3>{{ grupo.nombre }}</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for miembro in grupo.usuarios %}
+                <tr>
+                    <td>{{ miembro.nombre }}</td>
+                    <td>{{ miembro.rol }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2" class="text-muted">No hay usuarios en este grupo.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% empty %}
+        <p class="text-muted">Este proyecto no tiene grupos asignados.</p>
+        {% endfor %}
+    </div>
+
+    <!-- 📈 Gráficos -->
+    <div class="section">
+        <h2>Gráficos del proyecto</h2>
+        <canvas id="miembrosPorGrupo" class="grafico-chico"></canvas>
+        <canvas id="rolesDistribucion" class="grafico-grande"></canvas>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx1 = document.getElementById('miembrosPorGrupo').getContext('2d');
+new Chart(ctx1, {
+    type: 'bar',
+    data: {
+        labels: {{ grupos_nombres_json|safe }},
+        datasets: [{
+            label: 'Integrantes por grupo',
+            data: {{ grupos_num_usuarios_json|safe }},
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    precision: 0  // Mostrar solo números enteros
+                }
+            }
+        }
+    }
+});
+
+const ctx2 = document.getElementById('rolesDistribucion').getContext('2d');
+new Chart(ctx2, {
+    type: 'pie',
+    data: {
+        labels: {{ roles_labels_json|safe }},
+        datasets: [{
+            label: 'Distribución de roles',
+            data: {{ roles_values_json|safe }},
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.6)',
+                'rgba(255, 206, 86, 0.6)',
+                'rgba(75, 192, 192, 0.6)',
+                'rgba(153, 102, 255, 0.6)',
+                'rgba(255, 159, 64, 0.6)'
+            ],
+            borderColor: 'rgba(255, 255, 255, 1)',
+            borderWidth: 1
+        }]
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block extra_css %}
+<style>
+.inicio-card {
+    background: var(--metso-white);
+    padding: 30px 25px;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+    max-width: 800px;
+    margin: 50px auto;
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+.inicio-card:hover { transform: translateY(-3px); }
+
+.inicio-card h2 { color: var(--metso-blue); font-family:'Poppins', sans-serif; font-weight:600; margin-bottom:15px; }
+.inicio-card p { color: #555; font-size: 1.1rem; margin-bottom:20px; }
+
+.inicio-card .btn {
+    background: var(--metso-orange);
+    color: #fff;
+    border-radius:8px;
+    padding:10px 18px;
+    font-weight:500;
+    transition: all 0.2s ease;
+}
+.inicio-card .btn:hover { background: #e55a00; transform: scale(1.05); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="inicio-card">
+    <h2>Bienvenido al Repositorio Metso</h2>
+    <p>Administra tus archivos de forma segura y rápida. Crea carpetas, sube documentos y accede a ellos desde cualquier lugar.</p>
+</div>
+{% endblock %}
