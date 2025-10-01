@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Proyectos{% endblock %}
+
+{% block extra_css %}
+<style>
+.container { max-width: 1100px; margin: 30px auto; padding: 0 15px; }
+
+h1 {
+    text-align: center;
+    color: var(--metso-dark-gray);
+    font-weight: 600;
+    margin-bottom: 25px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.table-wrapper { background: var(--metso-white); border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.05); overflow-x:auto; }
+table { width: 100%; border-collapse: collapse; min-width: 800px; }
+th, td { padding: 12px 15px; text-align: left; }
+th { background: #f7f8fa; color: var(--metso-dark-gray); font-weight: 600; }
+tr:hover { background: #f1f2f6; transition: background 0.2s ease; }
+
+.btn-action { padding: 6px 10px; border-radius:6px; color:#fff; display:inline-flex; justify-content:center; align-items:center; transition:0.2s; }
+.btn-warning { background:#f59e0b; } .btn-warning:hover { background:#d97706; }
+.btn-info { background:#3b82f6; } .btn-info:hover { background:#1d4ed8; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Proyectos</h1>
+
+    <div style="margin-bottom:20px;">
+        <a class="btn btn-success">
+            <i class="fas fa-plus"></i> Nuevo proyecto
+        </a>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Fecha inicio</th>
+                    <th>Fecha fin</th>
+                    <th style="text-align:center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for proyecto in proyectos %}
+                <tr>
+                    <td>{{ proyecto.nombre }}</td>
+                    <td>{{ proyecto.descripcion|default:"(Sin descripción)" }}</td>
+                    <td>{{ proyecto.fecha_inicio|date:"d/m/Y" }}</td>
+                    <td>{{ proyecto.fecha_fin|date:"d/m/Y" }}</td>
+                    <td style="text-align:center;">
+                        <a class="btn-action btn-warning" title="Editar proyecto"><i class="fas fa-edit"></i></a>
+                        <a class="btn-action btn-info" title="Ver detalles" href="{% url 'usuario:detalle_proyecto' proyecto.id %}
+">
+                            <i class="fas fa-eye"></i>
+                        </a>
+
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">No hay proyectos.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
