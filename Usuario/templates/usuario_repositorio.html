@@ -4,14 +4,19 @@
 
 {% block extra_css %}
 <style>
-.container { max-width: 1100px; margin: 30px auto; padding: 0 15px; }
+.container {
+    max-width: 1000px;
+    margin: 20px auto;
+    padding: 0 10px;
+}
 
 h1 {
     text-align: center;
     color: var(--metso-dark-gray);
     font-weight: 600;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     font-family: 'Poppins', sans-serif;
+    font-size: 1.4rem;
 }
 
 #overlay {
@@ -19,7 +24,7 @@ h1 {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(0,0,0,0.25);
+    background: rgba(0,0,0,0.2);
     z-index: 9000;
 }
 
@@ -27,23 +32,24 @@ h1 {
     display: flex;
     justify-content: space-between;
     flex-wrap: wrap;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     background: var(--metso-white);
-    padding: 15px 20px;
-    border-radius: 10px;
+    padding: 10px 15px;
+    border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
-.tools-panel .left, .tools-panel .right { display: flex; align-items: center; gap: 15px; }
+.tools-panel .left, .tools-panel .right { display: flex; align-items: center; gap: 10px; }
 .tools-panel button {
     background-color: var(--metso-blue);
     color: #fff;
     border: none;
-    padding: 8px 14px;
-    border-radius: 6px;
+    padding: 6px 10px;
+    border-radius: 5px;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
+    font-size: 0.85rem;
     transition: all 0.2s ease;
 }
 .tools-panel button:hover { background-color: #1f1f70; transform: scale(1.05); }
@@ -51,44 +57,53 @@ h1 {
 #folderForm, #uploadForm {
     display: none;
     position: fixed;
-    top: 180px; left: 50%;
+    top: 150px; left: 50%;
     transform: translateX(-50%);
-    width: 400px;
+    width: 350px;
     background: var(--metso-white);
-    padding: 20px;
-    border-radius: 10px;
+    padding: 15px;
+    border-radius: 8px;
     box-shadow: 0 6px 18px rgba(0,0,0,0.2);
     z-index: 10001;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 #folderForm input[type="text"], #uploadForm input[type="file"] {
-    padding: 8px 10px;
-    border-radius: 5px;
+    padding: 6px 8px;
+    border-radius: 4px;
     border: 1px solid #ccc;
     width: 100%;
 }
-.btn-confirm { background: #38b000; color: #fff; border-radius:6px; padding:7px 12px; }
+.btn-confirm { background: #38b000; color: #fff; border-radius:5px; padding:6px 10px; font-size:0.85rem; }
 .btn-confirm:hover { background: #2d9000; }
-.btn-cancel { background: #e63946; color: #fff; border-radius:6px; padding:7px 12px; }
+.btn-cancel { background: #e63946; color: #fff; border-radius:5px; padding:6px 10px; font-size:0.85rem; }
 .btn-cancel:hover { background: #b02a37; }
 
-.table-wrapper { background: var(--metso-white); border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.05); overflow-x:auto; }
-table { width: 100%; border-collapse: collapse; min-width: 800px; }
-th, td { padding: 12px 15px; text-align: left; }
+.table-wrapper {
+    background: var(--metso-white);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    overflow-x:auto;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 700px;
+}
+th, td { padding: 8px 10px; text-align: left; font-size: 0.9rem; }
 th { background: #f7f8fa; color: var(--metso-dark-gray); font-weight: 600; }
 tr:hover { background: #f1f2f6; transition: background 0.2s ease; }
 
-.action-buttons { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
-.action-buttons a { width: 32px; height: 32px; display: flex; justify-content:center; align-items:center; border-radius: 6px; color: #fff; transition: all 0.2s ease; }
+.action-buttons { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+.action-buttons a { width: 28px; height: 28px; display: flex; justify-content:center; align-items:center; border-radius:5px; color: #fff; transition: all 0.2s ease; font-size:0.8rem; }
 .view-btn { background: #38b000; } .view-btn:hover { background: #2d9000; }
 .download-btn { background: #ffb703; color:#333; } .download-btn:hover { background: #e0a800; }
 .delete-btn { background: #e63946; } .delete-btn:hover { background: #b02a37; }
 
-.folder-icon { color: #fbbf24; margin-right: 6px; }
-.file-icon { color: #555; margin-right: 6px; }
-.file-type { font-weight: 500; color: #555; }
-.back-link { display:inline-flex; align-items:center; gap:5px; color: #1a73e8; text-decoration:none; margin:15px 0; }
+.folder-icon { color: #fbbf24; margin-right: 4px; }
+.file-icon { color: #555; margin-right: 4px; }
+.file-type { font-weight: 500; color: #555; font-size:0.85rem; }
+.back-link { display:inline-flex; align-items:center; gap:4px; color: #1a73e8; text-decoration:none; margin:12px 0; font-size:0.9rem; }
 .back-link:hover { text-decoration:underline; }
 </style>
 {% endblock %}
@@ -117,7 +132,7 @@ tr:hover { background: #f1f2f6; transition: background 0.2s ease; }
             {% csrf_token %}
             <input type="hidden" name="current_folder" value="{{ current_folder }}">
             <input type="text" name="folder_name" placeholder="Nombre de la carpeta" required>
-            <div style="display:flex; gap:10px; margin-top:10px;">
+            <div style="display:flex; gap:8px; margin-top:8px;">
                 <button type="submit" class="btn-confirm">Crear</button>
                 <button type="button" class="btn-cancel">Cancelar</button>
             </div>
@@ -130,7 +145,7 @@ tr:hover { background: #f1f2f6; transition: background 0.2s ease; }
             {% csrf_token %}
             <input type="hidden" name="current_folder" value="{{ current_folder }}">
             <input type="file" name="file" required>
-            <div style="display:flex; gap:10px; margin-top:10px;">
+            <div style="display:flex; gap:8px; margin-top:8px;">
                 <button type="submit" class="btn-confirm">Subir</button>
                 <button type="button" class="btn-cancel">Cancelar</button>
             </div>
@@ -138,7 +153,7 @@ tr:hover { background: #f1f2f6; transition: background 0.2s ease; }
     </div>
 
     <!-- Tabla de archivos -->
-    <div class="table-wrapper mt-3">
+    <div class="table-wrapper mt-2">
         <table>
             <thead>
                 <tr>
@@ -183,7 +198,6 @@ tr:hover { background: #f1f2f6; transition: background 0.2s ease; }
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function(){
-    // Iconos dinámicos de archivos
     const fileIcons = document.querySelectorAll('.file-icon');
     const fileTypes = document.querySelectorAll('.file-type');
 
@@ -210,7 +224,6 @@ document.addEventListener('DOMContentLoaded', function(){
         if(typeElement) typeElement.textContent=typeLabel;
     });
 
-    // Formularios flotantes
     const overlay = document.getElementById('overlay');
     const folderForm = document.getElementById('folderForm');
     const uploadForm = document.getElementById('uploadForm');

@@ -1,13 +1,18 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse # Keep JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from datetime import timedelta
 from google.cloud import storage
 from django.conf import settings
+import openpyxl
 from .models import FilePreview
 from django.db import connection 
-import json
+import json 
+# You need to import the decorator:
+from django.views.decorators.http import require_POST 
+
+
 # Duración de previsualización en minutos
 PREVIEW_EXPIRATION_MINUTES = 60  
 
@@ -75,6 +80,183 @@ def lista_proyectos(request):
 
     return render(request, "usuario_proyectos.html", {"proyectos": proyectos})
 
+
+
+@login_required
+def crear_proyecto(request):
+    numero_orden = ""
+    usuarios = []
+    usuarios_administrador = []
+    grupos_maestros = []
+    documentos = []
+    form_error = None
+
+    # 1. Obtener TODOS los USUARIOS para roles
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT u.id, u.nombre, u.email
+            FROM usuarios_microsoft u
+            ORDER BY u.nombre
+        """)
+        usuarios = [{"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()]
+
+    # 1b. Obtener USUARIOS para Administrador de Servicio (solo área "Administrador de Contratos")
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT u.id, u.nombre, u.email
+            FROM usuarios_microsoft u
+            JOIN area_cargo_empresa a ON u.cargo_id = a.id
+            WHERE LOWER(a.nombre) = 'administrador de contratos'
+            ORDER BY u.nombre
+        """)
+        usuarios_administrador = [{"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()]
+
+    # 2. Obtener GRUPOS DE TRABAJO desde las categorías de documentos técnicos
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT c.id, c.nombre, c.descripcion
+            FROM categoria_documentos c
+            ORDER BY c.nombre
+        """)
+        grupos_maestros = [{"id": r[0], "nombre": r[1], "descripcion": r[2]} for r in cursor.fetchall()]
+
+    # 2b. Obtener DOCUMENTOS asociados a cada categoría
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT id, categoria_id, nombre
+            FROM tipo_documentos
+            ORDER BY nombre
+        """)
+        documentos = [{"id": r[0], "categoria_id": r[1], "nombre": r[2]} for r in cursor.fetchall()]
+
+    # 4. Procesar formulario
+    if request.method == "POST":
+        numero_orden = request.POST.get("numero_orden")
+        nombre_proyecto = request.POST.get("nombre")
+        descripcion_proyecto = request.POST.get("descripcion")
+        fecha_inicio = request.POST.get("fecha_inicio")
+        fecha_fin = request.POST.get("fecha_fin")
+        administrador_id = request.POST.get("administrador")
+
+        # Extraer los documentos seleccionados y sus roles
+        documentos_roles = {}
+        for doc in documentos:
+            doc_id = str(doc["id"])
+            redactores = request.POST.getlist(f"redactor_id_{doc_id}[]")
+            revisores = request.POST.getlist(f"revisor_id_{doc_id}[]")
+            aprobadores = request.POST.getlist(f"aprobador_id_{doc_id}[]")
+            if redactores or revisores or aprobadores:
+                documentos_roles[doc_id] = {
+                    "redactores": redactores,
+                    "revisores": revisores,
+                    "aprobadores": aprobadores,
+                }
+
+        # VALIDACIÓN
+        if not (numero_orden and nombre_proyecto and fecha_inicio):
+            form_error = "Faltan campos obligatorios del proyecto."
+        elif not administrador_id:
+            form_error = "Debe seleccionar un Administrador de Servicio."
+        elif not documentos_roles:
+            form_error = "Debe seleccionar al menos un Documento con roles."
+        else:
+            try:
+                with connection.cursor() as cursor:
+                    # Crear proyecto
+                    cursor.execute("""
+                        INSERT INTO proyectos (nombre, descripcion, fecha_inicio, fecha_fin)
+                        VALUES (%s, %s, %s, %s)
+                        RETURNING id
+                    """, [nombre_proyecto, descripcion_proyecto, fecha_inicio, fecha_fin])
+                    proyecto_id = cursor.fetchone()[0]
+
+                    # Asociar documentos y roles
+                    for doc_id, roles in documentos_roles.items():
+                        cursor.execute("""
+                            INSERT INTO documentos_proyecto (proyecto_id, documento_id)
+                            VALUES (%s, %s)
+                            RETURNING id
+                        """, [proyecto_id, doc_id])
+                        doc_proy_id = cursor.fetchone()[0]
+
+                        for r_id in roles["redactores"]:
+                            cursor.execute("""
+                                INSERT INTO usuarios_documentos (usuario_id, documento_proyecto_id, rol)
+                                VALUES (%s, %s, 'redactor')
+                            """, [r_id, doc_proy_id])
+                        for r_id in roles["revisores"]:
+                            cursor.execute("""
+                                INSERT INTO usuarios_documentos (usuario_id, documento_proyecto_id, rol)
+                                VALUES (%s, %s, 'revisor')
+                            """, [r_id, doc_proy_id])
+                        for r_id in roles["aprobadores"]:
+                            cursor.execute("""
+                                INSERT INTO usuarios_documentos (usuario_id, documento_proyecto_id, rol)
+                                VALUES (%s, %s, 'aprobador')
+                            """, [r_id, doc_proy_id])
+
+                    # Registrar administrador del servicio
+                    cursor.execute("""
+                        INSERT INTO usuarios_grupos (usuario_id, grupo_id, rol_id)
+                        VALUES (%s, NULL, (SELECT id FROM roles_ciclodocumento WHERE LOWER(nombre) = 'administrador' LIMIT 1))
+                    """, [administrador_id])
+
+                return redirect("usuario:detalle_proyecto", proyecto_id=proyecto_id)
+
+            except Exception as e:
+                form_error = f"Error al guardar el proyecto: {str(e)}"
+
+    context = {
+        "numero_orden": numero_orden,
+        "usuarios": usuarios,  # Para roles en documentos
+        "usuarios_administrador": usuarios_administrador,  # Solo para el select de Administrador
+        "grupos_maestros": grupos_maestros,
+        "documentos": documentos,
+        "form_error": form_error,
+    }
+    return render(request, "usuario_crearproyecto.html", context)
+
+
+
+
+
+# ----------------------------------------------------------------------
+# FUNCIÓN PARA VALIDACIÓN AJAX
+# ----------------------------------------------------------------------
+@require_POST
+def validar_orden_ajax(request):
+    if request.method == "POST" and request.FILES.get("archivo"):
+        archivo = request.FILES.get("archivo")
+
+        if not archivo.name.lower().endswith(".xlsx"):
+            return JsonResponse({"error": "Formato de archivo no soportado. Se espera un .xlsx"}, status=400)
+
+        try:
+            wb = openpyxl.load_workbook(archivo, data_only=True)
+            numero_orden = None
+
+            for defined_name in wb.defined_names.values():
+                if defined_name.name.lower() == "numordenservicio":
+                    dest = list(defined_name.destinations)[0]
+                    sheet_name, cell_coord = dest
+                    sheet = wb[sheet_name]
+                    valor_celda = sheet[cell_coord].value
+
+                    if valor_celda is not None:
+                        numero_orden = str(valor_celda).strip()
+                        break
+
+            if numero_orden:
+                return JsonResponse({"numero_orden": numero_orden})
+            else:
+                return JsonResponse({"error": "No se encontró el nombre definido 'NumOrdenServicio' o la celda está vacía."}, status=400)
+
+        except Exception as e:
+            return JsonResponse({"error": f"Error al procesar el archivo: {str(e)}"}, status=500)
+
+    return JsonResponse({"error": "Petición inválida o falta el archivo."}, status=400)
+
+
 @login_required
 def detalle_proyecto(request, proyecto_id):
     proyecto = {}
@@ -97,29 +279,31 @@ def detalle_proyecto(request, proyecto_id):
                 "fecha_fin": row[4],
             }
 
-        # Traer grupos relacionados con usuarios y roles
+        # Traer grupos con categoría, usuarios y roles
         cursor.execute("""
-            SELECT g.id, g.nombre, g.descripcion,
-                   u.id, u.nombre, u.email,
-                   r.nombre as rol
-            FROM grupos_trabajo g
+            SELECT g.id AS grupo_id,
+                   c.nombre AS categoria_nombre,
+                   u.id AS usuario_id, u.nombre AS usuario_nombre, u.email AS usuario_email,
+                   COALESCE(r.nombre, 'Sin rol') AS rol_nombre
+            FROM grupos_proyecto g
+            LEFT JOIN categoria_documentos c ON g.categoria_id = c.id
             LEFT JOIN usuarios_grupos ug ON g.id = ug.grupo_id
             LEFT JOIN usuarios_microsoft u ON ug.usuario_id = u.id
-            LEFT JOIN roles r ON ug.rol_id = r.id
+            LEFT JOIN roles_ciclodocumento r ON ug.rol_id = r.id
             WHERE g.proyecto_id = %s
             ORDER BY g.id, u.id
         """, [proyecto_id])
+
         rows = cursor.fetchall()
 
         grupos_dict = {}
         for row in rows:
-            grupo_id, grupo_nombre, grupo_desc, usuario_id, usuario_nombre, usuario_email, rol_nombre = row
+            grupo_id, categoria_nombre, usuario_id, usuario_nombre, usuario_email, rol_nombre = row
 
             if grupo_id not in grupos_dict:
                 grupos_dict[grupo_id] = {
                     "id": grupo_id,
-                    "nombre": grupo_nombre,
-                    "descripcion": grupo_desc,
+                    "nombre": categoria_nombre or "Sin categoría",
                     "usuarios": []
                 }
 
@@ -134,24 +318,24 @@ def detalle_proyecto(request, proyecto_id):
 
         grupos = list(grupos_dict.values())
 
-    # Estadísticas adicionales
+    # Estadísticas
     num_grupos = len(grupos)
     promedio_miembros = total_integrantes / num_grupos if num_grupos else 0
     grupo_max = max(grupos, key=lambda g: len(g["usuarios"]))["nombre"] if grupos else ''
     grupo_min = min(grupos, key=lambda g: len(g["usuarios"]))["nombre"] if grupos else ''
 
     # Distribución de roles
-    roles = {}
+    roles_ciclodocumento = {}
     for grupo in grupos:
         for usuario in grupo["usuarios"]:
-            rol = usuario["rol"] or "Sin rol"
-            roles[rol] = roles.get(rol, 0) + 1
+            rol = usuario["rol"]
+            roles_ciclodocumento[rol] = roles_ciclodocumento.get(rol, 0) + 1
 
     # Datos para gráficos
-    grupos_nombres = [g["nombre"] for g in grupos]
+    grupos_nombres = [g['nombre'] for g in grupos]
     grupos_num_usuarios = [len(g["usuarios"]) for g in grupos]
-    roles_labels = list(roles.keys())
-    roles_values = list(roles.values())
+    roles_labels = list(roles_ciclodocumento.keys())
+    roles_values = list(roles_ciclodocumento.values())
 
     context = {
         "proyecto": proyecto,
@@ -161,15 +345,14 @@ def detalle_proyecto(request, proyecto_id):
         "promedio_miembros": promedio_miembros,
         "grupo_max": grupo_max,
         "grupo_min": grupo_min,
-        "roles": roles,
         "grupos_nombres_json": json.dumps(grupos_nombres),
         "grupos_num_usuarios_json": json.dumps(grupos_num_usuarios),
         "roles_labels_json": json.dumps(roles_labels),
         "roles_values_json": json.dumps(roles_values),
     }
 
-
     return render(request, "usuario_proyecto_detalle.html", context)
+
 
 
 @login_required
@@ -177,16 +360,32 @@ def lista_usuarios(request):
     usuarios = []
 
     with connection.cursor() as cursor:
-        cursor.execute("SELECT id, nombre, email FROM usuarios_microsoft")
+        cursor.execute("""
+            SELECT u.id,
+                   u.nombre,
+                   u.email AS email_corporativo,
+                   COALESCE(u.email_secundario, '') AS email_secundario,
+                   COALESCE(u.telefono_corporativo, '') AS telefono_corporativo,
+                   COALESCE(u.telefono_secundario, '') AS telefono_secundario,
+                   COALESCE(c.nombre, '') AS cargo
+            FROM usuarios_microsoft u
+            LEFT JOIN cargo_empresa c ON u.cargo_id = c.id
+        """)
         rows = cursor.fetchall()
         for row in rows:
             usuarios.append({
                 "id": row[0],
                 "nombre": row[1],
-                "email": row[2],
+                "email_corporativo": row[2],
+                "email_secundario": row[3],
+                "telefono_corporativo": row[4],
+                "telefono_secundario": row[5],
+                "cargo": row[6],
             })
 
     return render(request, "usuario_usuarios.html", {"usuarios": usuarios})
+
+
 
 @login_required
 def list_files(request):

@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# Entorno virtual
+venv/
+.env
+
+# Archivos sensibles
+Usuario/service_account.json
