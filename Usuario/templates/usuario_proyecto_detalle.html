@@ -4,31 +4,89 @@
 
 {% block extra_css %}
 <style>
-.container { max-width: 1000px; margin: 30px auto; padding: 0 15px; }
-h1, h2, h3 { text-align: center; margin-bottom: 25px; font-weight: 600; }
-.section { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.05); margin-bottom: 25px; }
-.stats { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
-.stat-box { background: #f7f8fa; padding: 15px 25px; border-radius: 8px; text-align: center; min-width: 140px; }
-.stat-box h3 { margin: 0; font-size: 22px; color: #111; }
-.stat-box p { margin: 0; color: #555; }
-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-th, td { padding: 10px 12px; border-bottom: 1px solid #ddd; }
-th { background: #f1f2f6; text-align: left; }
-.btn-back { margin-bottom: 20px; display: inline-block; }
+.container {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 0 10px;
+}
 
-/* Gráficos responsivos por porcentaje */
+h1, h2, h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: 600;
+    font-size: 1.3rem;
+}
+
+.section {
+    background: var(--metso-white);
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+.stats {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.stat-box {
+    background: #f7f8fa;
+    padding: 10px 15px;
+    border-radius: 6px;
+    text-align: center;
+    min-width: 120px;
+}
+.stat-box h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #111;
+}
+.stat-box p {
+    margin: 0;
+    color: #555;
+    font-size: 0.85rem;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+th, td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #ddd;
+    font-size: 0.9rem;
+}
+th {
+    background: #f1f2f6;
+    text-align: left;
+}
+
+.btn-back {
+    margin-bottom: 15px;
+    display: inline-block;
+    font-size: 0.85rem;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
 .grafico-chico {
     width: 80%;
-    max-width: 500px;
-    height: 250px;
-    margin: 20px auto;
+    max-width: 450px;
+    height: 220px;
+    margin: 15px auto;
     display: block;
 }
+
 .grafico-grande {
     width: 90%;
-    max-width: 650px;
-    height: 350px;
-    margin: 20px auto;
+    max-width: 600px;
+    height: 300px;
+    margin: 15px auto;
     display: block;
 }
 </style>
@@ -38,7 +96,6 @@ th { background: #f1f2f6; text-align: left; }
 <div class="container">
     <h1>{{ proyecto.nombre }}</h1>
 
-    <!-- 🔙 Botón para volver -->
     <div class="btn-back">
         <a href="{% url 'usuario:lista_proyectos' %}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Volver a proyectos
@@ -51,11 +108,10 @@ th { background: #f1f2f6; text-align: left; }
         <p><strong>Fecha de fin:</strong> {{ proyecto.fecha_fin|date:"d/m/Y" }}</p>
     </div>
 
-    <!-- 📊 Estadísticas principales -->
     <div class="stats">
         <div class="stat-box">
             <h3>{{ num_grupos }}</h3>
-            <p>Grupos de trabajo</p>
+            <p>Grupos</p>
         </div>
         <div class="stat-box">
             <h3>{{ num_usuarios }}</h3>
@@ -75,7 +131,6 @@ th { background: #f1f2f6; text-align: left; }
         </div>
     </div>
 
-    <!-- 👥 Grupos y usuarios -->
     <div class="section">
         <h2>Grupos de trabajo</h2>
         {% for grupo in grupos %}
@@ -105,7 +160,6 @@ th { background: #f1f2f6; text-align: left; }
         {% endfor %}
     </div>
 
-    <!-- 📈 Gráficos -->
     <div class="section">
         <h2>Gráficos del proyecto</h2>
         <canvas id="miembrosPorGrupo" class="grafico-chico"></canvas>
@@ -113,7 +167,6 @@ th { background: #f1f2f6; text-align: left; }
     </div>
 </div>
 
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const ctx1 = document.getElementById('miembrosPorGrupo').getContext('2d');
@@ -133,9 +186,7 @@ new Chart(ctx1, {
         scales: {
             y: {
                 beginAtZero: true,
-                ticks: {
-                    precision: 0  // Mostrar solo números enteros
-                }
+                ticks: { precision: 0 }
             }
         }
     }

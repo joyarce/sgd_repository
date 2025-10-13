@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Proyecto{% endblock %}
+
+{% block extra_css %}
+<style>
+/* --- ESTILOS GENERALES (Ajustes para un look moderno) --- */
+:root {
+    /* Asumiendo variables de color de Metso */
+    --metso-dark-gray: #333;
+    --metso-white: #ffffff;
+    --metso-orange: #f36f21;
+}
+
+.container { max-width: 800px; margin: 30px auto; padding: 0 15px; } /* Aumentado a 800px para mejor vista de roles */
+h1 { text-align: center; color: var(--metso-dark-gray); font-weight: 600; margin-bottom: 25px; font-family: 'Poppins', sans-serif; font-size: 1.8rem; }
+h2 { color: var(--metso-dark-gray); font-size: 1.4rem; border-bottom: 2px solid var(--metso-orange); padding-bottom: 5px; margin-top: 35px; margin-bottom: 15px; }
+.form-card { background: var(--metso-white); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.1); padding: 30px; transition: all 0.2s ease; }
+label { font-weight: 500; color: var(--metso-dark-gray); font-size: 0.95rem; }
+input[type="text"], input[type="date"], textarea, select, input[type="file"] { width: 100%; padding: 10px 12px; margin: 6px 0 15px 0; border-radius: 6px; border: 1px solid #bbb; font-size: 0.95rem; box-sizing: border-box; transition: border-color 0.2s; }
+input:focus, textarea:focus, select:focus { border-color: var(--metso-orange); outline: none; box-shadow: 0 0 0 2px rgba(243, 111, 33, 0.2); }
+textarea { resize: vertical; min-height: 80px; }
+button { font-weight: 600; border-radius: 6px; padding: 10px 20px; transition: 0.2s; font-size: 1rem; background-color: var(--metso-orange); color: var(--metso-white); border: none; cursor: pointer; }
+button:hover { background-color: #e65b00; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+/* Mensajes AJAX */
+#info-match, #mensaje-error, #mensaje-ok { font-size: 0.85rem; line-height: 1.4; padding: 5px; border-radius: 4px; margin-bottom: 10px; }
+#info-match { color: #555; font-style: italic; }
+#mensaje-error { color: #d8000c; background-color: #ffbaba; border: 1px solid #d8000c; display: none; font-weight: 500; }
+#mensaje-ok { color: #4f8a10; background-color: #dff2bf; border: 1px solid #4f8a10; display: none; }
+
+
+/* --- SECCIÓN MEJORADA: Grupos y Roles (Acordeón Jerárquico) --- */
+#grupos-seleccion-container {
+    padding: 15px;
+    background-color: #f7f9fb; /* Fondo claro para destacar la sección */
+    border-radius: 8px;
+}
+
+/* Item de Grupo (Nivel 1) */
+.grupo-item {
+    margin-bottom: 8px;
+    border-radius: 6px;
+    background-color: var(--metso-white);
+    border: 1px solid #e0e0e0;
+    overflow: hidden;
+}
+.grupo-item.active {
+    border-color: var(--metso-orange);
+    box-shadow: 0 2px 10px rgba(243, 111, 33, 0.1);
+}
+.grupo-header {
+    padding: 12px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--metso-dark-gray);
+    transition: background-color 0.15s ease;
+    user-select: none;
+}
+.grupo-header:hover {
+    background-color: #f0f0f0;
+}
+.grupo-header .toggle-icon {
+    font-size: 1.1em;
+    font-weight: 900;
+    transition: transform 0.2s;
+    color: var(--metso-orange);
+}
+.grupo-item.active .grupo-header .toggle-icon {
+    transform: rotate(90deg);
+}
+.grupo-header input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(1.1);
+}
+
+/* Listas de Documentos (Nivel 2) */
+.documento-list {
+    padding: 10px 15px 10px 35px; /* Indentación visual */
+    background-color: #fcfcfc;
+    border-top: 1px solid #eee;
+    display: none;
+}
+
+/* Item de Documento */
+.documento-item {
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 0.9em;
+    border-bottom: 1px dashed #eee;
+}
+.documento-item:last-child {
+    border-bottom: none;
+}
+.documento-item input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+/* Roles por Documento (Nivel 3) - Diseño Compacto y Flexible */
+.roles-documento {
+    margin: 15px 0;
+    padding: 10px 15px;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    background-color: #f0f0f0;
+    display: none;
+}
+.role-group {
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+    border-bottom: 1px dotted #ccc;
+}
+.role-group:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+.role-group > label { /* Título del Rol */
+    font-weight: 700;
+    display: block;
+    margin-bottom: 8px;
+    color: var(--metso-dark-gray);
+    font-size: 0.9rem;
+}
+
+/* Contenedor de Selección de Usuarios (Mejora clave de compactación) */
+.user-selection-container {
+    display: flex;
+    flex-wrap: wrap; /* Envoltura para usuarios */
+    gap: 5px 15px; /* Espacio horizontal y vertical */
+    max-height: 120px; /* Altura limitada para prevenir lista infinita */
+    overflow-y: auto; /* Scroll si hay demasiados usuarios */
+    padding: 5px;
+    background-color: var(--metso-white);
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+.user-selection-container label {
+    font-weight: normal;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let numeroOrdenArchivo = "{{ numero_orden|default:'' }}";
+
+function mostrarArchivo(event) {
+    const archivoInput = event.target;
+    const archivo = archivoInput.files[0];
+    const inputOrden = document.getElementById('numero_orden_input');
+    const hiddenOrden = document.getElementById('numero_orden_hidden');
+    const mensajeError = document.getElementById('mensaje-error');
+    const mensajeOk = document.getElementById('mensaje-ok');
+
+    mensajeError.style.display = 'none';
+    mensajeOk.style.display = 'none';
+    numeroOrdenArchivo = ''; 
+
+    if (!archivo) { inputOrden.value = hiddenOrden.value = ''; return; }
+    if (!archivo.name.toLowerCase().endsWith(".xlsx")) {
+        inputOrden.value = hiddenOrden.value = '';
+        mensajeError.textContent = "Formato no válido. Por favor, sube un archivo .xlsx.";
+        mensajeError.style.display = 'block';
+        return;
+    }
+
+    inputOrden.value = 'Procesando archivo...';
+    inputOrden.style.backgroundColor = '#fffacd'; 
+
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+    fetch("{% url 'usuario:validar_orden' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {'X-CSRFToken': csrfToken}
+    })
+    .then(response => response.ok ? response.json() : response.json().then(err => {throw new Error(err.error || 'Error desconocido');}))
+    .then(data => {
+        if (data.numero_orden) {
+            numeroOrdenArchivo = data.numero_orden;
+            inputOrden.value = hiddenOrden.value = data.numero_orden;
+            inputOrden.style.backgroundColor = '#e6ffe6';
+            mensajeOk.textContent = `Número de orden "${data.numero_orden}" cargado correctamente.`;
+            mensajeOk.style.display = 'block';
+        } else throw new Error(data.error || "No se pudo obtener el número de orden.");
+    })
+    .catch(error => {
+        console.error('Error de validación:', error.message);
+        numeroOrdenArchivo = '';
+        inputOrden.value = 'ERROR: No se pudo obtener la orden.';
+        hiddenOrden.value = '';
+        inputOrden.style.backgroundColor = '#fce8e8';
+        mensajeError.textContent = error.message;
+        mensajeError.style.display = 'block';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+
+    // Función para manejar la lógica de expansión/colapso del Grupo
+    const toggleGrupo = (grupoItem, isChecked) => {
+        const docDiv = grupoItem.querySelector('.documento-list');
+        const checkbox = grupoItem.querySelector('input[name="grupo_checkbox"]');
+
+        if (isChecked) {
+            docDiv.style.display = 'block';
+            grupoItem.classList.add('active');
+            checkbox.checked = true;
+        } else {
+            docDiv.style.display = 'none';
+            grupoItem.classList.remove('active');
+            checkbox.checked = false;
+            // Desmarcar todos los elementos anidados al colapsar
+            docDiv.querySelectorAll('input[type="checkbox"]').forEach(c => {
+                c.checked = false;
+                // Ocultar roles también
+                const rolesDiv = document.getElementById('roles-' + c.value);
+                if(rolesDiv) rolesDiv.style.display = 'none';
+            });
+        }
+    };
+    
+    // 1. Manejar la expansión/colapso al hacer clic en el HEADER del Grupo
+    document.querySelectorAll('.grupo-item').forEach(grupoItem => {
+        const header = grupoItem.querySelector('.grupo-header');
+        const checkbox = grupoItem.querySelector('input[name="grupo_checkbox"]');
+
+        header.addEventListener('click', function(event) {
+            // Si el clic fue directamente en el checkbox, solo dejar que el 'change' del checkbox actúe
+            if (event.target === checkbox) return; 
+            
+            // Si el clic fue en el header, invertimos el estado del checkbox
+            toggleGrupo(grupoItem, !checkbox.checked);
+        });
+
+        // Asegurarse de que el cambio del checkbox también actualice la visualización
+        checkbox.addEventListener('change', function() {
+            toggleGrupo(grupoItem, this.checked);
+        });
+
+        // Inicializar el estado si ya está checked al cargar la página
+        if (checkbox.checked) {
+            toggleGrupo(grupoItem, true);
+        }
+    });
+
+    // 2. Manejar la visibilidad de Roles al seleccionar Documento
+    document.querySelectorAll('.documento-list input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const rolesDiv = document.getElementById('roles-' + this.value);
+            if(rolesDiv) {
+                rolesDiv.style.display = this.checked ? 'block' : 'none';
+            }
+            // Desmarcar roles si el documento se desmarca
+            if(!this.checked && rolesDiv) { 
+                rolesDiv.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+            }
+        });
+    });
+
+    // 3. Manejar la selección exclusiva de roles por documento (asumiendo que solo puede haber 1 usuario por rol)
+    document.querySelectorAll('.roles-documento').forEach(div => {
+        div.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const roleName = this.name; 
+                if(this.checked){
+                    // Desmarca otros checkboxes del mismo rol (ej: solo 1 redactor_id_X)
+                    document.querySelectorAll(`input[name="${roleName}"]`).forEach(other => {
+                        if(other !== this) other.checked = false;
+                    });
+                }
+            });
+        });
+    });
+
+
+    // Lógica de validación de formulario (Mantener)
+    form.addEventListener('submit', function(event) {
+        if (!numeroOrdenArchivo) {
+            event.preventDefault();
+            document.getElementById('mensaje-error').textContent = "Debes cargar y validar el número de orden usando el archivo.";
+            document.getElementById('mensaje-error').style.display = 'block';
+            document.getElementById('mensaje-ok').style.display = 'none';
+            document.getElementById('archivo').focus();
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Crear Proyecto</h1>
+    {% if form_error %}
+        <p style="color: red; text-align: center; font-weight: bold;">Error: {{ form_error }}</p>
+    {% endif %}
+
+    <div class="form-card">
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <label for="nombre_proyecto">Nombre del Proyecto:</label>
+            <input type="text" id="nombre_proyecto" name="nombre" placeholder="Ej: Cambio Trunnión Molino 1012" required>
+
+            <label for="descripcion_proyecto">Descripción del Proyecto:</label>
+            <textarea id="descripcion_proyecto" name="descripcion" placeholder="Detalles del servicio a realizar..."></textarea>
+
+            <div style="display:flex; gap: 20px;">
+                <div style="flex:1;">
+                    <label for="fecha_inicio">Fecha de Inicio:</label>
+                    <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+                </div>
+                <div style="flex:1;">
+                    <label for="fecha_fin">Fecha de Fin (estimada):</label>
+                    <input type="date" id="fecha_fin" name="fecha_fin">
+                </div>
+            </div>
+
+            <label for="administrador">Administrador de Servicio:</label>
+            <select id="administrador" name="administrador" required>
+                <option value="" disabled selected>Selecciona un usuario</option>
+                {% for user in usuarios_administrador %}
+                <option value="{{ user.id }}">{{ user.nombre }} ({{ user.email }})</option>
+                {% endfor %}
+            </select>
+
+
+            <label for="archivo">Número de Orden de Servicio:</label>
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom: 5px;">
+                <input type="text" id="numero_orden_input" placeholder="Número de orden" readonly style="flex:1; background-color:#f5f5f5; cursor: default;" value="{{ numero_orden|default:'' }}">
+                <input type="hidden" id="numero_orden_hidden" name="numero_orden" value="{{ numero_orden|default:'' }}">
+                <input type="file" id="archivo" name="archivo" onchange="mostrarArchivo(event)" required style="flex:1;">
+            </div>
+            <p id="info-match">El número de orden se obtiene automáticamente del archivo cargado.</p>
+            <p id="mensaje-error">Debes subir un archivo válido con el número de orden.</p>
+            <p id="mensaje-ok">Número de orden cargado correctamente desde el archivo.</p>
+
+            <h2>Selección de Grupos de Trabajo y Roles</h2>
+            <div id="grupos-seleccion-container">
+                {% for grupo in grupos_maestros %}
+                    {% with safe_id=grupo.nombre|lower|slugify %}
+                    <div class="grupo-item">
+                        
+                        <div class="grupo-header">
+                            <label style="margin: 0; font-weight: inherit; display: flex; align-items: center;">
+                                <input type="checkbox" name="grupo_checkbox" value="{{ grupo.nombre }}" data-safe-id="{{ safe_id }}">
+                                {{ grupo.nombre }}
+                            </label>
+                            <span class="toggle-icon">▶</span>
+                        </div>
+
+                        <div id="documentos-{{ safe_id }}" class="documento-list">
+                            {% for doc in documentos %}
+                                {% if doc.categoria_id == grupo.id %}
+                                <label class="documento-item">
+                                    <input type="checkbox" name="documento_{{ safe_id }}[]" value="{{ doc.id }}"> {{ doc.nombre }}
+                                </label>
+
+                                <div class="roles-documento" id="roles-{{ doc.id }}">
+                                    <p style="font-style: italic; font-size: 0.8em; margin-bottom: 10px;">Selecciona el usuario responsable de cada rol para este documento.</p>
+                                    
+                                    <div class="role-group">
+                                        <label>Redactor:</label>
+                                        <div class="user-selection-container">
+                                            {% for user in usuarios %}
+                                            <label><input type="checkbox" name="redactor_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="role-group">
+                                        <label>Revisor:</label>
+                                        <div class="user-selection-container">
+                                            {% for user in usuarios %}
+                                            <label><input type="checkbox" name="revisor_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="role-group">
+                                        <label>Aprobador:</label>
+                                        <div class="user-selection-container">
+                                            {% for user in usuarios %}
+                                            <label><input type="checkbox" name="aprobador_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+
+            <div style="text-align:center; margin-top:30px;">
+                <button type="submit">Crear Proyecto</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

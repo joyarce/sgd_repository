@@ -4,25 +4,73 @@
 
 {% block extra_css %}
 <style>
-.container { max-width: 1100px; margin: 30px auto; padding: 0 15px; }
+.container {
+    max-width: 1000px;
+    margin: 20px auto;
+    padding: 0 10px;
+}
 
 h1 {
     text-align: center;
     color: var(--metso-dark-gray);
     font-weight: 600;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     font-family: 'Poppins', sans-serif;
+    font-size: 1.4rem;
 }
 
-.table-wrapper { background: var(--metso-white); border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.05); overflow-x:auto; }
-table { width: 100%; border-collapse: collapse; min-width: 800px; }
-th, td { padding: 12px 15px; text-align: left; }
-th { background: #f7f8fa; color: var(--metso-dark-gray); font-weight: 600; }
-tr:hover { background: #f1f2f6; transition: background 0.2s ease; }
+.table-wrapper {
+    background: var(--metso-white);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    overflow-x:auto;
+}
 
-.btn-action { padding: 6px 10px; border-radius:6px; color:#fff; display:inline-flex; justify-content:center; align-items:center; transition:0.2s; }
-.btn-warning { background:#f59e0b; } .btn-warning:hover { background:#d97706; }
-.btn-info { background:#3b82f6; } .btn-info:hover { background:#1d4ed8; }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 700px;
+}
+
+th, td {
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+th {
+    background: #f7f8fa;
+    color: var(--metso-dark-gray);
+    font-weight: 600;
+}
+
+tr:hover {
+    background: #f1f2f6;
+    transition: background 0.2s ease;
+    cursor: pointer;
+}
+
+.btn-action {
+    padding: 4px 8px;
+    border-radius: 5px;
+    color:#fff;
+    display:inline-flex;
+    justify-content:center;
+    align-items:center;
+    transition:0.2s;
+}
+.btn-warning { 
+    background:#f59e0b; 
+}
+.btn-warning:hover { 
+    background:#d97706; 
+}
+
+.btn-success {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+}
 </style>
 {% endblock %}
 
@@ -30,8 +78,8 @@ tr:hover { background: #f1f2f6; transition: background 0.2s ease; }
 <div class="container">
     <h1>Proyectos</h1>
 
-    <div style="margin-bottom:20px;">
-        <a class="btn btn-success">
+    <div style="margin-bottom:15px;">
+        <a class="btn btn-success" href="{% url 'usuario:crear_proyecto' %}">
             <i class="fas fa-plus"></i> Nuevo proyecto
         </a>
     </div>
@@ -49,18 +97,13 @@ tr:hover { background: #f1f2f6; transition: background 0.2s ease; }
             </thead>
             <tbody>
                 {% for proyecto in proyectos %}
-                <tr>
+                <tr onclick="window.location.href='{% url 'usuario:detalle_proyecto' proyecto.id %}'">
                     <td>{{ proyecto.nombre }}</td>
                     <td>{{ proyecto.descripcion|default:"(Sin descripción)" }}</td>
                     <td>{{ proyecto.fecha_inicio|date:"d/m/Y" }}</td>
                     <td>{{ proyecto.fecha_fin|date:"d/m/Y" }}</td>
                     <td style="text-align:center;">
                         <a class="btn-action btn-warning" title="Editar proyecto"><i class="fas fa-edit"></i></a>
-                        <a class="btn-action btn-info" title="Ver detalles" href="{% url 'usuario:detalle_proyecto' proyecto.id %}
-">
-                            <i class="fas fa-eye"></i>
-                        </a>
-
                     </td>
                 </tr>
                 {% empty %}

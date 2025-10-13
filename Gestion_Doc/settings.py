@@ -92,11 +92,11 @@ EMAIL_HOST_PASSWORD = 'Loki99uexd.'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'django_db',           # Nombre de la base definido en docker-compose
-        'USER': 'django_user',         # Usuario definido en docker-compose
-        'PASSWORD': 'django_pass',     # Contraseña definida en docker-compose
-        'HOST': 'localhost',           # Docker expone la DB en localhost
-        'PORT': '5432',                # Puerto que asignaste en docker-compose
+        'NAME': 'django_db',
+        'USER': 'django_user',
+        'PASSWORD': 'django_pass',
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
     }
 }
 
