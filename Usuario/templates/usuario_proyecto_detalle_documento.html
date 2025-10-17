@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle Documento{% endblock %}
+
+{% block extra_css %}
+<style>
+.container { max-width:900px; margin:30px auto; padding:0 15px; }
+h1,h2 { text-align:center; }
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th, td { padding:12px 15px; border:1px solid #eee; text-align:left; }
+th { background:#f7f9fb; text-transform:uppercase; font-weight:700; }
+tr:hover { background:#fdf2e8; }
+.text-muted { text-align:center; color:#777; padding:15px; font-style:italic; }
+.btn-back { margin-bottom:20px; display:inline-block; }
+.btn-secondary { background:#6c757d; color:#fff; padding:8px 15px; border-radius:6px; text-decoration:none; }
+.btn-secondary:hover { background:#5a6268; }
+
+.estado-rechazado { background:#f8d7da; }
+.estado-aprobado { background:#d4edda; }
+
+.equipo-container { margin-bottom:20px; padding:10px; border:1px solid #eee; border-radius:6px; background:#f9f9f9; }
+.equipo-container p { margin:5px 0; font-weight:500; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="btn-back">
+        <a href="javascript:history.back()" class="btn-secondary">Volver al Proyecto</a>
+    </div>
+
+    <h1>{{ documento.tipo_documento }} ({{ documento.categoria }})</h1>
+    <p><strong>Estado Actual:</strong> {{ documento.estado_actual }}</p>
+
+    <!-- Integrantes del Ciclo de Vida -->
+    <div class="equipo-container">
+        <h2>Integrantes del Ciclo de Vida del Documento</h2>
+        <p><strong>Equipo de Redactores:</strong>
+            {% if equipo_redactores %}
+                {{ equipo_redactores|join:", " }}
+            {% else %}
+                No hay redactores asignados
+            {% endif %}
+        </p>
+        <p><strong>Equipo de Revisores y Aprobadores:</strong>
+            {% if equipo_revisores_aprobadores %}
+                {{ equipo_revisores_aprobadores|join:", " }}
+            {% else %}
+                No hay revisores/aprobadores asignados
+            {% endif %}
+        </p>
+    </div>
+
+    <h2>Ciclo de Vida</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Estado Origen</th>
+                <th>Estado Destino</th>
+                <th>Fecha Cambio</th>
+                <th>Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.usuario_nombre }}</td>
+                <td>{{ log.rol_usuario }}</td>
+                <td>{{ log.estado_origen }}</td>
+                <td class="{% if 'Rechazado' in log.estado_destino %}estado-rechazado{% elif 'Aprobado' in log.estado_destino %}estado-aprobado{% endif %}">
+                    {{ log.estado_destino }}
+                </td>
+                <td>{{ log.fecha_accion|date:"d/m/Y H:i" }}</td>
+                <td>{{ log.observaciones }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-muted">No hay historial de estados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

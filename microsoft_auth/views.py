@@ -96,12 +96,12 @@ def registrar_usuario_postgres(nombre, email, microsoft_id):
             port=settings.DATABASES['default']['PORT'],
         )
         cur = conn.cursor()
-        cur.execute("SELECT * FROM usuarios_microsoft WHERE microsoft_id=%s", (microsoft_id,))
+        cur.execute("SELECT * FROM usuarios WHERE microsoft_id=%s", (microsoft_id,))
         usuario = cur.fetchone()
 
         if usuario is None:
             cur.execute(
-                "INSERT INTO usuarios_microsoft (nombre, email, microsoft_id) VALUES (%s, %s, %s)",
+                "INSERT INTO usuarios (nombre, email, microsoft_id) VALUES (%s, %s, %s)",
                 (nombre, email, microsoft_id)
             )
             conn.commit()

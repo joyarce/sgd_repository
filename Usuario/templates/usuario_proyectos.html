@@ -4,83 +4,133 @@
 
 {% block extra_css %}
 <style>
+/* --- VARIABLES y ESTILOS GENERALES (Alineados al estilo Metso) --- */
+:root {
+    --metso-dark-gray: #333;
+    --metso-white: #ffffff;
+    --metso-orange: #f36f21;
+    --metso-green: #38b000;
+    --metso-light-gray: #f7f9fb;
+}
+
 .container {
-    max-width: 1000px;
-    margin: 20px auto;
-    padding: 0 10px;
+    max-width: 1100px;
+    margin: 30px auto;
+    padding: 0 15px;
 }
 
 h1 {
     text-align: center;
     color: var(--metso-dark-gray);
     font-weight: 600;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     font-family: 'Poppins', sans-serif;
-    font-size: 1.4rem;
+    font-size: 1.8rem;
 }
 
+/* --- TABLA (Visualización de proyectos) --- */
 .table-wrapper {
     background: var(--metso-white);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     overflow-x:auto;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 700px;
+    min-width: 800px;
 }
 
 th, td {
-    padding: 8px 10px;
+    padding: 12px 15px;
     text-align: left;
     font-size: 0.9rem;
+    border-bottom: 1px solid #eee;
 }
 
 th {
-    background: #f7f8fa;
+    background: var(--metso-light-gray);
     color: var(--metso-dark-gray);
-    font-weight: 600;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
 }
 
 tr:hover {
-    background: #f1f2f6;
+    background: #fdf2e8;
     transition: background 0.2s ease;
     cursor: pointer;
 }
 
+/* --- BOTONES --- */
+.btn-success {
+    background-color: var(--metso-dark-gray); /* Fondo oscuro del tema */
+    color: #ffffff;                            /* Texto siempre blanco */
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: none;
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+}
+
+.btn-success:hover {
+    background-color: #111111; /* Fondo un poco más oscuro al pasar el cursor */
+    color: #ffffff;            /* Texto siempre blanco */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+
+
+/* Botones de acción en la tabla */
 .btn-action {
-    padding: 4px 8px;
-    border-radius: 5px;
-    color:#fff;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 50%;
+    color: #fff;
     display:inline-flex;
     justify-content:center;
     align-items:center;
     transition:0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    background-color: var(--metso-orange); /* Fondo por defecto */
+    text-decoration: none;
+    border: none;
+    font-size: 0.9rem; /* Asegura que el ícono tenga tamaño */
 }
-.btn-warning { 
-    background:#f59e0b; 
-}
-.btn-warning:hover { 
-    background:#d97706; 
+.btn-action:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    background-color: #e65b00; /* Hover */
 }
 
-.btn-success {
-    padding: 6px 12px;
-    font-size: 0.9rem;
-    border-radius: 6px;
+.text-center {
+    text-align: center;
+}
+.text-muted {
+    color: #777;
+    padding: 20px;
 }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-    <h1>Proyectos</h1>
+    <h1>Listado de Proyectos</h1>
 
-    <div style="margin-bottom:15px;">
-        <a class="btn btn-success" href="{% url 'usuario:crear_proyecto' %}">
-            <i class="fas fa-plus"></i> Nuevo proyecto
+    <div style="margin-bottom:20px;">
+        <a class="btn-success" href="{% url 'usuario:crear_proyecto' %}">
+            <i class="fas fa-plus"></i> Crear Nuevo Proyecto
         </a>
     </div>
 
@@ -90,8 +140,8 @@ tr:hover {
                 <tr>
                     <th>Nombre</th>
                     <th>Descripción</th>
-                    <th>Fecha inicio</th>
-                    <th>Fecha fin</th>
+                    <th>Fecha Inicio</th>
+                    <th>Fecha Fin</th>
                     <th style="text-align:center;">Acciones</th>
                 </tr>
             </thead>
@@ -103,16 +153,23 @@ tr:hover {
                     <td>{{ proyecto.fecha_inicio|date:"d/m/Y" }}</td>
                     <td>{{ proyecto.fecha_fin|date:"d/m/Y" }}</td>
                     <td style="text-align:center;">
-                        <a class="btn-action btn-warning" title="Editar proyecto"><i class="fas fa-edit"></i></a>
+                        <a href="#" class="btn-action" title="Editar proyecto" onclick="event.stopPropagation();">
+                            <i class="fas fa-edit"></i>
+                        </a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center text-muted">No hay proyectos.</td>
+                    <td colspan="5" class="text-center text-muted">Aún no hay proyectos creados.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Cargamos Font Awesome -->
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 {% endblock %}

@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'Usuario',  # tu app
     'microsoft_auth', # tu app
+    'Gestion_Documentos'
 ]
 
 MIDDLEWARE = [
