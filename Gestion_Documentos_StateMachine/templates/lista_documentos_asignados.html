@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Mis Documentos Asignados{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>📄 Documentos Asignados a {{ request.user.nombre }}</h2>
+
+    {% if documentos %}
+        <table class="table table-striped mt-3">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tipo de Documento</th>
+                    <th>Categoría</th>
+                    <th>Estado</th>
+                    <th>Rol Asignado</th>
+                    <th>Fecha Registro</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in documentos %}
+                <tr>
+                    <td>{{ doc.requerimiento_id }}</td>
+                    <td>{{ doc.tipo_documento }}</td>
+                    <td>{{ doc.categoria_documento }}</td>
+                    <td>{{ doc.estado_actual }}</td>
+                    <td>{{ doc.rol_asignado }}</td>
+                    <td>{{ doc.fecha_registro|date:"d-m-Y H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="mt-3">No tienes documentos técnicos asignados actualmente.</p>
+    {% endif %}
+</div>
+{% endblock %}
