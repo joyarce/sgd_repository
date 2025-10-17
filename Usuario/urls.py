@@ -15,4 +15,5 @@ urlpatterns = [
     path("proyectos/<int:proyecto_id>/", views.detalle_proyecto, name="detalle_proyecto"),
     path('proyectos/nuevo/', views.crear_proyecto, name='crear_proyecto'),
     path('proyectos/validar_orden/', views.validar_orden_ajax, name='validar_orden'),
+    path('usuario/documento/<int:documento_id>/', views.detalle_documento, name='detalle_documento'),
 ]

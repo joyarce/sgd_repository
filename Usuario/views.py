@@ -8,6 +8,7 @@ from django.conf import settings
 import openpyxl
 from .models import FilePreview
 from django.db import connection 
+from collections import defaultdict
 import json 
 # You need to import the decorator:
 from django.views.decorators.http import require_POST 
@@ -56,8 +57,6 @@ def get_or_create_preview_url(blob):
         )
         return url, PREVIEW_EXPIRATION_MINUTES
 
-
-
 @login_required
 def inicio(request):
     return render(request, "usuario_inicio.html")
@@ -80,8 +79,6 @@ def lista_proyectos(request):
 
     return render(request, "usuario_proyectos.html", {"proyectos": proyectos})
 
-
-
 @login_required
 def crear_proyecto(request):
     numero_orden = ""
@@ -90,12 +87,13 @@ def crear_proyecto(request):
     grupos_maestros = []
     documentos = []
     form_error = None
+    data_debug = None  # Para mostrar los datos en pantalla
 
     # 1. Obtener TODOS los USUARIOS para roles
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT u.id, u.nombre, u.email
-            FROM usuarios_microsoft u
+            FROM usuarios u
             ORDER BY u.nombre
         """)
         usuarios = [{"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()]
@@ -104,8 +102,8 @@ def crear_proyecto(request):
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT u.id, u.nombre, u.email
-            FROM usuarios_microsoft u
-            JOIN area_cargo_empresa a ON u.cargo_id = a.id
+            FROM usuarios u
+            JOIN area_cargos_empresa a ON u.cargo_id = a.id
             WHERE LOWER(a.nombre) = 'administrador de contratos'
             ORDER BY u.nombre
         """)
@@ -115,7 +113,7 @@ def crear_proyecto(request):
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT c.id, c.nombre, c.descripcion
-            FROM categoria_documentos c
+            FROM categoria_documentos_tecnicos c
             ORDER BY c.nombre
         """)
         grupos_maestros = [{"id": r[0], "nombre": r[1], "descripcion": r[2]} for r in cursor.fetchall()]
@@ -124,7 +122,7 @@ def crear_proyecto(request):
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT id, categoria_id, nombre
-            FROM tipo_documentos
+            FROM tipo_documentos_tecnicos
             ORDER BY nombre
         """)
         documentos = [{"id": r[0], "categoria_id": r[1], "nombre": r[2]} for r in cursor.fetchall()]
@@ -161,68 +159,83 @@ def crear_proyecto(request):
             form_error = "Debe seleccionar al menos un Documento con roles."
         else:
             try:
-                with connection.cursor() as cursor:
-                    # Crear proyecto
-                    cursor.execute("""
-                        INSERT INTO proyectos (nombre, descripcion, fecha_inicio, fecha_fin)
-                        VALUES (%s, %s, %s, %s)
-                        RETURNING id
-                    """, [nombre_proyecto, descripcion_proyecto, fecha_inicio, fecha_fin])
-                    proyecto_id = cursor.fetchone()[0]
+                # Preparamos la estructura con lo que se habría insertado
+                data_debug = {
+                    "Proyecto": {
+                        "numero_orden": numero_orden,
+                        "nombre": nombre_proyecto,
+                        "descripcion": descripcion_proyecto,
+                        "fecha_inicio": fecha_inicio,
+                        "fecha_fin": fecha_fin,
+                        "administrador_id": administrador_id,
+                    },
+                    "Documentos_y_roles": documentos_roles,
+                }
 
-                    # Asociar documentos y roles
-                    for doc_id, roles in documentos_roles.items():
-                        cursor.execute("""
-                            INSERT INTO documentos_proyecto (proyecto_id, documento_id)
-                            VALUES (%s, %s)
-                            RETURNING id
-                        """, [proyecto_id, doc_id])
-                        doc_proy_id = cursor.fetchone()[0]
+                # Imprimir en consola (log de servidor) para ver fácilmente durante el desarrollo
+                print("========== DATOS QUE SE GUARDARÍAN ==========")
+                import pprint
+                pprint.pprint(data_debug)
+                print("=============================================")
 
-                        for r_id in roles["redactores"]:
-                            cursor.execute("""
-                                INSERT INTO usuarios_documentos (usuario_id, documento_proyecto_id, rol)
-                                VALUES (%s, %s, 'redactor')
-                            """, [r_id, doc_proy_id])
-                        for r_id in roles["revisores"]:
-                            cursor.execute("""
-                                INSERT INTO usuarios_documentos (usuario_id, documento_proyecto_id, rol)
-                                VALUES (%s, %s, 'revisor')
-                            """, [r_id, doc_proy_id])
-                        for r_id in roles["aprobadores"]:
-                            cursor.execute("""
-                                INSERT INTO usuarios_documentos (usuario_id, documento_proyecto_id, rol)
-                                VALUES (%s, %s, 'aprobador')
-                            """, [r_id, doc_proy_id])
-
-                    # Registrar administrador del servicio
-                    cursor.execute("""
-                        INSERT INTO usuarios_grupos (usuario_id, grupo_id, rol_id)
-                        VALUES (%s, NULL, (SELECT id FROM roles_ciclodocumento WHERE LOWER(nombre) = 'administrador' LIMIT 1))
-                    """, [administrador_id])
-
-                return redirect("usuario:detalle_proyecto", proyecto_id=proyecto_id)
+                # --- INICIO BLOQUE DESACTIVADO: INSERTS EN BD (comentado para testeo) ---
+                # with connection.cursor() as cursor:
+                #     # Crear proyecto
+                #     cursor.execute("""
+                #         INSERT INTO proyectos (nombre, descripcion, fecha_inicio, fecha_fin)
+                #         VALUES (%s, %s, %s, %s)
+                #         RETURNING id
+                #     """, [nombre_proyecto, descripcion_proyecto, fecha_inicio, fecha_fin])
+                #     proyecto_id = cursor.fetchone()[0]
+                #
+                #     # Asociar documentos y roles
+                #     for doc_id, roles in documentos_roles.items():
+                #         cursor.execute("""
+                #             INSERT INTO documentos_proyecto (proyecto_id, documento_id)
+                #             VALUES (%s, %s)
+                #             RETURNING id
+                #         """, [proyecto_id, doc_id])
+                #         doc_proy_id = cursor.fetchone()[0]
+                #
+                #         for r_id in roles["redactores"]:
+                #             cursor.execute("""
+                #                 INSERT INTO usuarios_documentos (usuario_id, documento_proyecto_id, rol)
+                #                 VALUES (%s, %s, 'redactor')
+                #             """, [r_id, doc_proy_id])
+                #         for r_id in roles["revisores"]:
+                #             cursor.execute("""
+                #                 INSERT INTO usuarios_documentos (usuario_id, documento_proyecto_id, rol)
+                #                 VALUES (%s, %s, 'revisor')
+                #             """, [r_id, doc_proy_id])
+                #         for r_id in roles["aprobadores"]:
+                #             cursor.execute("""
+                #                 INSERT INTO usuarios_documentos (usuario_id, documento_proyecto_id, rol)
+                #                 VALUES (%s, %s, 'aprobador')
+                #             """, [r_id, doc_proy_id])
+                #
+                #     # Registrar administrador del servicio
+                #     cursor.execute("""
+                #         INSERT INTO usuarios_grupos (usuario_id, grupo_id, rol_id)
+                #         VALUES (%s, NULL, (SELECT id FROM roles_ciclodocumento WHERE LOWER(nombre) = 'administrador' LIMIT 1))
+                #     """, [administrador_id])
+                #
+                # # No redirigimos: esto es modo testeo, se queda en la misma vista mostrando data_debug
+                # --- FIN BLOQUE DESACTIVADO ---
 
             except Exception as e:
-                form_error = f"Error al guardar el proyecto: {str(e)}"
+                form_error = f"Error al simular guardado del proyecto: {str(e)}"
 
     context = {
         "numero_orden": numero_orden,
-        "usuarios": usuarios,  # Para roles en documentos
-        "usuarios_administrador": usuarios_administrador,  # Solo para el select de Administrador
+        "usuarios": usuarios,
+        "usuarios_administrador": usuarios_administrador,
         "grupos_maestros": grupos_maestros,
         "documentos": documentos,
         "form_error": form_error,
+        "data_debug": data_debug,  # Muestra datos simulados en la vista
     }
     return render(request, "usuario_crearproyecto.html", context)
 
-
-
-
-
-# ----------------------------------------------------------------------
-# FUNCIÓN PARA VALIDACIÓN AJAX
-# ----------------------------------------------------------------------
 @require_POST
 def validar_orden_ajax(request):
     if request.method == "POST" and request.FILES.get("archivo"):
@@ -256,102 +269,205 @@ def validar_orden_ajax(request):
 
     return JsonResponse({"error": "Petición inválida o falta el archivo."}, status=400)
 
-
 @login_required
 def detalle_proyecto(request, proyecto_id):
-    proyecto = {}
-    grupos = []
-    total_integrantes = 0
+    """
+    Muestra los detalles completos de un proyecto incluyendo:
+    - Proyecto
+    - Contrato
+    - Cliente
+    - Máquinas
+    - Requerimientos de documentos técnicos con su último estado
+    """
 
+    # Consulta SQL completa
+    sql = """
+    WITH UltimoEstado AS (
+        SELECT
+            requerimiento_id,
+            estado_destino_id,
+            ROW_NUMBER() OVER (
+                PARTITION BY requerimiento_id 
+                ORDER BY fecha_cambio DESC, id DESC
+            ) AS rn
+        FROM public.log_estado_requerimiento_documento
+    )
+    SELECT
+        -- Proyecto
+        P.id AS proyecto_id,
+        P.nombre AS nombre_proyecto,
+        P.descripcion AS proyecto_descripcion,
+        P.fecha_inicio,
+        P.fecha_fin,
+        P.numero_orden,
+
+        -- Administrador
+        U.nombre AS administrador_nombre_completo,
+        U.email AS administrador_email,
+
+        -- Faena
+        F.nombre AS nombre_faena,
+
+        -- Contrato
+        C.id AS contrato_id,
+        C.numero_contrato,
+        C.monto_total,
+        C.fecha_creacion AS contrato_fecha_creacion,
+        C.representante_cliente_nombre,
+        C.representante_cliente_correo,
+        C.representante_cliente_telefono,
+
+        -- Cliente
+        CL.id AS cliente_id,
+        CL.nombre AS cliente_nombre,
+        CL.rut AS cliente_rut,
+        CL.direccion AS cliente_direccion,
+        CL.correo_contacto AS cliente_correo,
+        CL.telefono_contacto AS cliente_telefono,
+
+        -- Requerimientos de Documento Técnico
+        RDT.id AS requerimiento_id,
+        TDT.nombre AS nombre_documento_tecnico,
+        E.nombre AS estado_actual_documento,
+        RDT.fecha_registro AS requerimiento_fecha,
+
+        -- Máquinas
+        M.id AS maquina_id,
+        M.nombre AS maquina_nombre,
+        M.codigo_equipo,
+        M.marca,
+        M.modelo,
+        M.anio_fabricacion,
+        M.tipo AS tipo_maquina,
+        M.descripcion AS maquina_descripcion
+
+    FROM public.proyectos P
+    INNER JOIN public.usuarios U ON P.administrador_id = U.id
+    LEFT JOIN public.faenas F ON P.faena_id = F.id
+    INNER JOIN public.contratos C ON P.contrato_id = C.id
+    INNER JOIN public.clientes CL ON C.cliente_id = CL.id
+    LEFT JOIN public.requerimiento_documento_tecnico RDT ON P.id = RDT.proyecto_id
+    LEFT JOIN public.tipo_documentos_tecnicos TDT ON RDT.tipo_documento_id = TDT.id
+    LEFT JOIN UltimoEstado UE ON RDT.id = UE.requerimiento_id AND UE.rn = 1
+    LEFT JOIN public.estado_documento E ON UE.estado_destino_id = E.id
+    LEFT JOIN public.maquinas M ON P.id = M.proyecto_id
+    WHERE P.id = %s
+    ORDER BY RDT.fecha_registro DESC, M.id;
+    """
+
+    # Ejecutar la consulta
     with connection.cursor() as cursor:
-        # Traer datos del proyecto
-        cursor.execute(
-            "SELECT id, nombre, descripcion, fecha_inicio, fecha_fin FROM proyectos WHERE id = %s",
-            [proyecto_id]
-        )
-        row = cursor.fetchone()
-        if row:
-            proyecto = {
-                "id": row[0],
-                "nombre": row[1],
-                "descripcion": row[2],
-                "fecha_inicio": row[3],
-                "fecha_fin": row[4],
-            }
+        cursor.execute(sql, [proyecto_id])
+        columns = [col[0] for col in cursor.description]
+        resultados = [
+            dict(zip(columns, row))
+            for row in cursor.fetchall()
+        ]
 
-        # Traer grupos con categoría, usuarios y roles
-        cursor.execute("""
-            SELECT g.id AS grupo_id,
-                   c.nombre AS categoria_nombre,
-                   u.id AS usuario_id, u.nombre AS usuario_nombre, u.email AS usuario_email,
-                   COALESCE(r.nombre, 'Sin rol') AS rol_nombre
-            FROM grupos_proyecto g
-            LEFT JOIN categoria_documentos c ON g.categoria_id = c.id
-            LEFT JOIN usuarios_grupos ug ON g.id = ug.grupo_id
-            LEFT JOIN usuarios_microsoft u ON ug.usuario_id = u.id
-            LEFT JOIN roles_ciclodocumento r ON ug.rol_id = r.id
-            WHERE g.proyecto_id = %s
-            ORDER BY g.id, u.id
-        """, [proyecto_id])
+    # Separar información general del proyecto/contrato/cliente (tomamos la primera fila)
+    proyecto_info = resultados[0] if resultados else None
 
-        rows = cursor.fetchall()
+    # Requerimientos de documentos y máquinas
+    requerimientos = []
+    maquinas = []
+    req_ids = set()
+    maquina_ids = set()
+    for row in resultados:
+        # Evitar duplicados en requerimientos
+        if row['requerimiento_id'] and row['requerimiento_id'] not in req_ids:
+            requerimientos.append({
+                'id': row['requerimiento_id'],
+                'nombre_documento_tecnico': row['nombre_documento_tecnico'],
+                'estado_actual': row['estado_actual_documento'],
+                'fecha_registro': row['requerimiento_fecha'],
+            })
+            req_ids.add(row['requerimiento_id'])
 
-        grupos_dict = {}
-        for row in rows:
-            grupo_id, categoria_nombre, usuario_id, usuario_nombre, usuario_email, rol_nombre = row
-
-            if grupo_id not in grupos_dict:
-                grupos_dict[grupo_id] = {
-                    "id": grupo_id,
-                    "nombre": categoria_nombre or "Sin categoría",
-                    "usuarios": []
-                }
-
-            if usuario_id:
-                grupos_dict[grupo_id]["usuarios"].append({
-                    "id": usuario_id,
-                    "nombre": usuario_nombre,
-                    "email": usuario_email,
-                    "rol": rol_nombre
-                })
-                total_integrantes += 1
-
-        grupos = list(grupos_dict.values())
-
-    # Estadísticas
-    num_grupos = len(grupos)
-    promedio_miembros = total_integrantes / num_grupos if num_grupos else 0
-    grupo_max = max(grupos, key=lambda g: len(g["usuarios"]))["nombre"] if grupos else ''
-    grupo_min = min(grupos, key=lambda g: len(g["usuarios"]))["nombre"] if grupos else ''
-
-    # Distribución de roles
-    roles_ciclodocumento = {}
-    for grupo in grupos:
-        for usuario in grupo["usuarios"]:
-            rol = usuario["rol"]
-            roles_ciclodocumento[rol] = roles_ciclodocumento.get(rol, 0) + 1
-
-    # Datos para gráficos
-    grupos_nombres = [g['nombre'] for g in grupos]
-    grupos_num_usuarios = [len(g["usuarios"]) for g in grupos]
-    roles_labels = list(roles_ciclodocumento.keys())
-    roles_values = list(roles_ciclodocumento.values())
+        # Evitar duplicados en maquinas
+        if row['maquina_id'] and row['maquina_id'] not in maquina_ids:
+            maquinas.append({
+                'id': row['maquina_id'],
+                'nombre': row['maquina_nombre'],
+                'codigo_equipo': row['codigo_equipo'],
+                'marca': row['marca'],
+                'modelo': row['modelo'],
+                'anio_fabricacion': row['anio_fabricacion'],
+                'tipo': row['tipo_maquina'],
+                'descripcion': row['maquina_descripcion'],
+            })
+            maquina_ids.add(row['maquina_id'])
 
     context = {
-        "proyecto": proyecto,
-        "grupos": grupos,
-        "num_grupos": num_grupos,
-        "num_usuarios": total_integrantes,
-        "promedio_miembros": promedio_miembros,
-        "grupo_max": grupo_max,
-        "grupo_min": grupo_min,
-        "grupos_nombres_json": json.dumps(grupos_nombres),
-        "grupos_num_usuarios_json": json.dumps(grupos_num_usuarios),
-        "roles_labels_json": json.dumps(roles_labels),
-        "roles_values_json": json.dumps(roles_values),
+        'proyecto': proyecto_info,
+        'requerimientos': requerimientos,
+        'maquinas': maquinas,
     }
 
     return render(request, "usuario_proyecto_detalle.html", context)
+
+
+@login_required
+def detalle_documento(request, documento_id):
+    """
+    Muestra el historial de estados de un requerimiento técnico y los equipos asignados.
+    """
+    logs = []
+    equipo_redactores = set()
+    equipo_revisores_aprobadores = set()
+
+    with connection.cursor() as cursor:
+        # Obtener historial de estados
+        cursor.execute("""
+            SELECT
+                rdt.id AS requerimiento_id,
+                u.id AS usuario_id,
+                u.nombre AS usuario_nombre,
+                rol.nombre AS rol_usuario,
+                eo.nombre AS estado_origen,
+                ed.nombre AS estado_destino,
+                led.created_at AS fecha_accion
+            FROM log_estado_requerimiento_documento led
+            LEFT JOIN requerimiento_documento_tecnico rdt ON led.requerimiento_id = rdt.id
+            LEFT JOIN usuarios u ON led.usuario_id = u.id
+            LEFT JOIN requerimiento_equipo_rol rer 
+                ON rer.requerimiento_id = rdt.id AND rer.usuario_id = u.id
+            LEFT JOIN roles_ciclodocumento rol ON rer.rol_id = rol.id
+            LEFT JOIN estado_documento eo ON led.estado_origen_id = eo.id
+            LEFT JOIN estado_documento ed ON led.estado_destino_id = ed.id
+            WHERE rdt.id = %s
+            ORDER BY led.id ASC
+        """, [documento_id])
+        columns = [col[0] for col in cursor.description]
+        logs = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        # Obtener todos los usuarios asignados al requerimiento y sus roles desde tabla usuarios
+        cursor.execute("""
+            SELECT u.nombre, rol.nombre
+            FROM requerimiento_equipo_rol rer
+            INNER JOIN usuarios u ON rer.usuario_id = u.id
+            INNER JOIN roles_ciclodocumento rol ON rer.rol_id = rol.id
+            WHERE rer.requerimiento_id = %s AND rer.activo = true
+        """, [documento_id])
+
+        for usuario_nombre, rol_nombre in cursor.fetchall():
+            if rol_nombre.lower() == "redactor":
+                equipo_redactores.add(usuario_nombre)
+            elif rol_nombre.lower() in ["revisor", "aprobador"]:
+                equipo_revisores_aprobadores.add(usuario_nombre)
+
+    context = {
+        "documento_id": documento_id,
+        "logs": logs,
+        "equipo_redactores": sorted(equipo_redactores),
+        "equipo_revisores_aprobadores": sorted(equipo_revisores_aprobadores),
+    }
+
+    return render(request, "usuario_proyecto_detalle_documento.html", context)
+
+
+
+
+
 
 
 
@@ -361,15 +477,20 @@ def lista_usuarios(request):
 
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT u.id,
-                   u.nombre,
-                   u.email AS email_corporativo,
-                   COALESCE(u.email_secundario, '') AS email_secundario,
-                   COALESCE(u.telefono_corporativo, '') AS telefono_corporativo,
-                   COALESCE(u.telefono_secundario, '') AS telefono_secundario,
-                   COALESCE(c.nombre, '') AS cargo
-            FROM usuarios_microsoft u
-            LEFT JOIN cargo_empresa c ON u.cargo_id = c.id
+            SELECT 
+                u.id,
+                u.nombre,
+                u.email AS email_corporativo,
+                COALESCE(u.email_secundario, '') AS email_secundario,
+                COALESCE(u.telefono_corporativo, '') AS telefono_corporativo,
+                COALESCE(u.telefono_secundario, '') AS telefono_secundario,
+                COALESCE(a.codigo, '') AS area_trabajo,
+                COALESCE(c.nombre, '') AS cargo,
+                u.fecha_registro
+            FROM public.usuarios u
+            LEFT JOIN public.cargos_empresa c ON u.cargo_id = c.id
+            LEFT JOIN public.area_cargo_empresa a ON c.area_id = a.id
+            ORDER BY u.id;
         """)
         rows = cursor.fetchall()
         for row in rows:
@@ -380,10 +501,14 @@ def lista_usuarios(request):
                 "email_secundario": row[3],
                 "telefono_corporativo": row[4],
                 "telefono_secundario": row[5],
-                "cargo": row[6],
+                "area_trabajo": row[6],
+                "cargo": row[7],
+                "fecha_registro": row[8],  # datetime o None
             })
 
     return render(request, "usuario_usuarios.html", {"usuarios": usuarios})
+
+
 
 
 

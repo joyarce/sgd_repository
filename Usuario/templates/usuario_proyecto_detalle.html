@@ -1,216 +1,200 @@
 {% extends "base.html" %}
 
-{% block title %}Detalle del Proyecto{% endblock %}
+{% block title %}Dashboard del Proyecto{% endblock %}
 
 {% block extra_css %}
 <style>
+/* --- Contenedor principal --- */
 .container {
-    max-width: 900px;
-    margin: 20px auto;
-    padding: 0 10px;
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 15px;
+    font-family: 'Poppins', sans-serif;
 }
 
-h1, h2, h3 {
+/* --- Cabecera --- */
+h1 {
     text-align: center;
-    margin-bottom: 20px;
-    font-weight: 600;
-    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 30px;
+    font-size: 2rem;
+    color: #333;
 }
 
-.section {
-    background: var(--metso-white);
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
-}
-
-.stats {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-bottom: 15px;
-}
-
-.stat-box {
-    background: #f7f8fa;
-    padding: 10px 15px;
+/* --- Botón volver --- */
+.btn-back { margin-bottom: 25px; }
+.btn-secondary {
+    background: #6c757d;
+    color: #fff;
+    padding: 8px 20px;
     border-radius: 6px;
-    text-align: center;
-    min-width: 120px;
+    text-decoration: none;
+    transition: 0.2s;
 }
-.stat-box h3 {
-    margin: 0;
-    font-size: 18px;
-    color: #111;
+.btn-secondary:hover { background: #5a6268; }
+
+/* --- Tarjetas --- */
+.card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
 }
-.stat-box p {
-    margin: 0;
-    color: #555;
-    font-size: 0.85rem;
+.card h2 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    color: #f36f21;
+    border-bottom: 2px solid #f36f21;
+    padding-bottom: 5px;
 }
 
-table {
+/* --- Indicadores --- */
+.indicator {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    word-break: break-word;
+}
+.indicator span { font-weight: 600; }
+
+/* --- Layout horizontal para Contrato y Cliente --- */
+.row-horizontal {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.row-horizontal .card {
+    flex: 1 1 48%;
+    min-width: 280px;
+}
+
+/* --- Máquinas con scroll --- */
+.table-scroll {
+    overflow-x: auto;
+}
+.table-scroll table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
 }
-th, td {
-    padding: 6px 10px;
-    border-bottom: 1px solid #ddd;
-    font-size: 0.9rem;
-}
-th {
-    background: #f1f2f6;
-    text-align: left;
-}
+table th, table td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+table th { background: #f7f9fb; font-weight: 700; text-transform: uppercase; }
+table tr:hover { background: #fdf2e8; }
 
-.btn-back {
-    margin-bottom: 15px;
-    display: inline-block;
-    font-size: 0.85rem;
-    padding: 4px 10px;
-    border-radius: 4px;
-}
+/* --- Requerimientos de documentos --- */
+.section-docs table th, .section-docs table td { font-size: 0.88rem; }
 
-.grafico-chico {
-    width: 80%;
-    max-width: 450px;
-    height: 220px;
-    margin: 15px auto;
-    display: block;
-}
-
-.grafico-grande {
-    width: 90%;
-    max-width: 600px;
-    height: 300px;
-    margin: 15px auto;
-    display: block;
-}
+/* --- Mensajes vacíos --- */
+.text-muted { text-align:center; color:#777; padding:15px; font-style:italic; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-    <h1>{{ proyecto.nombre }}</h1>
-
     <div class="btn-back">
-        <a href="{% url 'usuario:lista_proyectos' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Volver a proyectos
-        </a>
+        <a href="{% url 'usuario:lista_proyectos' %}" class="btn-secondary">← Volver a Proyectos</a>
     </div>
 
-    <div class="section">
-        <p><strong>Descripción:</strong> {{ proyecto.descripcion }}</p>
-        <p><strong>Fecha de inicio:</strong> {{ proyecto.fecha_inicio|date:"d/m/Y" }}</p>
-        <p><strong>Fecha de fin:</strong> {{ proyecto.fecha_fin|date:"d/m/Y" }}</p>
+    <h1>{{ proyecto.nombre_proyecto }}</h1>
+
+    <!-- Información del Proyecto -->
+    <div class="card">
+        <h2>Información del Proyecto</h2>
+        <div class="indicator"><span>Descripción:</span> <span>{{ proyecto.proyecto_descripcion }}</span></div>
+        <div class="indicator"><span>Número de Orden:</span> <span>{{ proyecto.numero_orden }}</span></div>
+        <div class="indicator"><span>Administrador:</span> <span>{{ proyecto.administrador_nombre_completo }} ({{ proyecto.administrador_email }})</span></div>
+        <div class="indicator"><span>Faena:</span> <span>{{ proyecto.nombre_faena }}</span></div>
+        <div class="indicator"><span>Fecha Inicio:</span> <span>{{ proyecto.fecha_inicio|date:"d/m/Y" }}</span></div>
+        <div class="indicator"><span>Fecha Fin:</span> <span>{{ proyecto.fecha_fin|date:"d/m/Y"|default:"(Sin fecha)" }}</span></div>
     </div>
 
-    <div class="stats">
-        <div class="stat-box">
-            <h3>{{ num_grupos }}</h3>
-            <p>Grupos</p>
+    <!-- Contrato y Cliente lado a lado -->
+    <div class="row-horizontal">
+        <div class="card">
+            <h2>Información del Contrato</h2>
+            <div class="indicator"><span>Número de Contrato:</span> <span>{{ proyecto.numero_contrato }}</span></div>
+            <div class="indicator"><span>Monto Total:</span> <span>{{ proyecto.monto_total }}</span></div>
+            <div class="indicator"><span>Fecha Creación:</span> <span>{{ proyecto.contrato_fecha_creacion|date:"d/m/Y" }}</span></div>
+            <div class="indicator"><span>Representante:</span> <span>{{ proyecto.representante_cliente_nombre }}</span></div>
+            <div class="indicator"><span>Email:</span> <span>{{ proyecto.representante_cliente_correo }}</span></div>
+            <div class="indicator"><span>Teléfono:</span> <span>{{ proyecto.representante_cliente_telefono }}</span></div>
         </div>
-        <div class="stat-box">
-            <h3>{{ num_usuarios }}</h3>
-            <p>Integrantes</p>
-        </div>
-        <div class="stat-box">
-            <h3>{{ promedio_miembros|floatformat:1 }}</h3>
-            <p>Promedio por grupo</p>
-        </div>
-        <div class="stat-box">
-            <h3>{{ grupo_max }}</h3>
-            <p>Grupo más grande</p>
-        </div>
-        <div class="stat-box">
-            <h3>{{ grupo_min }}</h3>
-            <p>Grupo más pequeño</p>
+
+        <div class="card">
+            <h2>Información del Cliente</h2>
+            <div class="indicator"><span>Nombre:</span> <span>{{ proyecto.cliente_nombre }}</span></div>
+            <div class="indicator"><span>RUT:</span> <span>{{ proyecto.cliente_rut }}</span></div>
+            <div class="indicator"><span>Dirección:</span> <span>{{ proyecto.cliente_direccion }}</span></div>
+            <div class="indicator"><span>Correo:</span> <span>{{ proyecto.cliente_correo }}</span></div>
+            <div class="indicator"><span>Teléfono:</span> <span>{{ proyecto.cliente_telefono }}</span></div>
         </div>
     </div>
 
-    <div class="section">
-        <h2>Grupos de trabajo</h2>
-        {% for grupo in grupos %}
-        <h3>{{ grupo.nombre }}</h3>
+    <!-- Máquinas Asociadas con scroll horizontal -->
+    <div class="card table-scroll">
+        <h2>Máquinas Asociadas</h2>
         <table>
             <thead>
                 <tr>
-                    <th>Usuario</th>
-                    <th>Rol</th>
+                    <th>Nombre</th>
+                    <th>Código</th>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Año</th>
+                    <th>Tipo</th>
+                    <th>Descripción</th>
                 </tr>
             </thead>
             <tbody>
-                {% for miembro in grupo.usuarios %}
+                {% for maquina in maquinas %}
                 <tr>
-                    <td>{{ miembro.nombre }}</td>
-                    <td>{{ miembro.rol }}</td>
+                    <td>{{ maquina.nombre }}</td>
+                    <td>{{ maquina.codigo_equipo }}</td>
+                    <td>{{ maquina.marca }}</td>
+                    <td>{{ maquina.modelo }}</td>
+                    <td>{{ maquina.anio_fabricacion }}</td>
+                    <td>{{ maquina.tipo }}</td>
+                    <td>{{ maquina.descripcion }}</td>
                 </tr>
                 {% empty %}
-                <tr>
-                    <td colspan="2" class="text-muted">No hay usuarios en este grupo.</td>
-                </tr>
+                <tr><td colspan="7" class="text-muted">No hay máquinas asociadas.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
-        {% empty %}
-        <p class="text-muted">Este proyecto no tiene grupos asignados.</p>
-        {% endfor %}
     </div>
 
-    <div class="section">
-        <h2>Gráficos del proyecto</h2>
-        <canvas id="miembrosPorGrupo" class="grafico-chico"></canvas>
-        <canvas id="rolesDistribucion" class="grafico-grande"></canvas>
+    <!-- Requerimientos de Documentos -->
+    <div class="card section-docs">
+        <h2>Requerimientos de Documentos Técnicos</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Documento Técnico</th>
+                    <th>Estado Actual</th>
+                    <th>Fecha Registro</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requerimientos %}
+                <tr 
+                    style="cursor:pointer;"
+                    onclick="window.location.href='{% url 'usuario:detalle_documento' req.id %}'"
+                >
+                    <td>{{ req.nombre_documento_tecnico }}</td>
+                    <td>{{ req.estado_actual }}</td>
+                    <td>{{ req.fecha_registro|date:"d/m/Y H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-muted">No hay documentos requeridos.</td>
+                </tr>
+                {% endfor %}
+        
+            </tbody>
+        </table>
     </div>
+
+
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-const ctx1 = document.getElementById('miembrosPorGrupo').getContext('2d');
-new Chart(ctx1, {
-    type: 'bar',
-    data: {
-        labels: {{ grupos_nombres_json|safe }},
-        datasets: [{
-            label: 'Integrantes por grupo',
-            data: {{ grupos_num_usuarios_json|safe }},
-            backgroundColor: 'rgba(54, 162, 235, 0.6)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
-        }]
-    },
-    options: {
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: { precision: 0 }
-            }
-        }
-    }
-});
-
-const ctx2 = document.getElementById('rolesDistribucion').getContext('2d');
-new Chart(ctx2, {
-    type: 'pie',
-    data: {
-        labels: {{ roles_labels_json|safe }},
-        datasets: [{
-            label: 'Distribución de roles',
-            data: {{ roles_values_json|safe }},
-            backgroundColor: [
-                'rgba(255, 99, 132, 0.6)',
-                'rgba(255, 206, 86, 0.6)',
-                'rgba(75, 192, 192, 0.6)',
-                'rgba(153, 102, 255, 0.6)',
-                'rgba(255, 159, 64, 0.6)'
-            ],
-            borderColor: 'rgba(255, 255, 255, 1)',
-            borderWidth: 1
-        }]
-    }
-});
-</script>
 {% endblock %}
