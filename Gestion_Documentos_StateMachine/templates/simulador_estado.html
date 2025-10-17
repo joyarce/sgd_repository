@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}Simulador de Estados{% endblock %}
+
+{% block content %}
+<div style="max-width:700px;margin:40px auto;font-family:'Inter', sans-serif;">
+    <h1>Simulador de Estados</h1>
+    <p><strong>Estado actual:</strong> {{ estado_actual }}</p>
+
+    {% if mensaje %}
+        <div style="padding:10px;background:#f0f0f0;border-radius:5px;margin-bottom:10px;">
+            {{ mensaje }}
+        </div>
+    {% endif %}
+
+    <h3>Acciones disponibles</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:15px;">
+        {% for evento in todos_eventos %}
+            {% if evento in eventos %}
+                <a href="?estado={{ estado_actual }}&evento={{ evento }}&rol={{ rol_id }}" style="padding:8px 12px;background:#007bff;color:#fff;text-decoration:none;border-radius:5px;">
+                    {{ evento }}
+                </a>
+            {% else %}
+                <span style="padding:8px 12px;background:#ccc;color:#666;border-radius:5px;" title="{{ mensajes_estado|get_item:evento }}">
+                    {{ evento }}
+                </span>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <h3>Simular rol</h3>
+    <div style="margin-top:10px;">
+        <a href="?estado={{ estado_actual }}&rol=1" style="margin-right:5px;">Redactor</a>
+        <a href="?estado={{ estado_actual }}&rol=2" style="margin-right:5px;">Revisor</a>
+        <a href="?estado={{ estado_actual }}&rol=3">Aprobador</a>
+    </div>
+</div>
+{% endblock %}

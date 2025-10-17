@@ -2,10 +2,14 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse # Keep JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from collections import Counter, defaultdict
 from datetime import timedelta
 from google.cloud import storage
 from django.conf import settings
 import openpyxl
+from datetime import datetime
+from django.shortcuts import render
+from django.db import connection
 from .models import FilePreview
 from django.db import connection 
 from collections import defaultdict
@@ -408,39 +412,47 @@ def detalle_proyecto(request, proyecto_id):
 
 @login_required
 def detalle_documento(request, documento_id):
-    """
-    Muestra el historial de estados de un requerimiento técnico y los equipos asignados.
-    """
     logs = []
-    equipo_redactores = set()
-    equipo_revisores_aprobadores = set()
+    equipo_redactores = []
+    equipo_revisores = []
+    equipo_aprobadores = []
+    ultima_observacion = None
+    documento_info = None
 
     with connection.cursor() as cursor:
-        # Obtener historial de estados
+        # Información del documento
         cursor.execute("""
-            SELECT
-                rdt.id AS requerimiento_id,
-                u.id AS usuario_id,
-                u.nombre AS usuario_nombre,
-                rol.nombre AS rol_usuario,
-                eo.nombre AS estado_origen,
-                ed.nombre AS estado_destino,
-                led.created_at AS fecha_accion
+            SELECT RDT.id, TDT.nombre, CDT.nombre
+            FROM requerimiento_documento_tecnico RDT
+            LEFT JOIN tipo_documentos_tecnicos TDT ON RDT.tipo_documento_id = TDT.id
+            LEFT JOIN categoria_documentos_tecnicos CDT ON TDT.categoria_id = CDT.id
+            WHERE RDT.id = %s
+        """, [documento_id])
+        row = cursor.fetchone()
+        if row:
+            documento_info = {'id': row[0], 'tipo_documento': row[1], 'categoria': row[2]}
+
+        # Logs del documento
+        cursor.execute("""
+            SELECT rdt.id, u.nombre AS usuario_nombre, rol.nombre AS rol_usuario,
+                   eo.nombre AS estado_origen, ed.nombre AS estado_destino,
+                   led.created_at AS fecha_accion, led.observaciones
             FROM log_estado_requerimiento_documento led
             LEFT JOIN requerimiento_documento_tecnico rdt ON led.requerimiento_id = rdt.id
             LEFT JOIN usuarios u ON led.usuario_id = u.id
-            LEFT JOIN requerimiento_equipo_rol rer 
-                ON rer.requerimiento_id = rdt.id AND rer.usuario_id = u.id
+            LEFT JOIN requerimiento_equipo_rol rer ON rer.requerimiento_id = rdt.id AND rer.usuario_id = u.id
             LEFT JOIN roles_ciclodocumento rol ON rer.rol_id = rol.id
             LEFT JOIN estado_documento eo ON led.estado_origen_id = eo.id
             LEFT JOIN estado_documento ed ON led.estado_destino_id = ed.id
             WHERE rdt.id = %s
-            ORDER BY led.id ASC
+            ORDER BY led.created_at ASC
         """, [documento_id])
         columns = [col[0] for col in cursor.description]
         logs = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        if logs:
+            ultima_observacion = logs[-1]['observaciones']
 
-        # Obtener todos los usuarios asignados al requerimiento y sus roles desde tabla usuarios
+        # Equipos
         cursor.execute("""
             SELECT u.nombre, rol.nombre
             FROM requerimiento_equipo_rol rer
@@ -448,21 +460,52 @@ def detalle_documento(request, documento_id):
             INNER JOIN roles_ciclodocumento rol ON rer.rol_id = rol.id
             WHERE rer.requerimiento_id = %s AND rer.activo = true
         """, [documento_id])
-
         for usuario_nombre, rol_nombre in cursor.fetchall():
-            if rol_nombre.lower() == "redactor":
-                equipo_redactores.add(usuario_nombre)
-            elif rol_nombre.lower() in ["revisor", "aprobador"]:
-                equipo_revisores_aprobadores.add(usuario_nombre)
+            rol = rol_nombre.lower().strip()
+            if rol == "redactor": equipo_redactores.append(usuario_nombre)
+            elif rol == "revisor": equipo_revisores.append(usuario_nombre)
+            elif rol == "aprobador": equipo_aprobadores.append(usuario_nombre)
+
+    # Estadísticas adicionales
+    acciones_por_usuario = Counter(log['usuario_nombre'] for log in logs)
+
+    # Conteo de estados finales
+    conteo_estados = Counter(log['estado_destino'] for log in logs)
+
+    # Tiempo promedio por estado
+    tiempos_estado = defaultdict(list)
+    for i in range(1, len(logs)):
+        estado_anterior = logs[i-1]['estado_destino']
+        tiempo = logs[i]['fecha_accion'] - logs[i-1]['fecha_accion']
+        tiempos_estado[estado_anterior].append(tiempo.total_seconds())
+
+    tiempo_promedio_estado = {estado: sum(tiempos)/len(tiempos) for estado, tiempos in tiempos_estado.items() if tiempos}
 
     context = {
-        "documento_id": documento_id,
-        "logs": logs,
+        "documento": {
+            "titulo": f"{documento_info['tipo_documento']} - {documento_info['categoria']}" if documento_info else "Documento",
+            "categoria": documento_info['categoria'] if documento_info else "",
+            "tipo_documento": documento_info['tipo_documento'] if documento_info else "",
+            "ultima_observacion": ultima_observacion or "No disponible"
+        },
         "equipo_redactores": sorted(equipo_redactores),
-        "equipo_revisores_aprobadores": sorted(equipo_revisores_aprobadores),
+        "equipo_revisores": sorted(equipo_revisores),
+        "equipo_aprobadores": sorted(equipo_aprobadores),
+        "logs": logs,
+        "acciones_por_usuario": list(acciones_por_usuario.items()),  # Convertido a lista de tuplas
+        "conteo_estados": list(conteo_estados.items()),
+        "tiempo_promedio_estado": tiempo_promedio_estado
     }
-
     return render(request, "usuario_proyecto_detalle_documento.html", context)
+
+
+
+
+
+
+
+
+
 
 
 
