@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle del Documento | Gestión Documental{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Detalle del Documento</h2>
+
+    {% if mensaje %}
+        <div class="alert alert-info">{{ mensaje }}</div>
+    {% endif %}
+
+    {% if documento %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <strong>Documento:</strong> {{ documento.tipo_documento }} ({{ documento.categoria_documento }})
+        </div>
+        <div class="card-body">
+            <p><strong>Proyecto:</strong> {{ documento.nombre_proyecto }}</p>
+            <p><strong>Observaciones:</strong> {{ documento.observaciones }}</p>
+            <p><strong>Estado Actual:</strong> {{ estado_actual }}</p>
+            <p><strong>Rol Asignado:</strong> {{ documento.rol_asignado }}</p>
+            <p><strong>Fecha de Registro:</strong> {{ documento.fecha_registro }}</p>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="evento">Selecciona Evento:</label>
+            <select name="evento" id="evento" class="form-control">
+                {% for ev, ev_fmt in eventos_tuplas %}
+                    <option value="{{ ev }}">{{ ev_fmt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group mt-2" id="comentario-div" style="display:none;">
+            <label for="comentario">Comentario:</label>
+            <textarea name="comentario" id="comentario" class="form-control" rows="3"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-2">Ejecutar Evento</button>
+        <a href="?reset_historial=1" class="btn btn-warning mt-2">Reiniciar Historial</a>
+    </form>
+
+    <hr>
+
+    <h4>Historial de Estados</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Usuario</th>
+                <th>Comentario</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in historial_estados %}
+            <tr>
+                <td>{{ log.fecha_cambio }}</td>
+                <td>{{ log.estado_destino }}</td>
+                <td>{{ log.usuario_nombre }}</td>
+                <td>{{ log.comentario }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4>Historial de Simulación</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Evento</th>
+                <th>Nuevo Estado</th>
+                <th>Comentario</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in historial_simulador %}
+            <tr>
+                <td>{{ log.evento }}</td>
+                <td>{{ log.nuevo_estado }}</td>
+                <td>{{ log.comentario }}</td>
+                <td>{{ log.timestamp }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+
+<script>
+    const eventoSelect = document.getElementById('evento');
+    const comentarioDiv = document.getElementById('comentario-div');
+    const eventosConComentario = {{ eventos_con_comentario|safe }};
+
+    function toggleComentario() {
+        const selected = eventoSelect.value;
+        if (eventosConComentario.includes(selected)) {
+            comentarioDiv.style.display = 'block';
+        } else {
+            comentarioDiv.style.display = 'none';
+        }
+    }
+
+    eventoSelect.addEventListener('change', toggleComentario);
+    // Inicializa al cargar
+    toggleComentario();
+</script>
+{% endblock %}
