@@ -45,9 +45,15 @@ class DocumentoTecnicoStateMachine(StateMachine):
             "rechazar_aprobacion": [3],
             "publicar_documento": [3],
         }
-
+    
         # Evitar publicar si no está aprobado
         if evento == "publicar_documento" and self.current_state != self.aprobado:
             return False
-
+    
+        # Restricción especial: Redactor en "En Elaboración"
+        if self.rol_id == 1 and self.current_state.name == "En Elaboración":
+            return evento in ["enviar_revision", "reenviar_revision"]
+    
         return self.rol_id in permisos.get(evento, [])
+    
+    

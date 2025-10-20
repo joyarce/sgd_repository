@@ -6,7 +6,8 @@ import random
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.db import connection
-
+from django.contrib import messages
+from django.shortcuts import render, redirect
 
 
 
@@ -246,25 +247,26 @@ def detalle_documento(request, requerimiento_id):
                 CDT.nombre AS categoria_documento,
                 RR.id AS rol_id,
                 RR.nombre AS rol_asignado,
-                EA.nombre AS estado_actual,
+                COALESCE(EA.nombre, 'Borrador') AS estado_actual,
                 P.nombre AS nombre_proyecto
             FROM public.requerimiento_documento_tecnico RDT
             INNER JOIN public.tipo_documentos_tecnicos TDT ON RDT.tipo_documento_id = TDT.id
             INNER JOIN public.categoria_documentos_tecnicos CDT ON TDT.categoria_id = CDT.id
-            INNER JOIN public.requerimiento_equipo_rol RER 
+            LEFT JOIN public.requerimiento_equipo_rol RER 
                 ON RDT.id = RER.requerimiento_id AND RER.usuario_id = %s
-            INNER JOIN public.roles_ciclodocumento RR ON RER.rol_id = RR.id
+            LEFT JOIN public.roles_ciclodocumento RR ON RER.rol_id = RR.id
             INNER JOIN public.proyectos P ON RDT.proyecto_id = P.id
-            INNER JOIN (
+            LEFT JOIN (
                 SELECT requerimiento_id, MAX(fecha_cambio) AS ultima_fecha
                 FROM public.log_estado_requerimiento_documento
                 GROUP BY requerimiento_id
             ) ult ON RDT.id = ult.requerimiento_id
-            INNER JOIN public.estado_documento EA ON EA.id = (
+            LEFT JOIN public.estado_documento EA ON EA.id = (
                 SELECT estado_destino_id
                 FROM public.log_estado_requerimiento_documento
                 WHERE requerimiento_id = RDT.id
-                ORDER BY fecha_cambio DESC LIMIT 1
+                ORDER BY fecha_cambio DESC
+                LIMIT 1
             )
             WHERE RDT.id = %s
             LIMIT 1
@@ -273,8 +275,8 @@ def detalle_documento(request, requerimiento_id):
         documento = dict(zip([col[0] for col in cursor.description], row)) if row else None
 
     if not documento:
-        messages.error(request, "❌ Documento no encontrado o no tienes acceso a este requerimiento.")
-        return redirect("mis_documentos")
+        messages.error(request, "❌ Documento no encontrado.")
+        return redirect("lista_documentos_asignados")
 
     # --- Historial de estados ---
     with connection.cursor() as cursor:
@@ -290,11 +292,14 @@ def detalle_documento(request, requerimiento_id):
             WHERE LER.requerimiento_id = %s
             ORDER BY LER.fecha_cambio ASC
         """, [requerimiento_id])
-        historial_estados = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
+        historial_estados = [
+            dict(zip([col[0] for col in cursor.description], row))
+            for row in cursor.fetchall()
+        ]
 
     # --- Máquina de estados ---
     estado_inicial = documento["estado_actual"] or "Borrador"
-    rol_id = documento["rol_id"]
+    rol_id = documento.get("rol_id")
     machine = DocumentoTecnicoStateMachine(rol_id=rol_id, estado_inicial=estado_inicial)
     mensaje = ""
     historial_simulador = request.session.get("historial_simulador", [])
@@ -368,4 +373,3 @@ def detalle_documento(request, requerimiento_id):
         "eventos_con_comentario": eventos_con_comentario,
     }
     return render(request, "detalle_documento.html", context)
-
