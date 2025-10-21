@@ -219,11 +219,25 @@ def lista_documentos_asignados(request):
     # Cumplimiento estimado (simulado)
     cumplimiento = random.randint(60, 95)
 
+    # --- Mapeo de estado a clase de color Bootstrap ---
+    colores_estado = {
+        "Borrador": "secondary",
+        "En Elaboración": "info",
+        "En Revisión": "warning",
+        "En Aprobación": "primary",
+        "Aprobado": "success",
+        "Publicado": "success",
+        "Re Estructuración": "danger",
+    }
+
+
+
     context = {
         "documentos_por_proyecto": documentos_por_proyecto,
         "total_docs": total_docs,
         "cumplimiento": cumplimiento,
         "chart_estado": chart_estado,
+        "colores_estado": colores_estado,
         "chart_rol": chart_rol,
         "chart_actividad": chart_actividad,
         "chart_tiempos": chart_tiempos,
@@ -363,10 +377,25 @@ def detalle_documento(request, requerimiento_id):
     # --- Eventos que requieren comentario ---
     eventos_con_comentario = ["rechazar_revision", "rechazar_aprobacion"]
 
+    # --- Mapeo de estado a clase de color Bootstrap ---
+    colores_estado = {
+        "Borrador": "secondary",
+        "En Elaboración": "info",
+        "En Revisión": "warning",
+        "En Aprobación": "primary",
+        "Aprobado": "success",
+        "Publicado": "success",
+        "Re Estructuración": "danger",
+    }
+
+    # Tomar el color correspondiente al estado actual
+    estado_css = colores_estado.get(documento["estado_actual"], "secondary")
+
     context = {
         "documento": documento,
         "estado_actual": documento["estado_actual"],
         "mensaje": mensaje,
+        "estado_css": estado_css,  # <-- aquí pasamos el color
         "eventos_tuplas": eventos_tuplas,
         "historial_estados": historial_estados,
         "historial_simulador": historial_simulador,

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Nuevo Requerimiento Técnico{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Nuevo Requerimiento de Documento Técnico</h1>
+
+    <!-- Información del proyecto -->
+    <div class="card" style="margin-bottom:20px;">
+        <p><strong>Proyecto:</strong> {{ proyecto.nombre }}</p>
+        <p><strong>ID:</strong> {{ proyecto.id }}</p>
+        <p><strong>Estado inicial:</strong> En borrador</p>
+    </div>
+
+    <!-- Formulario para crear el requerimiento -->
+    <form method="POST">
+        {% csrf_token %}
+
+        <!-- Tipo de Documento Técnico -->
+        <div class="card" style="margin-bottom:20px;">
+            <label for="tipo_documento"><strong>Tipo de Documento Técnico</strong></label>
+            <select id="tipo_documento" name="tipo_documento" required>
+                <option value="">Seleccione tipo...</option>
+                {% for tipo in tipos_documento %}
+                    <option value="{{ tipo.0 }}">{{ tipo.1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Observaciones -->
+        <div class="card" style="margin-bottom:20px;">
+            <label for="observaciones"><strong>Observaciones</strong></label>
+            <textarea name="observaciones" id="observaciones" rows="3" style="width:100%;"></textarea>
+        </div>
+
+        <!-- Fecha tentativa de entrega -->
+        <div class="card" style="margin-bottom:20px;">
+            <label for="fecha_entrega"><strong>Fecha tentativa de entrega</strong></label>
+            <input type="date" id="fecha_entrega" name="fecha_entrega" style="width:100%;" />
+        </div>
+
+        <!-- Asignación de Roles -->
+        <div class="card" style="margin-bottom:20px;">
+            <h3>Asignar Roles</h3>
+
+            <label for="redactores"><strong>Redactores</strong></label>
+            <select id="redactores" name="redactores" multiple style="width:100%; height:100px;">
+                {% for u in usuarios %}
+                    <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
+                {% endfor %}
+            </select>
+
+            <label for="revisores" style="margin-top:10px;"><strong>Revisores</strong></label>
+            <select id="revisores" name="revisores" multiple style="width:100%; height:100px;">
+                {% for u in usuarios %}
+                    <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
+                {% endfor %}
+            </select>
+
+            <label for="aprobadores" style="margin-top:10px;"><strong>Aprobadores</strong></label>
+            <select id="aprobadores" name="aprobadores" multiple style="width:100%; height:100px;">
+                {% for u in usuarios %}
+                    <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Alertas / Recordatorios -->
+        <div class="card" style="margin-bottom:20px;">
+            <h3>Alertas / Recordatorios</h3>
+            <p>Configura alertas automáticas por correo electrónico para notificar a los miembros del equipo cuando la fecha de entrega se esté acercando.</p>
+
+            <label for="alertar_dias"><strong>Días antes de la fecha de entrega para enviar alerta</strong></label>
+            <input type="number" id="alertar_dias" name="alertar_dias" min="1" style="width:100%;" placeholder="Ej: 3" />
+
+            <label for="alertar_usuarios" style="margin-top:10px;"><strong>Usuarios a notificar</strong></label>
+            <select id="alertar_usuarios" name="alertar_usuarios" multiple style="width:100%; height:100px;">
+                {% for u in usuarios %}
+                    <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Botón de envío -->
+        <div style="text-align:right; margin-bottom:30px;">
+            <button type="submit" class="btn btn-secondary">💾 Crear Requerimiento</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

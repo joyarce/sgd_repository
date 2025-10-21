@@ -1,9 +1,6 @@
 from statemachine import StateMachine, State
 
 class DocumentoTecnicoStateMachine(StateMachine):
-    """Máquina de estados ajustada según PlantUML."""
-
-    # Estados
     borrador = State("Borrador", initial=True)
     en_elaboracion = State("En Elaboración")
     en_revision = State("En Revisión")
@@ -12,7 +9,6 @@ class DocumentoTecnicoStateMachine(StateMachine):
     aprobado = State("Aprobado. Listo para Publicación")
     publicado = State("Publicado", final=True)
 
-    # Transiciones (nombres de eventos coinciden con PlantUML)
     crear_documento = borrador.to(en_elaboracion)
     enviar_revision = en_elaboracion.to(en_revision)
     revision_aceptada = en_revision.to(en_aprobacion)
@@ -22,7 +18,7 @@ class DocumentoTecnicoStateMachine(StateMachine):
     reenviar_revision = re_estructuracion.to(en_revision)
     publicar_documento = aprobado.to(publicado)
 
-    def __init__(self, rol_id=1, estado_inicial=None):
+    def __init__(self, rol_id, estado_inicial=None):
         super().__init__()
         self.rol_id = rol_id
         if estado_inicial:
@@ -50,10 +46,18 @@ class DocumentoTecnicoStateMachine(StateMachine):
         if evento == "publicar_documento" and self.current_state != self.aprobado:
             return False
     
-        # Restricción especial: Redactor en "En Elaboración"
-        if self.rol_id == 1 and self.current_state.name == "En Elaboración":
-            return evento in ["enviar_revision", "reenviar_revision"]
+        # Restricción especial por estado
+        if self.rol_id == 1:  # Redactor
+            if self.current_state.name == "Re Estructuración":
+                # Solo puede reenviar a revisión
+                return evento == "reenviar_revision"
+            elif self.current_state.name == "En Elaboración":
+                # Solo puede enviar a revisión
+                return evento == "enviar_revision"
+            elif self.current_state.name == "Borrador":
+                # Solo puede crear documento
+                return evento == "crear_documento"
     
+        # Restricciones por rol generales
         return self.rol_id in permisos.get(evento, [])
-    
     

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Requerimiento{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Editar Requerimiento: {{ requerimiento.nombre_tipo_documento }}</h1>
+
+    <!-- Mostrar IDs -->
+    <p><strong>Proyecto ID:</strong> {{ requerimiento.proyecto_id }}</p>
+    <p><strong>Requerimiento ID:</strong> {{ requerimiento.id }}</p>
+
+    <!-- FORMULARIO DE EDICIÓN -->
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="proyecto_id" value="{{ requerimiento.proyecto_id }}">
+        <input type="hidden" name="requerimiento_id" value="{{ requerimiento.id }}">
+
+        <div>
+            <label>Observaciones:</label>
+            <textarea name="observaciones" rows="4" style="width:100%;">{{ requerimiento.observaciones }}</textarea>
+        </div>
+
+        <div>
+            <label>Redactores:</label>
+            <select name="redactores" multiple style="width:100%;">
+                {% for u in usuarios %}
+                    <option value="{{ u.0 }}" {% if u.0 in redactores %}selected{% endif %}>{{ u.1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label>Revisores:</label>
+            <select name="revisores" multiple style="width:100%;">
+                {% for u in usuarios %}
+                    <option value="{{ u.0 }}" {% if u.0 in revisores %}selected{% endif %}>{{ u.1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label>Aprobadores:</label>
+            <select name="aprobadores" multiple style="width:100%;">
+                {% for u in usuarios %}
+                    <option value="{{ u.0 }}" {% if u.0 in aprobadores %}selected{% endif %}>{{ u.1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="margin-top:20px; display:flex; gap:10px;">
+            <button type="submit" class="btn btn-secondary">💾 Guardar Cambios</button>
+        </div>
+    </form>
+
+    <!-- FORMULARIO DE ELIMINACIÓN -->
+    <form method="post" action="{% url 'usuario:eliminar_requerimiento' requerimiento.id %}" 
+          onsubmit="return confirm('¿Estás seguro de eliminar este requerimiento? Esta acción no se puede deshacer.');"
+          style="margin-top:20px;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">🗑️ Eliminar Requerimiento</button>
+    </form>
+</div>
+{% endblock %}
