@@ -16,6 +16,11 @@ from collections import defaultdict
 import json 
 # You need to import the decorator:
 from django.views.decorators.http import require_POST 
+from django.shortcuts import get_object_or_404, render
+from django.contrib import messages
+
+
+
 
 
 # Duración de previsualización en minutos
@@ -83,162 +88,6 @@ def lista_proyectos(request):
 
     return render(request, "usuario_proyectos.html", {"proyectos": proyectos})
 
-@login_required
-def crear_proyecto(request):
-    numero_orden = ""
-    usuarios = []
-    usuarios_administrador = []
-    grupos_maestros = []
-    documentos = []
-    form_error = None
-    data_debug = None  # Para mostrar los datos en pantalla
-
-    # 1. Obtener TODOS los USUARIOS para roles
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT u.id, u.nombre, u.email
-            FROM usuarios u
-            ORDER BY u.nombre
-        """)
-        usuarios = [{"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()]
-
-    # 1b. Obtener USUARIOS para Administrador de Servicio (solo área "Administrador de Contratos")
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT u.id, u.nombre, u.email
-            FROM usuarios u
-            JOIN area_cargos_empresa a ON u.cargo_id = a.id
-            WHERE LOWER(a.nombre) = 'administrador de contratos'
-            ORDER BY u.nombre
-        """)
-        usuarios_administrador = [{"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()]
-
-    # 2. Obtener GRUPOS DE TRABAJO desde las categorías de documentos técnicos
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT c.id, c.nombre, c.descripcion
-            FROM categoria_documentos_tecnicos c
-            ORDER BY c.nombre
-        """)
-        grupos_maestros = [{"id": r[0], "nombre": r[1], "descripcion": r[2]} for r in cursor.fetchall()]
-
-    # 2b. Obtener DOCUMENTOS asociados a cada categoría
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT id, categoria_id, nombre
-            FROM tipo_documentos_tecnicos
-            ORDER BY nombre
-        """)
-        documentos = [{"id": r[0], "categoria_id": r[1], "nombre": r[2]} for r in cursor.fetchall()]
-
-    # 4. Procesar formulario
-    if request.method == "POST":
-        numero_orden = request.POST.get("numero_orden")
-        nombre_proyecto = request.POST.get("nombre")
-        descripcion_proyecto = request.POST.get("descripcion")
-        fecha_inicio = request.POST.get("fecha_inicio")
-        fecha_fin = request.POST.get("fecha_fin")
-        administrador_id = request.POST.get("administrador")
-
-        # Extraer los documentos seleccionados y sus roles
-        documentos_roles = {}
-        for doc in documentos:
-            doc_id = str(doc["id"])
-            redactores = request.POST.getlist(f"redactor_id_{doc_id}[]")
-            revisores = request.POST.getlist(f"revisor_id_{doc_id}[]")
-            aprobadores = request.POST.getlist(f"aprobador_id_{doc_id}[]")
-            if redactores or revisores or aprobadores:
-                documentos_roles[doc_id] = {
-                    "redactores": redactores,
-                    "revisores": revisores,
-                    "aprobadores": aprobadores,
-                }
-
-        # VALIDACIÓN
-        if not (numero_orden and nombre_proyecto and fecha_inicio):
-            form_error = "Faltan campos obligatorios del proyecto."
-        elif not administrador_id:
-            form_error = "Debe seleccionar un Administrador de Servicio."
-        elif not documentos_roles:
-            form_error = "Debe seleccionar al menos un Documento con roles."
-        else:
-            try:
-                # Preparamos la estructura con lo que se habría insertado
-                data_debug = {
-                    "Proyecto": {
-                        "numero_orden": numero_orden,
-                        "nombre": nombre_proyecto,
-                        "descripcion": descripcion_proyecto,
-                        "fecha_inicio": fecha_inicio,
-                        "fecha_fin": fecha_fin,
-                        "administrador_id": administrador_id,
-                    },
-                    "Documentos_y_roles": documentos_roles,
-                }
-
-                # Imprimir en consola (log de servidor) para ver fácilmente durante el desarrollo
-                print("========== DATOS QUE SE GUARDARÍAN ==========")
-                import pprint
-                pprint.pprint(data_debug)
-                print("=============================================")
-
-                # --- INICIO BLOQUE DESACTIVADO: INSERTS EN BD (comentado para testeo) ---
-                # with connection.cursor() as cursor:
-                #     # Crear proyecto
-                #     cursor.execute("""
-                #         INSERT INTO proyectos (nombre, descripcion, fecha_inicio, fecha_fin)
-                #         VALUES (%s, %s, %s, %s)
-                #         RETURNING id
-                #     """, [nombre_proyecto, descripcion_proyecto, fecha_inicio, fecha_fin])
-                #     proyecto_id = cursor.fetchone()[0]
-                #
-                #     # Asociar documentos y roles
-                #     for doc_id, roles in documentos_roles.items():
-                #         cursor.execute("""
-                #             INSERT INTO documentos_proyecto (proyecto_id, documento_id)
-                #             VALUES (%s, %s)
-                #             RETURNING id
-                #         """, [proyecto_id, doc_id])
-                #         doc_proy_id = cursor.fetchone()[0]
-                #
-                #         for r_id in roles["redactores"]:
-                #             cursor.execute("""
-                #                 INSERT INTO usuarios_documentos (usuario_id, documento_proyecto_id, rol)
-                #                 VALUES (%s, %s, 'redactor')
-                #             """, [r_id, doc_proy_id])
-                #         for r_id in roles["revisores"]:
-                #             cursor.execute("""
-                #                 INSERT INTO usuarios_documentos (usuario_id, documento_proyecto_id, rol)
-                #                 VALUES (%s, %s, 'revisor')
-                #             """, [r_id, doc_proy_id])
-                #         for r_id in roles["aprobadores"]:
-                #             cursor.execute("""
-                #                 INSERT INTO usuarios_documentos (usuario_id, documento_proyecto_id, rol)
-                #                 VALUES (%s, %s, 'aprobador')
-                #             """, [r_id, doc_proy_id])
-                #
-                #     # Registrar administrador del servicio
-                #     cursor.execute("""
-                #         INSERT INTO usuarios_grupos (usuario_id, grupo_id, rol_id)
-                #         VALUES (%s, NULL, (SELECT id FROM roles_ciclodocumento WHERE LOWER(nombre) = 'administrador' LIMIT 1))
-                #     """, [administrador_id])
-                #
-                # # No redirigimos: esto es modo testeo, se queda en la misma vista mostrando data_debug
-                # --- FIN BLOQUE DESACTIVADO ---
-
-            except Exception as e:
-                form_error = f"Error al simular guardado del proyecto: {str(e)}"
-
-    context = {
-        "numero_orden": numero_orden,
-        "usuarios": usuarios,
-        "usuarios_administrador": usuarios_administrador,
-        "grupos_maestros": grupos_maestros,
-        "documentos": documentos,
-        "form_error": form_error,
-        "data_debug": data_debug,  # Muestra datos simulados en la vista
-    }
-    return render(request, "usuario_crearproyecto.html", context)
 
 @require_POST
 def validar_orden_ajax(request):
@@ -348,8 +197,8 @@ def detalle_proyecto(request, proyecto_id):
     FROM public.proyectos P
     INNER JOIN public.usuarios U ON P.administrador_id = U.id
     LEFT JOIN public.faenas F ON P.faena_id = F.id
-    INNER JOIN public.contratos C ON P.contrato_id = C.id
-    INNER JOIN public.clientes CL ON C.cliente_id = CL.id
+    LEFT JOIN public.contratos C ON P.contrato_id = C.id
+    LEFT JOIN public.clientes CL ON C.cliente_id = CL.id
     LEFT JOIN public.requerimiento_documento_tecnico RDT ON P.id = RDT.proyecto_id
     LEFT JOIN public.tipo_documentos_tecnicos TDT ON RDT.tipo_documento_id = TDT.id
     LEFT JOIN UltimoEstado UE ON RDT.id = UE.requerimiento_id AND UE.rn = 1
@@ -369,7 +218,26 @@ def detalle_proyecto(request, proyecto_id):
         ]
 
     # Separar información general del proyecto/contrato/cliente (tomamos la primera fila)
-    proyecto_info = resultados[0] if resultados else None
+    proyecto_info = resultados[0] if resultados else {
+    'proyecto_id': proyecto_id,  # <-- aseguramos que siempre haya ID
+    'nombre_proyecto': '',
+    'proyecto_descripcion': '',
+    'numero_orden': '',
+    'administrador_nombre_completo': '',
+    'administrador_email': '',
+    'nombre_faena': '',
+    'numero_contrato': '',
+    'monto_total': '',
+    'contrato_fecha_creacion': None,
+    'representante_cliente_nombre': '',
+    'representante_cliente_correo': '',
+    'representante_cliente_telefono': '',
+    'cliente_nombre': '',
+    'cliente_rut': '',
+    'cliente_direccion': '',
+    'cliente_correo': '',
+    'cliente_telefono': '',
+    }
 
     # Requerimientos de documentos y máquinas
     requerimientos = []
@@ -416,13 +284,12 @@ def detalle_documento(request, documento_id):
     equipo_redactores = []
     equipo_revisores = []
     equipo_aprobadores = []
-    ultima_observacion = None
     documento_info = None
 
     with connection.cursor() as cursor:
         # Información del documento
         cursor.execute("""
-            SELECT RDT.id, TDT.nombre, CDT.nombre
+            SELECT RDT.id, TDT.nombre, CDT.nombre, RDT.fecha_registro
             FROM requerimiento_documento_tecnico RDT
             LEFT JOIN tipo_documentos_tecnicos TDT ON RDT.tipo_documento_id = TDT.id
             LEFT JOIN categoria_documentos_tecnicos CDT ON TDT.categoria_id = CDT.id
@@ -430,7 +297,12 @@ def detalle_documento(request, documento_id):
         """, [documento_id])
         row = cursor.fetchone()
         if row:
-            documento_info = {'id': row[0], 'tipo_documento': row[1], 'categoria': row[2]}
+            documento_info = {
+                'id': row[0],
+                'tipo_documento': row[1],
+                'categoria': row[2],
+                'created_at': row[3] or timezone.now()
+            }
 
         # Logs del documento
         cursor.execute("""
@@ -449,8 +321,28 @@ def detalle_documento(request, documento_id):
         """, [documento_id])
         columns = [col[0] for col in cursor.description]
         logs = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        if logs:
-            ultima_observacion = logs[-1]['observaciones']
+
+        # Agregar log inicial del sistema si es necesario
+        if not logs or logs[0]['estado_origen'] is None:
+            logs.insert(0, {
+                'fecha_accion': documento_info.get('created_at') or timezone.now(),
+                'estado_origen': 'Sistema',
+                'estado_destino': 'Borrador',
+                'usuario_nombre': 'Sistema',
+                'rol_usuario': '',
+                'observaciones': 'El sistema ha habilitado la plantilla en el repositorio.'
+            })
+
+        # Reconstruir estado_origen y usuario si es NULL
+        estado_anterior = "Borrador"
+        for log in logs:
+            if not log['estado_origen']:
+                log['estado_origen'] = estado_anterior
+            if not log['usuario_nombre']:
+                log['usuario_nombre'] = "Sistema"
+            if not log['rol_usuario']:
+                log['rol_usuario'] = ""
+            estado_anterior = log['estado_destino']
 
         # Equipos
         cursor.execute("""
@@ -485,32 +377,18 @@ def detalle_documento(request, documento_id):
         "documento": {
             "titulo": f"{documento_info['tipo_documento']} - {documento_info['categoria']}" if documento_info else "Documento",
             "categoria": documento_info['categoria'] if documento_info else "",
-            "tipo_documento": documento_info['tipo_documento'] if documento_info else "",
-            "ultima_observacion": ultima_observacion or "No disponible"
+            "tipo_documento": documento_info['tipo_documento'] if documento_info else ""
         },
         "equipo_redactores": sorted(equipo_redactores),
         "equipo_revisores": sorted(equipo_revisores),
         "equipo_aprobadores": sorted(equipo_aprobadores),
         "logs": logs,
-        "acciones_por_usuario": list(acciones_por_usuario.items()),  # Convertido a lista de tuplas
-        "conteo_estados": list(conteo_estados.items()),
+        "acciones_por_usuario": list(acciones_por_usuario.items()),
+        "conteo_estados": dict(conteo_estados),
         "tiempo_promedio_estado": tiempo_promedio_estado
     }
+
     return render(request, "usuario_proyecto_detalle_documento.html", context)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -550,8 +428,6 @@ def lista_usuarios(request):
             })
 
     return render(request, "usuario_usuarios.html", {"usuarios": usuarios})
-
-
 
 
 
@@ -661,5 +537,372 @@ def new_folder(request):
                 return HttpResponse(f"Error al crear carpeta: {e}", status=500)
     return redirect("list_files")
 
+@login_required
+def nuevo_requerimiento(request, proyecto_id):
+    from django.utils import timezone
+
+    # --- Obtener info del proyecto ---
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT id, nombre, descripcion
+            FROM proyectos
+            WHERE id = %s;
+        """, [proyecto_id])
+        row = cursor.fetchone()
+
+    if not row:
+        return render(request, "error.html", {"mensaje": "Proyecto no encontrado."})
+
+    proyecto = {
+        "id": row[0],
+        "nombre": row[1],
+        "descripcion": row[2],
+    }
+
+    # --- Obtener tipos de documento técnico ---
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT id, nombre FROM tipo_documentos_tecnicos ORDER BY nombre;")
+        tipos_documento = cursor.fetchall()
+
+    # --- Obtener usuarios ---
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT id, nombre, email FROM usuarios ORDER BY nombre;")
+        usuarios = cursor.fetchall()
+
+    # --- Si el formulario fue enviado ---
+    if request.method == "POST":
+        tipo_doc_id = request.POST.get("tipo_documento")
+        observaciones = request.POST.get("observaciones", "")
+        redactores = request.POST.getlist("redactores")
+        revisores = request.POST.getlist("revisores")
+        aprobadores = request.POST.getlist("aprobadores")
+
+        with connection.cursor() as cursor:
+            # 1️⃣ Insertar en requerimiento_documento_tecnico
+            cursor.execute("""
+                INSERT INTO requerimiento_documento_tecnico
+                (proyecto_id, tipo_documento_id, fecha_registro, observaciones)
+                VALUES (%s, %s, NOW(), %s)
+                RETURNING id;
+            """, [proyecto_id, tipo_doc_id, observaciones])
+            req_id = cursor.fetchone()[0]
+
+            # 2️⃣ Registrar log inicial “Sistema → Borrador”
+            # Usamos usuario_id=NULL para indicar que es el sistema
+            cursor.execute("""
+                INSERT INTO log_estado_requerimiento_documento
+                (requerimiento_id, usuario_id, estado_origen_id, estado_destino_id, created_at, observaciones)
+                VALUES (%s, NULL, NULL, (SELECT id FROM estado_documento WHERE nombre='Borrador'), NOW(), %s)
+            """, [req_id, 'El sistema ha habilitado la plantilla en el repositorio.'])
+
+            # 3️⃣ Asignar roles (redactor=1, revisor=2, aprobador=3)
+            for u in redactores:
+                cursor.execute("""
+                    INSERT INTO requerimiento_equipo_rol
+                    (requerimiento_id, usuario_id, rol_id, fecha_asignacion, activo)
+                    VALUES (%s, %s, 1, NOW(), TRUE);
+                """, [req_id, u])
+            for u in revisores:
+                cursor.execute("""
+                    INSERT INTO requerimiento_equipo_rol
+                    (requerimiento_id, usuario_id, rol_id, fecha_asignacion, activo)
+                    VALUES (%s, %s, 2, NOW(), TRUE);
+                """, [req_id, u])
+            for u in aprobadores:
+                cursor.execute("""
+                    INSERT INTO requerimiento_equipo_rol
+                    (requerimiento_id, usuario_id, rol_id, fecha_asignacion, activo)
+                    VALUES (%s, %s, 3, NOW(), TRUE);
+                """, [req_id, u])
+
+        return redirect('usuario:detalle_proyecto', proyecto_id=proyecto_id)
+
+    return render(request, "nuevo_requerimiento.html", {
+        "proyecto": proyecto,
+        "tipos_documento": tipos_documento,
+        "usuarios": usuarios,
+    })
+
+
+
+@login_required
+def editar_requerimiento(request, requerimiento_id):
+    # --- Obtener datos del requerimiento ---
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT rdt.id, rdt.proyecto_id, rdt.tipo_documento_id, TDT.nombre, rdt.observaciones
+            FROM requerimiento_documento_tecnico rdt
+            LEFT JOIN tipo_documentos_tecnicos TDT ON rdt.tipo_documento_id = TDT.id
+            WHERE rdt.id = %s
+        """, [requerimiento_id])
+        row = cursor.fetchone()
+
+    if not row:
+        return render(request, "error.html", {"mensaje": "Requerimiento no encontrado."})
+
+    requerimiento = {
+        "id": row[0],
+        "proyecto_id": row[1],
+        "tipo_documento_id": row[2],
+        "nombre_tipo_documento": row[3],
+        "observaciones": row[4]
+    }
+
+    # --- Obtener usuarios para asignar roles ---
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT id, nombre FROM usuarios ORDER BY nombre;")
+        usuarios = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT usuario_id, rol_id
+            FROM requerimiento_equipo_rol
+            WHERE requerimiento_id = %s AND activo = TRUE
+        """, [requerimiento_id])
+        roles_asignados = cursor.fetchall()
+        redactores = [u for u, r in roles_asignados if r == 1]
+        revisores = [u for u, r in roles_asignados if r == 2]
+        aprobadores = [u for u, r in roles_asignados if r == 3]
+
+    if request.method == "POST":
+        observaciones = request.POST.get("observaciones", "")
+        redactores_post = request.POST.getlist("redactores")
+        revisores_post = request.POST.getlist("revisores")
+        aprobadores_post = request.POST.getlist("aprobadores")
+
+        with connection.cursor() as cursor:
+            # Actualizar observaciones
+            cursor.execute("""
+                UPDATE requerimiento_documento_tecnico
+                SET observaciones=%s
+                WHERE id=%s
+            """, [observaciones, requerimiento_id])
+
+            # Actualizar roles: desactivar todos primero
+            cursor.execute("""
+                UPDATE requerimiento_equipo_rol
+                SET activo=FALSE
+                WHERE requerimiento_id=%s
+            """, [requerimiento_id])
+
+            # Insertar roles seleccionados
+            for u in redactores_post:
+                cursor.execute("""
+                    INSERT INTO requerimiento_equipo_rol
+                    (requerimiento_id, usuario_id, rol_id, fecha_asignacion, activo)
+                    VALUES (%s, %s, 1, NOW(), TRUE)
+                """, [requerimiento_id, u])
+            for u in revisores_post:
+                cursor.execute("""
+                    INSERT INTO requerimiento_equipo_rol
+                    (requerimiento_id, usuario_id, rol_id, fecha_asignacion, activo)
+                    VALUES (%s, %s, 2, NOW(), TRUE)
+                """, [requerimiento_id, u])
+            for u in aprobadores_post:
+                cursor.execute("""
+                    INSERT INTO requerimiento_equipo_rol
+                    (requerimiento_id, usuario_id, rol_id, fecha_asignacion, activo)
+                    VALUES (%s, %s, 3, NOW(), TRUE)
+                """, [requerimiento_id, u])
+
+        return redirect('usuario:detalle_proyecto', proyecto_id=requerimiento["proyecto_id"])
+
+    return render(request, "editar_requerimiento.html", {
+        "requerimiento": requerimiento,
+        "usuarios": usuarios,
+        "redactores": redactores,
+        "revisores": revisores,
+        "aprobadores": aprobadores
+    })
+
+
+@login_required
+def eliminar_requerimiento(request, requerimiento_id):
+    """Elimina un requerimiento de documento técnico y todas sus asociaciones de forma segura."""
+    if request.method == "POST":
+        # Obtener proyecto_id asociado al requerimiento directamente desde la DB
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT proyecto_id
+                FROM requerimiento_documento_tecnico
+                WHERE id = %s
+            """, [requerimiento_id])
+            row = cursor.fetchone()
+            if row:
+                proyecto_id = row[0]
+            else:
+                messages.error(request, "No se encontró el requerimiento.")
+                return redirect('usuario:lista_proyectos')
+
+            # Eliminar el requerimiento
+            cursor.execute("""
+                DELETE FROM requerimiento_documento_tecnico
+                WHERE id = %s
+            """, [requerimiento_id])
+
+        messages.success(request, "El requerimiento y todos sus registros relacionados fueron eliminados correctamente.")
+        return redirect('usuario:detalle_proyecto', proyecto_id=proyecto_id)
+
+    # Si se intenta acceder por GET, redirigir a lista de proyectos
+    return redirect('usuario:usuario_proyectos')
+
+
+
+@login_required
+def crear_proyecto_wizard(request, paso=1):
+    """
+    Wizard multipágina usando SQL crudo
+    Paso 1: Proyecto
+    Paso 2: Contrato
+    Paso 3: Cliente
+    Paso 4: Máquinas
+    Paso 5: Requerimientos (roles)
+    Paso 6: Verificación y guardado final
+    """
+    usuarios, usuarios_administrador, grupos_maestros, documentos = [], [], [], []
+
+    # Datos generales para formularios
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT id, nombre, email FROM usuarios ORDER BY nombre")
+        usuarios = [{"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()]
+
+        cursor.execute("""
+            SELECT u.id, u.nombre, u.email
+            FROM usuarios u
+            WHERE u.cargo_id = 4
+            ORDER BY u.nombre
+        """)
+        usuarios_administrador = [{"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()]
+
+        cursor.execute("SELECT id, nombre, descripcion FROM categoria_documentos_tecnicos ORDER BY nombre")
+        grupos_maestros = [{"id": r[0], "nombre": r[1], "descripcion": r[2]} for r in cursor.fetchall()]
+
+        cursor.execute("SELECT id, categoria_id, nombre FROM tipo_documentos_tecnicos ORDER BY nombre")
+        documentos = [{"id": r[0], "categoria_id": r[1], "nombre": r[2]} for r in cursor.fetchall()]
+
+    # Inicializar sesión temporal
+    if 'proyecto_temp' not in request.session:
+        request.session['proyecto_temp'] = {}
+    proyecto_temp = request.session['proyecto_temp']
+
+    form_error = None
+
+    if request.method == "POST":
+        # ---------------- PASO 1: Proyecto ----------------
+        if paso == 1:
+            proyecto_temp['nombre'] = request.POST.get('nombre')
+            proyecto_temp['descripcion'] = request.POST.get('descripcion')
+            proyecto_temp['fecha_inicio'] = request.POST.get('fecha_inicio')
+            proyecto_temp['fecha_fin'] = request.POST.get('fecha_fin')
+            proyecto_temp['administrador_id'] = request.POST.get('administrador')
+            proyecto_temp['numero_orden'] = request.POST.get('numero_orden')
+
+            if not proyecto_temp['nombre'] or not proyecto_temp['fecha_inicio']:
+                form_error = "Faltan campos obligatorios."
+            else:
+                request.session['proyecto_temp'] = proyecto_temp
+                return redirect('usuario:crear_proyecto_wizard', paso=2)
+
+        # ---------------- PASO 2: Contrato ----------------
+        elif paso == 2:
+            proyecto_temp['numero_contrato'] = request.POST.get('numero_contrato')
+            proyecto_temp['monto_total'] = request.POST.get('monto_total')
+            proyecto_temp['contrato_fecha_creacion'] = request.POST.get('fecha_creacion')
+            request.session['proyecto_temp'] = proyecto_temp
+            return redirect('usuario:crear_proyecto_wizard', paso=3)
+
+        # ---------------- PASO 3: Cliente ----------------
+        elif paso == 3:
+            proyecto_temp['cliente_nombre'] = request.POST.get('cliente_nombre')
+            proyecto_temp['cliente_rut'] = request.POST.get('cliente_rut')
+            proyecto_temp['cliente_direccion'] = request.POST.get('cliente_direccion')
+            proyecto_temp['cliente_correo'] = request.POST.get('cliente_correo')
+            proyecto_temp['cliente_telefono'] = request.POST.get('cliente_telefono')
+            request.session['proyecto_temp'] = proyecto_temp
+            return redirect('usuario:crear_proyecto_wizard', paso=4)
+
+        # ---------------- PASO 4: Máquinas ----------------
+        elif paso == 4:
+            proyecto_temp['maquinas'] = request.POST.getlist('maquinas[]')
+            request.session['proyecto_temp'] = proyecto_temp
+            return redirect('usuario:crear_proyecto_wizard', paso=5)
+
+        # ---------------- PASO 5: Requerimientos (roles) ----------------
+        elif paso == 5:
+            documentos_roles = {}
+            for doc in documentos:
+                doc_id = str(doc["id"])
+                redactores = request.POST.getlist(f"redactor_id_{doc_id}[]")
+                revisores = request.POST.getlist(f"revisor_id_{doc_id}[]")
+                aprobadores = request.POST.getlist(f"aprobador_id_{doc_id}[]")
+                if redactores or revisores or aprobadores:
+                    documentos_roles[doc_id] = {
+                        "redactores": redactores,
+                        "revisores": revisores,
+                        "aprobadores": aprobadores
+                    }
+            proyecto_temp['documentos_roles'] = documentos_roles
+            request.session['proyecto_temp'] = proyecto_temp
+            # Redirigir al Paso 6 para verificación
+            return redirect('usuario:crear_proyecto_wizard', paso=6)
+
+        # ---------------- PASO 6: Verificación y guardado final ----------------
+        elif paso == 6:
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        INSERT INTO proyectos (numero_orden, nombre, descripcion, fecha_inicio, fecha_fin, administrador_id)
+                        VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
+                    """, [
+                        proyecto_temp['numero_orden'],
+                        proyecto_temp['nombre'],
+                        proyecto_temp['descripcion'],
+                        proyecto_temp['fecha_inicio'],
+                        proyecto_temp['fecha_fin'],
+                        proyecto_temp['administrador_id']
+                    ])
+                    proyecto_id = cursor.fetchone()[0]
+
+                    # Guardar documentos y roles
+                    for doc_id, roles in proyecto_temp.get('documentos_roles', {}).items():
+                        cursor.execute("""
+                            INSERT INTO requerimiento_documento_tecnico (proyecto_id, tipo_documento_id)
+                            VALUES (%s, %s) RETURNING id
+                        """, [proyecto_id, doc_id])
+                        requerimiento_id = cursor.fetchone()[0]
+
+                        for u_id in roles.get("redactores", []):
+                            cursor.execute("""
+                                INSERT INTO requerimiento_equipo_rol (requerimiento_id, usuario_id, rol_id)
+                                VALUES (%s, %s, 1)
+                            """, [requerimiento_id, u_id])
+                        for u_id in roles.get("revisores", []):
+                            cursor.execute("""
+                                INSERT INTO requerimiento_equipo_rol (requerimiento_id, usuario_id, rol_id)
+                                VALUES (%s, %s, 2)
+                            """, [requerimiento_id, u_id])
+                        for u_id in roles.get("aprobadores", []):
+                            cursor.execute("""
+                                INSERT INTO requerimiento_equipo_rol (requerimiento_id, usuario_id, rol_id)
+                                VALUES (%s, %s, 3)
+                            """, [requerimiento_id, u_id])
+
+                del request.session['proyecto_temp']
+                return redirect('proyectos_lista')
+            except Exception as e:
+                form_error = f"Error al guardar proyecto: {str(e)}"
+
+    # Renderizar el template correspondiente según el paso
+    template_name = f"crear_proyecto_paso{paso}.html"
+    context = {
+        'paso': paso,
+        'form_error': form_error,
+        'usuarios': usuarios,
+        'usuarios_administrador': usuarios_administrador,
+        'grupos_maestros': grupos_maestros,
+        'documentos': documentos,
+        'proyecto_temp': proyecto_temp
+    }
+
+    return render(request, template_name, context)
 
 

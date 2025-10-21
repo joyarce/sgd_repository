@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Paso 1: Proyecto{% endblock %}
+
+{% block extra_css %}
+<style>
+:root { --metso-dark-gray:#333; --metso-white:#fff; --metso-orange:#f36f21; }
+.container { max-width:800px; margin:30px auto; padding:0 15px; }
+h1 { text-align:center; color:var(--metso-dark-gray); font-weight:600; margin-bottom:25px; font-family:'Poppins', sans-serif; font-size:1.8rem; }
+.form-card { background:var(--metso-white); border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.1); padding:30px; transition:all 0.2s ease; }
+label { font-weight:500; color:var(--metso-dark-gray); font-size:0.95rem; margin-top:10px; display:block; }
+input[type="text"], input[type="date"], textarea, select, input[type="file"] { width:100%; padding:10px 12px; margin:6px 0 15px 0; border-radius:6px; border:1px solid #bbb; font-size:0.95rem; box-sizing:border-box; transition:border-color 0.2s; }
+input:focus, textarea:focus, select:focus, input[type="file"]:focus { border-color:var(--metso-orange); outline:none; box-shadow:0 0 0 2px rgba(243,111,33,0.2); }
+textarea { resize:vertical; min-height:80px; }
+button, a.button-link { font-weight:600; border-radius:6px; padding:10px 20px; transition:0.2s; font-size:1rem; background-color:var(--metso-orange); color:var(--metso-white); border:none; cursor:pointer; text-decoration:none; display:inline-block; margin-right:10px; }
+button:hover, a.button-link:hover { background-color:#e65b00; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+#mensaje-error { color:#d8000c; background-color:#ffbaba; border:1px solid #d8000c; display:none; font-weight:500; padding:8px; border-radius:4px; margin-bottom:10px; text-align:center; }
+#mensaje-ok { color:#4f8a10; background-color:#dff2bf; border:1px solid #4f8a10; display:none; font-weight:500; padding:8px; border-radius:4px; margin-bottom:10px; text-align:center; }
+#info-match { font-size:0.85rem; color:#666; margin-top:-10px; margin-bottom:10px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Paso 1: Datos Generales del Proyecto</h1>
+
+    {% if form_error %}
+        <p id="mensaje-error" style="display:block;">Error: {{ form_error }}</p>
+    {% endif %}
+
+    <div class="form-card">
+        <form method="POST" enctype="multipart/form-data">{% csrf_token %}
+            <label>Nombre del Proyecto:</label>
+            <input type="text" name="nombre" value="{{ proyecto_temp.nombre|default:'' }}" required>
+
+            <label>Descripción:</label>
+            <textarea name="descripcion">{{ proyecto_temp.descripcion|default:'' }}</textarea>
+
+            <div style="display:flex; gap:20px;">
+                <div style="flex:1;">
+                    <label>Fecha de Inicio:</label>
+                    <input type="date" name="fecha_inicio" value="{{ proyecto_temp.fecha_inicio|default:'' }}" required>
+                </div>
+                <div style="flex:1;">
+                    <label>Fecha de Fin (estimada):</label>
+                    <input type="date" name="fecha_fin" value="{{ proyecto_temp.fecha_fin|default:'' }}">
+                </div>
+            </div>
+
+            <label>Administrador:</label>
+            <select name="administrador" required>
+                <option value="">Selecciona</option>
+                {% for u in usuarios_administrador %}
+                <option value="{{ u.id }}" {% if proyecto_temp.administrador_id == u.id|stringformat:"s" %}selected{% endif %}>
+                    {{ u.nombre }} ({{ u.email }})
+                </option>
+                {% endfor %}
+            </select>
+
+            <label>Número de Orden:</label>
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:5px;">
+                <input type="text" id="numero_orden_input" placeholder="Número de orden" readonly style="flex:1; background-color:#f5f5f5; cursor:default;" value="{{ proyecto_temp.numero_orden|default:'' }}">
+                <input type="hidden" id="numero_orden_hidden" name="numero_orden" value="{{ proyecto_temp.numero_orden|default:'' }}">
+                <input type="file" id="archivo" name="archivo" onchange="mostrarArchivo(event)" style="flex:1;">
+            </div>
+            <p id="info-match">El número de orden se obtiene automáticamente del archivo cargado.</p>
+            <p id="mensaje-ok"></p>
+
+            <div style="text-align:center;">
+                <button type="submit">Siguiente →</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function mostrarArchivo(event) {
+    const input = event.target;
+    const fileName = input.files[0] ? input.files[0].name : '';
+    document.getElementById('numero_orden_input').value = fileName ? fileName.split('_')[0] : '';
+    document.getElementById('numero_orden_hidden').value = fileName ? fileName.split('_')[0] : '';
+    document.getElementById('mensaje-ok').style.display = fileName ? 'block' : 'none';
+    document.getElementById('mensaje-ok').textContent = fileName ? 'Archivo cargado correctamente' : '';
+}
+</script>
+{% endblock %}

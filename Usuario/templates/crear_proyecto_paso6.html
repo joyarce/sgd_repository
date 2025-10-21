@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Paso 6: Verificación de Datos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Verificación de Datos del Proyecto</h1>
+
+    <div class="form-card">
+        <h2>Datos Generales</h2>
+        <p><strong>Nombre:</strong> {{ proyecto_temp.nombre }}</p>
+        <p><strong>Descripción:</strong> {{ proyecto_temp.descripcion }}</p>
+        <p><strong>Fecha Inicio:</strong> {{ proyecto_temp.fecha_inicio }}</p>
+        <p><strong>Fecha Fin:</strong> {{ proyecto_temp.fecha_fin }}</p>
+        <p><strong>Administrador:</strong> {{ proyecto_temp.administrador_id }}</p>
+        <p><strong>Número de Orden:</strong> {{ proyecto_temp.numero_orden }}</p>
+
+        <h2>Contrato</h2>
+        <p><strong>Número de Contrato:</strong> {{ proyecto_temp.numero_contrato }}</p>
+        <p><strong>Monto Total:</strong> {{ proyecto_temp.monto_total }}</p>
+        <p><strong>Fecha de Creación:</strong> {{ proyecto_temp.contrato_fecha_creacion }}</p>
+
+        <h2>Cliente</h2>
+        <p><strong>Nombre:</strong> {{ proyecto_temp.cliente_nombre }}</p>
+        <p><strong>RUT:</strong> {{ proyecto_temp.cliente_rut }}</p>
+        <p><strong>Dirección:</strong> {{ proyecto_temp.cliente_direccion }}</p>
+        <p><strong>Correo:</strong> {{ proyecto_temp.cliente_correo }}</p>
+        <p><strong>Teléfono:</strong> {{ proyecto_temp.cliente_telefono }}</p>
+
+        {% if proyecto_temp.maquinas %}
+        <h2>Máquinas</h2>
+        <ul>
+            {% for maquina in proyecto_temp.maquinas %}
+            <li>{{ maquina }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if proyecto_temp.documentos_roles %}
+        <h2>Roles por Documento</h2>
+        <ul>
+            {% for doc_id, roles in proyecto_temp.documentos_roles.items %}
+            <li>
+                Documento ID: {{ doc_id }}
+                <ul>
+                    <li>Redactores: {{ roles.redactores|join:", " }}</li>
+                    <li>Revisores: {{ roles.revisores|join:", " }}</li>
+                    <li>Aprobadores: {{ roles.aprobadores|join:", " }}</li>
+                </ul>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <div style="text-align:center; margin-top:20px;">
+            <a href="{% url 'usuario:crear_proyecto_wizard' paso=5 %}" class="button-link">← Anterior</a>
+            <form method="POST" style="display:inline;">{% csrf_token %}
+                <button type="submit">Confirmar y Crear Proyecto</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

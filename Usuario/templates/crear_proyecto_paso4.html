@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Paso 4: Máquinas{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Paso 4: Máquinas</h1>
+
+    <div class="form-card">
+        <form method="POST">{% csrf_token %}
+            <label>Máquinas del Proyecto:</label>
+            <input type="text" name="maquinas[]" placeholder="Ingrese el nombre de la máquina" value="">
+
+            <div id="mas-maquinas"></div>
+            <button type="button" onclick="agregarMaquina()">+ Agregar otra máquina</button>
+
+            <div style="text-align:center; margin-top:20px;">
+                <a href="{% url 'usuario:crear_proyecto_wizard' paso=3 %}" class="button-link">← Anterior</a>
+                <button type="submit">Siguiente →</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function agregarMaquina() {
+    const div = document.createElement('div');
+    div.innerHTML = '<input type="text" name="maquinas[]" placeholder="Ingrese el nombre de la máquina">';
+    document.getElementById('mas-maquinas').appendChild(div);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Proyecto{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --metso-dark-gray: #333;
+    --metso-white: #ffffff;
+    --metso-orange: #f36f21;
+}
+.container { max-width: 800px; margin: 30px auto; padding: 0 15px; }
+h1 { text-align: center; color: var(--metso-dark-gray); font-weight: 600; margin-bottom: 25px; font-family: 'Poppins', sans-serif; font-size: 1.8rem; }
+h2 { color: var(--metso-dark-gray); font-size: 1.4rem; border-bottom: 2px solid var(--metso-orange); padding-bottom: 5px; margin-top: 35px; margin-bottom: 15px; }
+.form-card { background: var(--metso-white); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.1); padding: 30px; transition: all 0.2s ease; }
+label { font-weight: 500; color: var(--metso-dark-gray); font-size: 0.95rem; }
+input[type="text"], input[type="date"], textarea, select, input[type="file"] { width: 100%; padding: 10px 12px; margin: 6px 0 15px 0; border-radius: 6px; border: 1px solid #bbb; font-size: 0.95rem; box-sizing: border-box; transition: border-color 0.2s; }
+input:focus, textarea:focus, select:focus { border-color: var(--metso-orange); outline: none; box-shadow: 0 0 0 2px rgba(243, 111, 33, 0.2); }
+textarea { resize: vertical; min-height: 80px; }
+button { font-weight: 600; border-radius: 6px; padding: 10px 20px; transition: 0.2s; font-size: 1rem; background-color: var(--metso-orange); color: var(--metso-white); border: none; cursor: pointer; }
+button:hover { background-color: #e65b00; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+#grupos-seleccion-container {
+    padding: 15px;
+    background-color: #f7f9fb;
+    border-radius: 8px;
+}
+.grupo-item { margin-bottom: 8px; border-radius: 6px; background-color: var(--metso-white); border: 1px solid #e0e0e0; overflow: hidden; }
+.grupo-item.active { border-color: var(--metso-orange); box-shadow: 0 2px 10px rgba(243, 111, 33, 0.1); }
+.grupo-header { padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: 600; color: var(--metso-dark-gray); transition: background-color 0.15s ease; user-select: none; }
+.grupo-header:hover { background-color: #f0f0f0; }
+.grupo-header .toggle-icon { font-size: 1.1em; font-weight: 900; transition: transform 0.2s; color: var(--metso-orange); }
+.grupo-item.active .grupo-header .toggle-icon { transform: rotate(90deg); }
+.grupo-header input[type="checkbox"] { margin-right: 10px; transform: scale(1.1); }
+
+.documento-list { padding: 10px 15px 10px 35px; background-color: #fcfcfc; border-top: 1px solid #eee; display: none; }
+.documento-item { padding: 8px 0; display: flex; align-items: center; cursor: pointer; font-size: 0.9em; border-bottom: 1px dashed #eee; }
+.documento-item:last-child { border-bottom: none; }
+.documento-item input[type="checkbox"] { margin-right: 8px; }
+
+.roles-documento { margin: 15px 0; padding: 10px 15px; border: 1px solid #d0d0d0; border-radius: 6px; background-color: #f0f0f0; display: none; }
+.role-group { margin-bottom: 15px; padding-bottom: 5px; border-bottom: 1px dotted #ccc; }
+.role-group:last-child { border-bottom: none; margin-bottom: 0; }
+.role-group > label { font-weight: 700; display: block; margin-bottom: 8px; color: var(--metso-dark-gray); font-size: 0.9rem; }
+.user-selection-container { display: flex; flex-wrap: wrap; gap: 5px 15px; max-height: 120px; overflow-y: auto; padding: 5px; background-color: var(--metso-white); border: 1px solid #e0e0e0; border-radius: 4px; }
+.user-selection-container label { font-weight: normal; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+
+    const toggleGrupo = (grupoItem, isChecked) => {
+        const docDiv = grupoItem.querySelector('.documento-list');
+        const checkbox = grupoItem.querySelector('input[name="grupo_checkbox"]');
+
+        if (isChecked) {
+            docDiv.style.display = 'block';
+            grupoItem.classList.add('active');
+            checkbox.checked = true;
+        } else {
+            docDiv.style.display = 'none';
+            grupoItem.classList.remove('active');
+            checkbox.checked = false;
+            docDiv.querySelectorAll('input[type="checkbox"]').forEach(c => {
+                c.checked = false;
+                const rolesDiv = document.getElementById('roles-' + c.dataset.safeId + '-' + c.value);
+                if (rolesDiv) rolesDiv.style.display = 'none';
+            });
+        }
+    };
+
+    document.querySelectorAll('.grupo-item').forEach(grupoItem => {
+        const header = grupoItem.querySelector('.grupo-header');
+        const checkbox = grupoItem.querySelector('input[name="grupo_checkbox"]');
+
+        header.addEventListener('click', function(event) {
+            if (event.target === checkbox) return;
+            toggleGrupo(grupoItem, !checkbox.checked);
+        });
+
+        checkbox.addEventListener('change', function() {
+            toggleGrupo(grupoItem, this.checked);
+        });
+
+        if (checkbox.checked) toggleGrupo(grupoItem, true);
+    });
+
+    document.querySelectorAll('.documento-list input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const rolesDiv = document.getElementById('roles-' + this.dataset.safeId + '-' + this.value);
+            if (rolesDiv) rolesDiv.style.display = this.checked ? 'block' : 'none';
+            if (!this.checked && rolesDiv) {
+                rolesDiv.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+            }
+        });
+    });
+
+    document.querySelectorAll('.roles-documento').forEach(div => {
+        div.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const roleName = this.name;
+                if (this.checked) {
+                    document.querySelectorAll(`input[name="${roleName}"]`).forEach(other => {
+                        if (other !== this) other.checked = false;
+                    });
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Crear Proyecto</h1>
+
+    {% if form_error %}
+        <p style="color: red; text-align: center; font-weight: bold;">Error: {{ form_error }}</p>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <!-- Selección de grupos y roles -->
+        <h2>Selección de Grupos de Trabajo y Roles</h2>
+        <div id="grupos-seleccion-container">
+            {% for grupo in grupos_maestros %}
+            {% with safe_id=grupo.nombre|lower|slugify %}
+            <div class="grupo-item">
+                <div class="grupo-header">
+                    <label style="margin:0; display:flex; align-items:center;">
+                        <input type="checkbox" name="grupo_checkbox" value="{{ grupo.nombre }}" data-safe-id="{{ safe_id }}">
+                        {{ grupo.nombre }}
+                    </label>
+                    <span class="toggle-icon">▶</span>
+                </div>
+
+                <div id="documentos-{{ safe_id }}" class="documento-list">
+                    {% for doc in documentos %}
+                        {% if doc.categoria_id == grupo.id %}
+                        <label class="documento-item">
+                            <input type="checkbox" name="documento_{{ safe_id }}[]" value="{{ doc.id }}" data-safe-id="{{ safe_id }}"> {{ doc.nombre }}
+                        </label>
+
+                        <div class="roles-documento" id="roles-{{ safe_id }}-{{ doc.id }}">
+                            <div class="role-group">
+                                <label>Redactor:</label>
+                                <div class="user-selection-container">
+                                    {% for user in usuarios %}
+                                    <label><input type="checkbox" name="redactor_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="role-group">
+                                <label>Revisor:</label>
+                                <div class="user-selection-container">
+                                    {% for user in usuarios %}
+                                    <label><input type="checkbox" name="revisor_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="role-group">
+                                <label>Aprobador:</label>
+                                <div class="user-selection-container">
+                                    {% for user in usuarios %}
+                                    <label><input type="checkbox" name="aprobador_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endwith %}
+            {% endfor %}
+        </div>
+
+        <!-- Botón submit -->
+        <div style="text-align:center; margin-top:30px;">
+            <input type="hidden" name="paso" value="5">
+            <a href="{% url 'usuario:crear_proyecto_wizard' paso=4 %}" class="button-link">← Anterior</a>
+            <button type="submit">Siguiente: Verificar Proyecto</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
