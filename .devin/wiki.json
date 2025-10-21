@@ -1,0 +1,251 @@
+{
+  "repo_notes": [
+    {
+      "content": ""
+    }
+  ],
+  "pages": [
+    {
+      "title": "Overview",
+      "purpose": "Introduce the Gestion_Doc system, a Django-based document management platform with finite state machine workflows, external service integrations, and role-based access control",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Architecture & Design",
+      "purpose": "Explain the overall system architecture, including the Django project structure, application organization, and design patterns",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Django Project Configuration",
+      "purpose": "Document the core Django project files including settings, URL routing, and application initialization",
+      "parent": "Architecture & Design",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Database Schema & Models",
+      "purpose": "Detail the database structure, including all models, relationships, and migration history",
+      "parent": "Architecture & Design",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "URL Routing Structure",
+      "purpose": "Explain how HTTP requests are routed through the system, including root URLs and application-specific routing",
+      "parent": "Architecture & Design",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Document Management System (Gestion_Doc_FSM)",
+      "purpose": "Comprehensive overview of the document management application, including its FSM workflow, team assignments, and state transitions",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Document Models & State Machine",
+      "purpose": "Detail the DocumentoTecnico and Equipo models, explaining the finite state machine implementation and state transition logic",
+      "parent": "Document Management System (Gestion_Doc_FSM)",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Document Workflow & Views",
+      "purpose": "Explain how document state transitions are triggered through views, including the avanzar_estado function and permission checks",
+      "parent": "Document Management System (Gestion_Doc_FSM)",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Document Administration Interface",
+      "purpose": "Document the Django admin configuration for documents, including FSMTransitionMixin integration and list display customization",
+      "parent": "Document Management System (Gestion_Doc_FSM)",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Database Migrations",
+      "purpose": "Detail the initial database migration that creates the DocumentoTecnico and Equipo tables with their relationships",
+      "parent": "Document Management System (Gestion_Doc_FSM)",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "User Management System (Usuario)",
+      "purpose": "Overview of the user management application, including file preview functionality and OneDrive integration",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "File Preview System",
+      "purpose": "Explain the FilePreview model and how temporary signed URLs are generated and managed for file access",
+      "parent": "User Management System (Usuario)",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "OneDrive Integration",
+      "purpose": "Document the onedrive_utils module, including authentication with Microsoft Graph API and file operations",
+      "parent": "User Management System (Usuario)",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "External Service Integrations",
+      "purpose": "Comprehensive overview of all external service integrations including authentication, storage, and communication services",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Microsoft OAuth Authentication",
+      "purpose": "Detail the Microsoft OAuth integration, including configuration, authentication flow, and callback handling",
+      "parent": "External Service Integrations",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Google Cloud Storage Integration",
+      "purpose": "Document Google Cloud Storage and Google Drive integration, including service account authentication and bucket configuration",
+      "parent": "External Service Integrations",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Email Service (Gmail SMTP)",
+      "purpose": "Explain the Gmail SMTP configuration for sending transactional emails",
+      "parent": "External Service Integrations",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Deployment & Server Configuration",
+      "purpose": "Guide for deploying the application using WSGI or ASGI servers, including configuration and environment setup",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "WSGI Deployment",
+      "purpose": "Detail the WSGI configuration and deployment with servers like Gunicorn or uWSGI",
+      "parent": "Deployment & Server Configuration",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "ASGI Deployment",
+      "purpose": "Detail the ASGI configuration for asynchronous deployment with servers like Uvicorn or Daphne",
+      "parent": "Deployment & Server Configuration",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Database Configuration",
+      "purpose": "Explain the PostgreSQL database configuration and Docker setup",
+      "parent": "Deployment & Server Configuration",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Development Environment",
+      "purpose": "Document development tools, IDE configuration, and version control settings",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "VS Code Configuration",
+      "purpose": "Detail the VS Code workspace settings, particularly Python REPL configuration",
+      "parent": "Development Environment",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Version Control & Gitignore",
+      "purpose": "Explain the Git configuration and which files are excluded from version control",
+      "parent": "Development Environment",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Testing",
+      "purpose": "Document the testing infrastructure and test configuration",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    }
+  ]
+}
