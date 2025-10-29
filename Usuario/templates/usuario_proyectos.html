@@ -129,20 +129,20 @@ tr:hover {
     <h1>Listado de Proyectos</h1>
 
     <div style="margin-bottom:20px;">
-        <a class="btn-success" href="{% url 'usuario:crear_proyecto_wizard' paso=1%}">
-            <i class="fas fa-plus"></i> Crear Nuevo Proyecto
+        <a class="btn-success" href="{% url 'usuario:crear_proyecto' %}">
+            <i class="fas fa-plus"></i> Crear Proyecto
         </a>
     </div>
-
     <div class="table-wrapper">
         <table>
             <thead>
                 <tr>
                     <th>Nombre</th>
                     <th>Descripción</th>
-                    <th>Fecha Inicio</th>
-                    <th>Fecha Fin</th>
-                    <th style="text-align:center;">Acciones</th>
+                    <th>Recepción y Evaluación</th>
+                    <th>Inicio Planificación</th>
+                    <th>Inicio Ejecución</th>
+                    <th>Cierre del Proyecto</th>
                 </tr>
             </thead>
             <tbody>
@@ -150,17 +150,14 @@ tr:hover {
                 <tr onclick="window.location.href='{% url 'usuario:detalle_proyecto' proyecto.id %}'">
                     <td>{{ proyecto.nombre }}</td>
                     <td>{{ proyecto.descripcion|default:"(Sin descripción)" }}</td>
-                    <td>{{ proyecto.fecha_inicio|date:"d/m/Y" }}</td>
-                    <td>{{ proyecto.fecha_fin|date:"d/m/Y" }}</td>
-                    <td style="text-align:center;">
-                        <a href="#" class="btn-action" title="Editar proyecto" onclick="event.stopPropagation();">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                    </td>
+                    <td>{{ proyecto.fecha_recepcion_evaluacion|date:"d/m/Y"|default:"-" }}</td>
+                    <td>{{ proyecto.fecha_inicio_planificacion|date:"d/m/Y"|default:"-" }}</td>
+                    <td>{{ proyecto.fecha_inicio_ejecucion|date:"d/m/Y"|default:"-" }}</td>
+                    <td>{{ proyecto.fecha_cierre_proyecto|date:"d/m/Y"|default:"-" }}</td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center text-muted">Aún no hay proyectos creados.</td>
+                    <td colspan="6" class="text-center text-muted">Aún no hay proyectos creados.</td>
                 </tr>
                 {% endfor %}
             </tbody>

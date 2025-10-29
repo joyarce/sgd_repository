@@ -1,33 +1,22 @@
-{% extends "base.html" %}
+<!-- crear_proyecto_paso3.html -->
 
-{% block title %}Paso 3: Cliente{% endblock %}
-
-{% block content %}
-<div class="container">
-    <h1>Paso 3: Cliente</h1>
+<div class="step-inner">
+    <h3>Paso 3: Cliente</h3>
 
     <div class="form-card">
-        <form method="POST">{% csrf_token %}
-            <label>Nombre del Cliente:</label>
-            <input type="text" name="cliente_nombre" value="{{ proyecto_temp.cliente_nombre|default:'' }}" required>
+        <label>Nombre del Cliente:</label>
+        <input type="text" name="cliente_nombre" value="{{ proyecto_temp.cliente_nombre|default:'' }}" required>
 
-            <label>RUT:</label>
-            <input type="text" name="cliente_rut" value="{{ proyecto_temp.cliente_rut|default:'' }}" required>
+        <label>RUT:</label>
+        <input type="text" name="cliente_rut" value="{{ proyecto_temp.cliente_rut|default:'' }}" required>
 
-            <label>Dirección:</label>
-            <input type="text" name="cliente_direccion" value="{{ proyecto_temp.cliente_direccion|default:'' }}">
+        <label>Dirección:</label>
+        <input type="text" name="cliente_direccion" value="{{ proyecto_temp.cliente_direccion|default:'' }}">
 
-            <label>Correo:</label>
-            <input type="email" name="cliente_correo" value="{{ proyecto_temp.cliente_correo|default:'' }}">
+        <label>Correo:</label>
+        <input type="email" name="cliente_correo" value="{{ proyecto_temp.cliente_correo|default:'' }}">
 
-            <label>Teléfono:</label>
-            <input type="text" name="cliente_telefono" value="{{ proyecto_temp.cliente_telefono|default:'' }}">
-
-            <div style="text-align:center; margin-top:20px;">
-                <a href="{% url 'usuario:crear_proyecto_wizard' paso=2 %}" class="button-link">← Anterior</a>
-                <button type="submit">Siguiente →</button>
-            </div>
-        </form>
+        <label>Teléfono:</label>
+        <input type="text" name="cliente_telefono" value="{{ proyecto_temp.cliente_telefono|default:'' }}">
     </div>
 </div>
-{% endblock %}

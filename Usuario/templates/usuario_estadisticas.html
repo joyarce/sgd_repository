@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Estadísticas de {{ usuario.nombre }} | Gestión Documental{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:800px; margin-top:30px; background:#fff; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.06);">
+    <h1>Estadísticas de {{ usuario.nombre }}</h1>
+    <p>Área de trabajo: {{ usuario.area_trabajo }}</p>
+    <p>Cargo: {{ usuario.cargo }}</p>
+    <p>Fecha de registro: {{ usuario.fecha_registro|date:"d M Y" }}</p>
+
+    <!-- Aquí se llenarán las estadísticas más adelante -->
+    <div id="estadisticas-usuario">
+        <p>Aún no hay estadísticas disponibles.</p>
+    </div>
+
+    <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary" style="margin-top:20px;">Volver a usuarios</a>
+</div>
+{% endblock %}

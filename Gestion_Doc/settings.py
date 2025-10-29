@@ -14,9 +14,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'Usuario',  # tu app
-    'microsoft_auth', # tu app
+    'Usuario',  
+    'microsoft_auth', 
     "Gestion_Documentos_StateMachine",
+    "plantillas_documentos_tecnicos"
 ]
 
 MIDDLEWARE = [

@@ -1,32 +1,28 @@
-{% extends "base.html" %}
+<!-- crear_proyecto_paso4.html -->
 
-{% block title %}Paso 4: Máquinas{% endblock %}
-
-{% block content %}
-<div class="container">
-    <h1>Paso 4: Máquinas</h1>
-
+<div class="step-inner">
+    <h3>Paso 4: Máquinas</h3>
     <div class="form-card">
-        <form method="POST">{% csrf_token %}
-            <label>Máquinas del Proyecto:</label>
-            <input type="text" name="maquinas[]" placeholder="Ingrese el nombre de la máquina" value="">
+        <label>Máquinas del Proyecto:</label>
+        <select name="maquinas[]" style="width:100%;">
+            <option value="">-- Seleccione una máquina --</option>
+            {% for maquina in maquinas %}
+            <option value="{{ maquina.id }}"
+                {% if maquina.id|stringformat:"s" in proyecto_temp.maquinas %}selected{% endif %}>
+                {{ maquina.nombre }}
+            </option>
+            {% endfor %}
+        </select>
 
-            <div id="mas-maquinas"></div>
-            <button type="button" onclick="agregarMaquina()">+ Agregar otra máquina</button>
-
-            <div style="text-align:center; margin-top:20px;">
-                <a href="{% url 'usuario:crear_proyecto_wizard' paso=3 %}" class="button-link">← Anterior</a>
-                <button type="submit">Siguiente →</button>
-            </div>
-        </form>
+        <div id="mas-maquinas"></div>
+        <button type="button" onclick="agregarMaquina()">+ Agregar otra máquina</button>
     </div>
-</div>
+</div> 
 
 <script>
 function agregarMaquina() {
     const div = document.createElement('div');
-    div.innerHTML = '<input type="text" name="maquinas[]" placeholder="Ingrese el nombre de la máquina">';
+    div.innerHTML = '<input type="text" name="maquinas[]" placeholder="Ingrese el nombre de la máquina" style="margin-top:5px; width:100%;">';
     document.getElementById('mas-maquinas').appendChild(div);
 }
 </script>
-{% endblock %}

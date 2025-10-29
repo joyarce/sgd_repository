@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Máquina{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Editar Máquina (Prueba)</h1>
+
+    <form id="editar-maquina-form">
+        <div class="card">
+            <div class="indicator">
+                <span>Nombre:</span>
+                <input type="text" name="nombre" value="{{ maquina.nombre }}" class="form-input">
+            </div>
+            <div class="indicator">
+                <span>Código:</span>
+                <input type="text" name="codigo_equipo" value="{{ maquina.codigo_equipo }}" class="form-input readonly-input" readonly>
+                <div class="form-text">Campo de solo lectura (no editable).</div>
+            </div>
+            <div class="indicator">
+                <span>Marca:</span>
+                <input type="text" name="marca" value="{{ maquina.marca }}" class="form-input">
+            </div>
+            <div class="indicator">
+                <span>Modelo:</span>
+                <input type="text" name="modelo" value="{{ maquina.modelo }}" class="form-input">
+            </div>
+            <div class="indicator">
+                <span>Año:</span>
+                <input type="number" name="anio_fabricacion" value="{{ maquina.anio_fabricacion }}" class="form-input">
+            </div>
+            <div class="indicator">
+                <span>Tipo:</span>
+                <input type="text" name="tipo" value="{{ maquina.tipo }}" class="form-input">
+            </div>
+            <div class="indicator">
+                <span>Descripción:</span>
+                <textarea name="descripcion" class="form-input">{{ maquina.descripcion }}</textarea>
+            </div>
+        </div>
+
+        <div style="margin-top:20px;">
+            <!-- Botón Volver -->
+            <a href="{% url 'usuario:detalle_proyecto' maquina.proyecto_id %}" class="btn btn-secondary">← Volver</a>
+
+            <!-- Botón Guardar (sin acción aún) -->
+            <button type="submit" class="btn btn-primary" style="margin-left:10px;">💾 Guardar</button>
+
+            <!-- Botón Eliminar (solo visual, por ahora) -->
+            <button type="button" class="btn btn-danger" style="margin-left:10px;" 
+                    onclick="console.log('Eliminar máquina {{ maquina.id }}');">
+                🗑️ Eliminar
+            </button>
+        </div>
+    </form>
+
+    <style>
+    .btn-danger {
+        background: #dc3545;
+        color: #fff;
+        padding: 8px 20px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .btn-danger:hover { background: #c82333; }
+
+    .form-input {
+        width: 70%;
+        padding: 6px 10px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        font-size: 0.9rem;
+    }
+
+    textarea.form-input {
+        width: 70%;
+        height: 60px;
+        resize: vertical;
+    }
+
+    /* Estilo para campo de solo lectura */
+    .readonly-input {
+        background-color: #f0f0f0;
+        color: #555;
+        cursor: not-allowed;
+    }
+    </style>
+</div>
+{% endblock %}

@@ -1,90 +1,109 @@
+<!-- nuevo_requerimiento.html -->
 {% extends "base.html" %}
 {% block title %}Nuevo Requerimiento Técnico{% endblock %}
 
+{% block extra_css %}
+<style>
+:root {
+    --metso-dark-gray: #333;
+    --metso-light-gray: #f7f7f7;
+    --metso-orange: #f36f21;
+    --metso-orange-hover: #d65c1a;
+    --metso-white: #fff;
+    --metso-border-radius: 12px;
+}
+
+body { background-color: var(--metso-light-gray); }
+
+.container { max-width: 800px; margin: 40px auto; padding: 0 20px; font-family: 'Inter', sans-serif; color: var(--metso-dark-gray); }
+h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 5px; }
+.subtitle { color: #6a6a6a; margin-bottom: 30px; }
+.card { background: var(--metso-white); border-radius: var(--metso-border-radius); box-shadow: 0 10px 30px rgba(0,0,0,0.05); padding: 30px; margin-bottom: 25px; border:1px solid #eee; }
+label { display:block; margin-top:15px; margin-bottom:6px; font-weight:600; }
+input, select, textarea { width:100%; padding:12px; border:1px solid #e0e0e0; border-radius:8px; font-size:15px; background:#fcfcfc; transition:border-color 0.2s, box-shadow 0.2s; }
+input:focus, select:focus, textarea:focus { border-color: var(--metso-orange); box-shadow:0 0 0 3px rgba(243,111,33,0.2); background:#fff; outline:none; }
+textarea { resize: vertical; }
+small { display:block; color:#888; font-size:12px; margin-top:5px; }
+h3 { margin-top:0; margin-bottom:20px; font-size:1.4rem; font-weight:600; color: var(--metso-dark-gray); border-bottom:2px solid var(--metso-orange); display:inline-block; padding-bottom:5px; }
+.project-info { display:flex; justify-content:space-between; padding:15px 0; margin-bottom:20px; border-bottom:1px solid #eee; }
+.project-info p { margin:0; font-size:14px; flex-grow:1; }
+.project-info strong { color: var(--metso-orange); font-weight:700; }
+button.btn { background-color: var(--metso-orange); color: var(--metso-white); border:none; padding:12px 30px; border-radius:8px; font-size:16px; cursor:pointer; font-weight:600; transition: background 0.2s, transform 0.1s; box-shadow:0 4px 10px rgba(243,111,33,0.3); }
+button.btn:hover { background-color: var(--metso-orange-hover); transform: translateY(-1px); }
+button.btn:active { transform: translateY(1px); }
+select[multiple] { height:150px; padding:10px; border:1px solid #ddd; }
+select[multiple] option:checked { background-color: var(--metso-orange); color:#fff; }
+.progress-bar { display:flex; justify-content:space-between; margin-bottom:40px; padding:0 10%; }
+.step { text-align:center; position:relative; cursor:pointer; }
+.step-circle { width:35px; height:35px; border-radius:50%; background:#ccc; color:#fff; line-height:35px; font-weight:600; margin:0 auto 8px; transition:background 0.3s; border:3px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+.step-circle.active { background-color: var(--metso-orange); }
+.step-label { font-size:13px; color:#6a6a6a; }
+.progress-line { position:absolute; top:17px; height:3px; background-color:#ddd; z-index:-1; }
+.step:not(:last-child) .progress-line { left: calc(50% + 17.5px); right: calc(-50% + 17.5px); width:100%; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container">
-    <h1>Nuevo Requerimiento de Documento Técnico</h1>
+    <h1>Nuevo Requerimiento</h1>
+    <p class="subtitle">Creación de documento técnico para el proyecto <strong>{{ proyecto.nombre }}</strong>.</p>
 
-    <!-- Información del proyecto -->
-    <div class="card" style="margin-bottom:20px;">
-        <p><strong>Proyecto:</strong> {{ proyecto.nombre }}</p>
-        <p><strong>ID:</strong> {{ proyecto.id }}</p>
-        <p><strong>Estado inicial:</strong> En borrador</p>
+    <div class="progress-bar">
+        <div class="step" data-step="1"><div class="step-circle active">1</div><div class="step-label">Detalles</div><div class="progress-line"></div></div>
+        <div class="step" data-step="2"><div class="step-circle">2</div><div class="step-label">Planificación</div><div class="progress-line"></div></div>
+        <div class="step" data-step="3"><div class="step-circle">3</div><div class="step-label">Equipo</div></div>
     </div>
 
-    <!-- Formulario para crear el requerimiento -->
+    <div class="project-info">
+        <p><strong>Proyecto:</strong> {{ proyecto.nombre }}</p>
+        <p><strong>ID:</strong> {{ proyecto.id }}</p>
+        <p><strong>Estado:</strong> <strong style="color: #4CAF50;">En borrador</strong></p>
+    </div>
+
     <form method="POST">
         {% csrf_token %}
+        {% include "nuevo_requerimiento_paso1.html" %}
+        {% include "nuevo_requerimiento_paso2.html" %}
+        {% include "nuevo_requerimiento_paso3.html" %}
 
-        <!-- Tipo de Documento Técnico -->
-        <div class="card" style="margin-bottom:20px;">
-            <label for="tipo_documento"><strong>Tipo de Documento Técnico</strong></label>
-            <select id="tipo_documento" name="tipo_documento" required>
-                <option value="">Seleccione tipo...</option>
-                {% for tipo in tipos_documento %}
-                    <option value="{{ tipo.0 }}">{{ tipo.1 }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <!-- Observaciones -->
-        <div class="card" style="margin-bottom:20px;">
-            <label for="observaciones"><strong>Observaciones</strong></label>
-            <textarea name="observaciones" id="observaciones" rows="3" style="width:100%;"></textarea>
-        </div>
-
-        <!-- Fecha tentativa de entrega -->
-        <div class="card" style="margin-bottom:20px;">
-            <label for="fecha_entrega"><strong>Fecha tentativa de entrega</strong></label>
-            <input type="date" id="fecha_entrega" name="fecha_entrega" style="width:100%;" />
-        </div>
-
-        <!-- Asignación de Roles -->
-        <div class="card" style="margin-bottom:20px;">
-            <h3>Asignar Roles</h3>
-
-            <label for="redactores"><strong>Redactores</strong></label>
-            <select id="redactores" name="redactores" multiple style="width:100%; height:100px;">
-                {% for u in usuarios %}
-                    <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
-                {% endfor %}
-            </select>
-
-            <label for="revisores" style="margin-top:10px;"><strong>Revisores</strong></label>
-            <select id="revisores" name="revisores" multiple style="width:100%; height:100px;">
-                {% for u in usuarios %}
-                    <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
-                {% endfor %}
-            </select>
-
-            <label for="aprobadores" style="margin-top:10px;"><strong>Aprobadores</strong></label>
-            <select id="aprobadores" name="aprobadores" multiple style="width:100%; height:100px;">
-                {% for u in usuarios %}
-                    <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <!-- Alertas / Recordatorios -->
-        <div class="card" style="margin-bottom:20px;">
-            <h3>Alertas / Recordatorios</h3>
-            <p>Configura alertas automáticas por correo electrónico para notificar a los miembros del equipo cuando la fecha de entrega se esté acercando.</p>
-
-            <label for="alertar_dias"><strong>Días antes de la fecha de entrega para enviar alerta</strong></label>
-            <input type="number" id="alertar_dias" name="alertar_dias" min="1" style="width:100%;" placeholder="Ej: 3" />
-
-            <label for="alertar_usuarios" style="margin-top:10px;"><strong>Usuarios a notificar</strong></label>
-            <select id="alertar_usuarios" name="alertar_usuarios" multiple style="width:100%; height:100px;">
-                {% for u in usuarios %}
-                    <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <!-- Botón de envío -->
         <div style="text-align:right; margin-bottom:30px;">
-            <button type="submit" class="btn btn-secondary">💾 Crear Requerimiento</button>
+            <button type="button" class="btn" id="prev-step" style="background-color:#aaa; margin-right:10px; display:none;">← Anterior</button>
+            <button type="button" class="btn" id="next-step">Siguiente →</button>
+            <button type="submit" class="btn" id="submit-form" style="display:none;">💾 Crear Requerimiento</button>
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentStep = 1;
+    const totalSteps = 3;
+    const nextBtn = document.getElementById('next-step');
+    const prevBtn = document.getElementById('prev-step');
+    const submitBtn = document.getElementById('submit-form');
+    const steps = document.querySelectorAll('.step-circle');
+    const contents = document.querySelectorAll('.step-content');
+
+    function showStep(step) {
+        contents.forEach(c => c.style.display='none');
+        document.getElementById(`step-${step}`).style.display='block';
+        steps.forEach((c,i)=>c.classList.remove('active'));
+        for(let i=0;i<step;i++) steps[i].classList.add('active');
+        prevBtn.style.display = step>1 ? 'inline-block' : 'none';
+        nextBtn.style.display = step<totalSteps ? 'inline-block' : 'none';
+        submitBtn.style.display = step===totalSteps ? 'inline-block' : 'none';
+    }
+
+    nextBtn.addEventListener('click',()=>{ if(currentStep<totalSteps){currentStep++; showStep(currentStep);} });
+    prevBtn.addEventListener('click',()=>{ if(currentStep>1){currentStep--; showStep(currentStep);} });
+
+    document.querySelectorAll('.step').forEach(el=>{
+        el.addEventListener('click',()=>{ currentStep=parseInt(el.dataset.step); showStep(currentStep); });
+    });
+
+    showStep(currentStep);
+});
+</script>
 {% endblock %}

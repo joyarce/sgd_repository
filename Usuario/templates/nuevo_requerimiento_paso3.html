@@ -1,0 +1,27 @@
+<div class="step-content" id="step-3" style="display:none;">
+    <div class="card">
+        <h3>Asignación de Equipo</h3>
+        <small style="margin-bottom:15px; color: var(--metso-dark-gray);">Seleccione a los participantes con el rol correspondiente.</small>
+
+        <label for="redactores">Redactores</label>
+        <select id="redactores" name="redactores" multiple required>
+            {% for u in usuarios %}
+                <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
+            {% endfor %}
+        </select>
+
+        <label for="revisores">Revisores</label>
+        <select id="revisores" name="revisores" multiple required>
+            {% for u in usuarios %}
+                <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
+            {% endfor %}
+        </select>
+
+        <label for="aprobadores">Aprobadores</label>
+        <select id="aprobadores" name="aprobadores" multiple required>
+            {% for u in usuarios %}
+                <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>

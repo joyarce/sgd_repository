@@ -1,35 +1,20 @@
-{% extends "base.html" %}
+<!-- crear_proyecto_paso2.html -->
 
-{% block title %}Paso 2: Contrato{% endblock %}
-
-{% block extra_css %}
-<!-- Reutilizar estilos del paso 1 -->
-{% endblock %}
-
-{% block content %}
-<div class="container">
-    <h1>Paso 2: Contrato</h1>
+<div class="step-inner">
+    <h3>Paso 2: Contrato</h3>
 
     {% if form_error %}
         <p id="mensaje-error" style="display:block;">Error: {{ form_error }}</p>
     {% endif %}
 
     <div class="form-card">
-        <form method="POST">{% csrf_token %}
-            <label>Número de Contrato:</label>
-            <input type="text" name="numero_contrato" value="{{ proyecto_temp.numero_contrato|default:'' }}" required>
+        <label>Número de Contrato:</label>
+        <input type="text" name="numero_contrato" value="{{ proyecto_temp.numero_contrato|default:'' }}" required>
 
-            <label>Monto Total:</label>
-            <input type="text" name="monto_total" value="{{ proyecto_temp.monto_total|default:'' }}" required>
+        <label>Monto Total:</label>
+        <input type="text" name="monto_total" value="{{ proyecto_temp.monto_total|default:'' }}" required>
 
-            <label>Fecha de Creación:</label>
-            <input type="date" name="fecha_creacion" value="{{ proyecto_temp.contrato_fecha_creacion|default:'' }}" required>
-
-            <div style="text-align:center; margin-top:20px;">
-                <a href="{% url 'usuario:crear_proyecto_wizard' paso=1 %}" class="button-link">← Anterior</a>
-                <button type="submit">Siguiente →</button>
-            </div>
-        </form>
+        <label>Fecha de Creación:</label>
+        <input type="date" name="fecha_creacion" value="{{ proyecto_temp.contrato_fecha_creacion|default:'' }}" required>
     </div>
 </div>
-{% endblock %}

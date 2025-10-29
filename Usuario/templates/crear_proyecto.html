@@ -1,301 +1,305 @@
+<!-- crear_proyecto.html -->
 {% extends "base.html" %}
-
-{% block title %}Crear Proyecto{% endblock %}
 
 {% block extra_css %}
 <style>
-/* --- ESTILOS GENERALES (Ajustes para un look moderno) --- */
 :root {
     --metso-dark-gray: #333;
-    --metso-white: #ffffff;
+    --metso-light-gray: #f7f7f7;
     --metso-orange: #f36f21;
+    --metso-orange-hover: #d65c1a;
+    --metso-white: #fff;
+    --metso-border-radius: 8px;
 }
-.container { max-width: 800px; margin: 30px auto; padding: 0 15px; }
-h1 { text-align: center; color: var(--metso-dark-gray); font-weight: 600; margin-bottom: 25px; font-family: 'Poppins', sans-serif; font-size: 1.8rem; }
-h2 { color: var(--metso-dark-gray); font-size: 1.4rem; border-bottom: 2px solid var(--metso-orange); padding-bottom: 5px; margin-top: 35px; margin-bottom: 15px; }
-.form-card { background: var(--metso-white); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.1); padding: 30px; transition: all 0.2s ease; }
-label { font-weight: 500; color: var(--metso-dark-gray); font-size: 0.95rem; }
-input[type="text"], input[type="date"], textarea, select, input[type="file"] { width: 100%; padding: 10px 12px; margin: 6px 0 15px 0; border-radius: 6px; border: 1px solid #bbb; font-size: 0.95rem; box-sizing: border-box; transition: border-color 0.2s; }
-input:focus, textarea:focus, select:focus { border-color: var(--metso-orange); outline: none; box-shadow: 0 0 0 2px rgba(243, 111, 33, 0.2); }
-textarea { resize: vertical; min-height: 80px; }
-button { font-weight: 600; border-radius: 6px; padding: 10px 20px; transition: 0.2s; font-size: 1rem; background-color: var(--metso-orange); color: var(--metso-white); border: none; cursor: pointer; }
-button:hover { background-color: #e65b00; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 
-#info-match, #mensaje-error, #mensaje-ok { font-size: 0.85rem; line-height: 1.4; padding: 5px; border-radius: 4px; margin-bottom: 10px; }
-#info-match { color: #555; font-style: italic; }
-#mensaje-error { color: #d8000c; background-color: #ffbaba; border: 1px solid #d8000c; display: none; font-weight: 500; }
-#mensaje-ok { color: #4f8a10; background-color: #dff2bf; border: 1px solid #4f8a10; display: none; }
+/* Wizard general */
+body { background-color: var(--metso-light-gray); font-family: 'Inter', sans-serif; margin:0; }
+.project-wizard { max-width: 1000px; margin: 40px auto; padding: 0 20px; display: grid; grid-template-columns: 200px 1fr; gap: 50px; color: var(--metso-dark-gray); }
+.header-section h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 5px; }
+.header-section .subtitle { color: #6a6a6a; margin-bottom: 30px; font-size: 1rem; }
+.card { background: var(--metso-white); border-radius: var(--metso-border-radius); box-shadow: 0 5px 15px rgba(0,0,0,0.05); padding: 30px; margin-bottom: 25px; border: 1px solid #eee; transition: all 0.2s ease; max-height: 80vh; overflow-y: auto; }
+label { display:block; margin-top:15px; margin-bottom:6px; font-weight:600; font-size: 0.95rem; }
+input, select, textarea { width:100%; padding:12px; border:1px solid #e0e0e0; border-radius:var(--metso-border-radius); font-size:15px; background:#fcfcfc; transition:border-color 0.2s, box-shadow 0.2s; }
+input:focus, select:focus, textarea:focus { border-color: var(--metso-orange); box-shadow:0 0 0 3px rgba(243,111,33,0.2); background:#fff; outline:none; }
+textarea { resize: vertical; min-height: 100px; }
+button.btn { background-color: var(--metso-orange); color: var(--metso-white); border:none; padding:12px 25px; border-radius:var(--metso-border-radius); font-size:15px; cursor:pointer; font-weight:600; transition: background 0.2s, transform 0.1s, box-shadow 0.2s; box-shadow:0 4px 8px rgba(243,111,33,0.2); }
+button.btn:hover { background-color: var(--metso-orange-hover); transform: translateY(-1px); box-shadow:0 6px 12px rgba(243,111,33,0.3); }
+button.btn:active { transform: translateY(1px); box-shadow:0 2px 4px rgba(243,111,33,0.2); }
+.btn-secondary { background-color:#aaa; box-shadow: none; }
+.btn-secondary:hover { background-color:#999; transform: none; box-shadow: none; }
+.progress-bar-vertical { display: flex; flex-direction: column; padding-top: 50px; position: sticky; top: 20px; }
+.step { position: relative; display: flex; align-items: center; padding: 10px 0; cursor: pointer; transition: opacity 0.2s; }
+.step:not(.current):hover { opacity: 0.8; }
+.step-circle { width: 30px; height: 30px; min-width: 30px; border-radius: 50%; background: #ccc; color: var(--metso-white); line-height: 30px; text-align: center; font-weight: 700; margin-right: 15px; transition: background 0.3s, border-color 0.3s; border: 3px solid var(--metso-white); box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 10; }
+.step-circle.active { background-color: var(--metso-orange); border-color: #fcebe3; }
+.step-label { font-size: 15px; font-weight: 500; color: #6a6a6a; transition: color 0.3s; }
+.step-circle.active + .step-label { color: var(--metso-dark-gray); font-weight: 600; }
+.progress-line { position: absolute; left: 15px; top: 40px; bottom: -10px; width: 3px; background-color: #ddd; z-index: 5; }
+.step:last-child .progress-line { display: none; }
+.form-navigation { text-align: right; margin-top: 20px; }
 
-#grupos-seleccion-container {
-    padding: 15px;
-    background-color: #f7f9fb;
-    border-radius: 8px;
-}
-.grupo-item { margin-bottom: 8px; border-radius: 6px; background-color: var(--metso-white); border: 1px solid #e0e0e0; overflow: hidden; }
-.grupo-item.active { border-color: var(--metso-orange); box-shadow: 0 2px 10px rgba(243, 111, 33, 0.1); }
-.grupo-header { padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: 600; color: var(--metso-dark-gray); transition: background-color 0.15s ease; user-select: none; }
-.grupo-header:hover { background-color: #f0f0f0; }
-.grupo-header .toggle-icon { font-size: 1.1em; font-weight: 900; transition: transform 0.2s; color: var(--metso-orange); }
-.grupo-item.active .grupo-header .toggle-icon { transform: rotate(90deg); }
-.grupo-header input[type="checkbox"] { margin-right: 10px; transform: scale(1.1); }
-
-.documento-list { padding: 10px 15px 10px 35px; background-color: #fcfcfc; border-top: 1px solid #eee; display: none; }
-.documento-item { padding: 8px 0; display: flex; align-items: center; cursor: pointer; font-size: 0.9em; border-bottom: 1px dashed #eee; }
-.documento-item:last-child { border-bottom: none; }
-.documento-item input[type="checkbox"] { margin-right: 8px; }
-
-.roles-documento { margin: 15px 0; padding: 10px 15px; border: 1px solid #d0d0d0; border-radius: 6px; background-color: #f0f0f0; display: none; }
-.role-group { margin-bottom: 15px; padding-bottom: 5px; border-bottom: 1px dotted #ccc; }
-.role-group:last-child { border-bottom: none; margin-bottom: 0; }
-.role-group > label { font-weight: 700; display: block; margin-bottom: 8px; color: var(--metso-dark-gray); font-size: 0.9rem; }
-.user-selection-container { display: flex; flex-wrap: wrap; gap: 5px 15px; max-height: 120px; overflow-y: auto; padding: 5px; background-color: var(--metso-white); border: 1px solid #e0e0e0; border-radius: 4px; }
-.user-selection-container label { font-weight: normal; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; }
+#step-5 { padding: 15px; background-color: #f7f9fb; border-radius: 8px; }
+#step-5 .grupo-item { margin-bottom: 8px; border-radius: 6px; background-color: var(--metso-white); border: 1px solid #e0e0e0; overflow: hidden; transition: all 0.2s ease; }
+#step-5 .grupo-item.active { border-color: var(--metso-orange); box-shadow: 0 2px 10px rgba(243, 111, 33, 0.1); }
+#step-5 .grupo-header { padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: 600; color: var(--metso-dark-gray); transition: background-color 0.15s ease; user-select: none; }
+#step-5 .grupo-header:hover { background-color: #f0f0f0; }
+#step-5 .grupo-header .toggle-icon { font-size: 1.1em; font-weight: 900; transition: transform 0.2s; color: var(--metso-orange); }
+#step-5 .grupo-item.active .grupo-header .toggle-icon { transform: rotate(90deg); }
+#step-5 .documento-list { padding: 10px 15px 10px 35px; background-color: #fcfcfc; border-top: 1px solid #eee; display: none; max-height: 200px; overflow-y: auto; }
+#step-5 .documento-item { padding: 8px 0; display: flex; align-items: center; cursor: pointer; font-size: 0.9em; border-bottom: 1px dashed #eee; }
+#step-5 .documento-item:last-child { border-bottom: none; }
+#step-5 .documento-item input[type="checkbox"] { margin-right: 8px; }
+#step-5 .roles-documento { margin: 15px 0; padding: 10px 15px; border: 1px solid #d0d0d0; border-radius: 6px; background-color: #f0f0f0; display: none; max-height: 180px; overflow-y: auto; }
+#step-5 .role-group { margin-bottom: 15px; padding-bottom: 5px; border-bottom: 1px dotted #ccc; }
+#step-5 .role-group:last-child { border-bottom: none; margin-bottom: 0; }
+#step-5 .role-group > label { font-weight: 700; display: block; margin-bottom: 8px; color: var(--metso-dark-gray); font-size: 0.9rem; }
+#step-5 .user-selection-container { display: flex; flex-wrap: wrap; gap: 5px 15px; max-height: 120px; overflow-y: auto; padding: 5px; background-color: var(--metso-white); border: 1px solid #e0e0e0; border-radius: 4px; }
+#step-5 .user-selection-container label { font-weight: normal; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; }
 </style>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-let numeroOrdenArchivo = "{{ numero_orden|default:'' }}";
-
-function mostrarArchivo(event) {
-    const archivoInput = event.target;
-    const archivo = archivoInput.files[0];
-    const inputOrden = document.getElementById('numero_orden_input');
-    const hiddenOrden = document.getElementById('numero_orden_hidden');
-    const mensajeError = document.getElementById('mensaje-error');
-    const mensajeOk = document.getElementById('mensaje-ok');
-
-    mensajeError.style.display = 'none';
-    mensajeOk.style.display = 'none';
-    numeroOrdenArchivo = ''; 
-
-    if (!archivo) { inputOrden.value = hiddenOrden.value = ''; return; }
-    if (!archivo.name.toLowerCase().endsWith(".xlsx")) {
-        inputOrden.value = hiddenOrden.value = '';
-        mensajeError.textContent = "Formato no válido. Por favor, sube un archivo .xlsx.";
-        mensajeError.style.display = 'block';
-        return;
-    }
-
-    inputOrden.value = 'Procesando archivo...';
-    inputOrden.style.backgroundColor = '#fffacd'; 
-
-    const formData = new FormData();
-    formData.append('archivo', archivo);
-    const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
-
-    fetch("{% url 'usuario:validar_orden' %}", {
-        method: 'POST',
-        body: formData,
-        headers: {'X-CSRFToken': csrfToken}
-    })
-    .then(response => response.ok ? response.json() : response.json().then(err => {throw new Error(err.error || 'Error desconocido');}))
-    .then(data => {
-        if (data.numero_orden) {
-            numeroOrdenArchivo = data.numero_orden;
-            inputOrden.value = hiddenOrden.value = data.numero_orden;
-            inputOrden.style.backgroundColor = '#e6ffe6';
-            mensajeOk.textContent = `Número de orden "${data.numero_orden}" cargado correctamente.`;
-            mensajeOk.style.display = 'block';
-        } else throw new Error(data.error || "No se pudo obtener el número de orden.");
-    })
-    .catch(error => {
-        console.error('Error de validación:', error.message);
-        numeroOrdenArchivo = '';
-        inputOrden.value = 'ERROR: No se pudo obtener la orden.';
-        hiddenOrden.value = '';
-        inputOrden.style.backgroundColor = '#fce8e8';
-        mensajeError.textContent = error.message;
-        mensajeError.style.display = 'block';
-    });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
-
-    // Función de expansión/colapso de grupos
-    const toggleGrupo = (grupoItem, isChecked) => {
-        const docDiv = grupoItem.querySelector('.documento-list');
-        const checkbox = grupoItem.querySelector('input[name="grupo_checkbox"]');
-
-        if (isChecked) {
-            docDiv.style.display = 'block';
-            grupoItem.classList.add('active');
-            checkbox.checked = true;
-        } else {
-            docDiv.style.display = 'none';
-            grupoItem.classList.remove('active');
-            checkbox.checked = false;
-            docDiv.querySelectorAll('input[type="checkbox"]').forEach(c => {
-                c.checked = false;
-                const rolesDiv = document.getElementById('roles-' + c.dataset.safeId + '-' + c.value);
-                if (rolesDiv) rolesDiv.style.display = 'none';
-            });
-        }
-    };
-
-    // Manejar grupos
-    document.querySelectorAll('.grupo-item').forEach(grupoItem => {
-        const header = grupoItem.querySelector('.grupo-header');
-        const checkbox = grupoItem.querySelector('input[name="grupo_checkbox"]');
-
-        header.addEventListener('click', function(event) {
-            if (event.target === checkbox) return;
-            toggleGrupo(grupoItem, !checkbox.checked);
-        });
-
-        checkbox.addEventListener('change', function() {
-            toggleGrupo(grupoItem, this.checked);
-        });
-
-        if (checkbox.checked) toggleGrupo(grupoItem, true);
-    });
-
-    // Mostrar roles del documento seleccionado
-    document.querySelectorAll('.documento-list input[type="checkbox"]').forEach(cb => {
-        cb.addEventListener('change', function() {
-            const rolesDiv = document.getElementById('roles-' + this.dataset.safeId + '-' + this.value);
-            if (rolesDiv) rolesDiv.style.display = this.checked ? 'block' : 'none';
-            if (!this.checked && rolesDiv) {
-                rolesDiv.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
-            }
-        });
-    });
-
-    // Exclusividad de roles
-    document.querySelectorAll('.roles-documento').forEach(div => {
-        div.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-            cb.addEventListener('change', function() {
-                const roleName = this.name; 
-                if (this.checked) {
-                    document.querySelectorAll(`input[name="${roleName}"]`).forEach(other => {
-                        if (other !== this) other.checked = false;
-                    });
-                }
-            });
-        });
-    });
-
-    // Validación final
-    form.addEventListener('submit', function(event) {
-        if (!numeroOrdenArchivo) {
-            event.preventDefault();
-            document.getElementById('mensaje-error').textContent = "Debes cargar y validar el número de orden usando el archivo.";
-            document.getElementById('mensaje-error').style.display = 'block';
-            document.getElementById('mensaje-ok').style.display = 'none';
-            document.getElementById('archivo').focus();
-        }
-    });
-});
-</script>
-{% endblock %}
-
 {% block content %}
-<div class="container">
-    <h1>Crear Proyecto</h1>
-    {% if form_error %}
-        <p style="color: red; text-align: center; font-weight: bold;">Error: {{ form_error }}</p>
-    {% endif %}
+<div class="project-wizard">
+    <div class="sidebar-progress">
+        <div class="header-section">
+            <h1>Crear Proyecto</h1>
+            <p class="subtitle">Flujo de trabajo multi-paso para el registro de un nuevo proyecto.</p>
+        </div>
+        <div class="progress-bar-vertical">
+            {% for label in steps %}
+            <div class="step {% if forloop.first %}current{% endif %}" data-step="{{ forloop.counter }}">
+                <div class="step-circle {% if forloop.first %}active{% endif %}">{{ forloop.counter }}</div>
+                <div class="step-label">{{ label }}</div>
+                <div class="progress-line"></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
 
-    <div class="form-card">
+    <div class="form-content">
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
-            <label for="nombre_proyecto">Nombre del Proyecto:</label>
-            <input type="text" id="nombre_proyecto" name="nombre" placeholder="Ej: Cambio Trunnión Molino 1012" required>
+            <input type="hidden" name="current_step" id="current_step" value="1">
 
-            <label for="descripcion_proyecto">Descripción del Proyecto:</label>
-            <textarea id="descripcion_proyecto" name="descripcion" placeholder="Detalles del servicio a realizar..."></textarea>
-
-            <div style="display:flex; gap: 20px;">
-                <div style="flex:1;">
-                    <label for="fecha_inicio">Fecha de Inicio:</label>
-                    <input type="date" id="fecha_inicio" name="fecha_inicio" required>
-                </div>
-                <div style="flex:1;">
-                    <label for="fecha_fin">Fecha de Fin (estimada):</label>
-                    <input type="date" id="fecha_fin" name="fecha_fin">
-                </div>
+            {% for step_template in step_templates %}
+            <div class="card step-content" id="step-{{ forloop.counter }}" style="{% if forloop.first %}display:block;{% else %}display:none;{% endif %}">
+                {% include step_template %}
             </div>
+            {% endfor %}
 
-            <label for="administrador">Administrador de Servicio:</label>
-            <select id="administrador" name="administrador" required>
-                <option value="" disabled selected>Selecciona un usuario</option>
-                {% for user in usuarios_administrador %}
-                <option value="{{ user.id }}">{{ user.nombre }} ({{ user.email }})</option>
-                {% endfor %}
-            </select>
-
-            <label for="archivo">Número de Orden de Servicio:</label>
-            <div style="display:flex; gap:10px; align-items:center; margin-bottom: 5px;">
-                <input type="text" id="numero_orden_input" placeholder="Número de orden" readonly style="flex:1; background-color:#f5f5f5; cursor: default;" value="{{ numero_orden|default:'' }}">
-                <input type="hidden" id="numero_orden_hidden" name="numero_orden" value="{{ numero_orden|default:'' }}">
-                <input type="file" id="archivo" name="archivo" onchange="mostrarArchivo(event)" required style="flex:1;">
-            </div>
-            <p id="info-match">El número de orden se obtiene automáticamente del archivo cargado.</p>
-            <p id="mensaje-error"></p>
-            <p id="mensaje-ok"></p>
-
-            <h2>Selección de Grupos de Trabajo y Roles</h2>
-            <div id="grupos-seleccion-container">
-                {% for grupo in grupos_maestros %}
-                    {% with safe_id=grupo.nombre|lower|slugify %}
-                    <div class="grupo-item">
-                        <div class="grupo-header">
-                            <label style="margin:0; display:flex; align-items:center;">
-                                <input type="checkbox" name="grupo_checkbox" value="{{ grupo.nombre }}" data-safe-id="{{ safe_id }}">
-                                {{ grupo.nombre }}
-                            </label>
-                            <span class="toggle-icon">▶</span>
-                        </div>
-
-                        <div id="documentos-{{ safe_id }}" class="documento-list">
-                            {% for doc in documentos %}
-                                {% if doc.categoria_id == grupo.id %}
-                                <label class="documento-item">
-                                    <input type="checkbox" name="documento_{{ safe_id }}[]" value="{{ doc.id }}" data-safe-id="{{ safe_id }}"> {{ doc.nombre }}
-                                </label>
-
-                                <!-- 🔧 ID corregido: único por grupo y documento -->
-                                <div class="roles-documento" id="roles-{{ safe_id }}-{{ doc.id }}">
-                                    <p style="font-style: italic; font-size: 0.8em; margin-bottom: 10px;">Selecciona el usuario responsable de cada rol para este documento.</p>
-                                    
-                                    <div class="role-group">
-                                        <label>Redactor:</label>
-                                        <div class="user-selection-container">
-                                            {% for user in usuarios %}
-                                            <label><input type="checkbox" name="redactor_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                    <div class="role-group">
-                                        <label>Revisor:</label>
-                                        <div class="user-selection-container">
-                                            {% for user in usuarios %}
-                                            <label><input type="checkbox" name="revisor_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                    <div class="role-group">
-                                        <label>Aprobador:</label>
-                                        <div class="user-selection-container">
-                                            {% for user in usuarios %}
-                                            <label><input type="checkbox" name="aprobador_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endwith %}
-                {% endfor %}
-            </div>
-
-            <div style="text-align:center; margin-top:30px;">
-                <button type="submit">Crear Proyecto</button>
+            <div class="form-navigation">
+                <button type="button" class="btn btn-secondary" id="prev-step">← Anterior</button>
+                <button type="button" class="btn" id="next-step">Siguiente →</button>
+                <button type="submit" class="btn" id="submit-form" style="display:none;">💾 Crear Proyecto</button>
             </div>
         </form>
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentStep = 1;
+    const totalSteps = {{ steps|length }};
+    const nextBtn = document.getElementById('next-step');
+    const prevBtn = document.getElementById('prev-step');
+    const submitBtn = document.getElementById('submit-form');
+    const steps = document.querySelectorAll('.step');
+    const stepCircles = document.querySelectorAll('.step-circle');
+    const contents = document.querySelectorAll('.step-content');
+    const currentStepInput = document.getElementById('current_step');
+    const proyecto_data = {}; // <-- almacenamiento local de los pasos
+
+    // Inicializa paso 5 (ya existente)
+    function initPaso5() {
+        const toggleGrupo = (grupoItem, isChecked) => {
+            const docDiv = grupoItem.querySelector('.documento-list');
+            const checkbox = grupoItem.querySelector('input[name="grupo_checkbox"]');
+
+            if (isChecked) {
+                docDiv.style.display = 'block';
+                grupoItem.classList.add('active');
+                checkbox.checked = true;
+            } else {
+                docDiv.style.display = 'none';
+                grupoItem.classList.remove('active');
+                checkbox.checked = false;
+                docDiv.querySelectorAll('input[type="checkbox"]').forEach(c => {
+                    c.checked = false;
+                    const rolesDiv = document.getElementById('roles-' + c.dataset.safeId + '-' + c.value);
+                    if (rolesDiv) rolesDiv.style.display = 'none';
+                });
+            }
+        };
+
+        document.querySelectorAll('#step-5 .grupo-item').forEach(grupoItem => {
+            const header = grupoItem.querySelector('.grupo-header');
+            const checkbox = grupoItem.querySelector('input[name="grupo_checkbox"]');
+
+            header.addEventListener('click', function(event) {
+                if (event.target === checkbox) return;
+                toggleGrupo(grupoItem, !checkbox.checked);
+            });
+
+            checkbox.addEventListener('change', function() {
+                toggleGrupo(grupoItem, this.checked);
+            });
+
+            if (checkbox.checked) toggleGrupo(grupoItem, true);
+        });
+
+        document.querySelectorAll('#step-5 .documento-list input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const rolesDiv = document.getElementById('roles-' + this.dataset.safeId + '-' + this.value);
+                if (rolesDiv) rolesDiv.style.display = this.checked ? 'block' : 'none';
+                if (!this.checked && rolesDiv) {
+                    rolesDiv.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+                }
+            });
+        });
+
+        document.querySelectorAll('#step-5 .roles-documento').forEach(div => {
+            div.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.addEventListener('change', function() {
+                    const roleName = this.name;
+                    if (this.checked) {
+                        document.querySelectorAll(`#step-5 input[name="${roleName}"]`).forEach(other => {
+                            if (other !== this) other.checked = false;
+                        });
+                    }
+                });
+            });
+        });
+    }
+
+    function showStep(step) {
+        currentStep = step;
+        currentStepInput.value = step;
+
+        contents.forEach(c => c.style.display = 'none');
+        steps.forEach(s => s.classList.remove('current'));
+        stepCircles.forEach(c => c.classList.remove('active'));
+
+        document.getElementById(`step-${step}`).style.display = 'block';
+
+        for (let i = 0; i < totalSteps; i++) {
+            if (i < step) stepCircles[i].classList.add('active');
+            if (i === step-1) steps[i].classList.add('current');
+        }
+
+        prevBtn.style.display = step > 1 ? 'inline-block' : 'none';
+        nextBtn.style.display = step < totalSteps ? 'inline-block' : 'none';
+        submitBtn.style.display = step === totalSteps ? 'inline-block' : 'none';
+
+        if (step === 5) initPaso5();
+        if (step === 6) renderConfirmacion(); // 🔥 mostrar resumen final
+    }
+
+    // Guardar datos del paso actual
+    function guardarPaso(paso) {
+        return new Promise((resolve, reject) => {
+            const form = document.querySelector('form');
+            const formData = new FormData(form);
+            const data = { paso: paso, form_data: {} };
+
+            for (let [key, value] of formData.entries()) {
+                if (key === 'csrfmiddlewaretoken' || key === 'current_step') continue;
+                if (key === 'archivo') continue;
+
+                if (key.endsWith('[]')) {
+                    const cleanKey = key.slice(0, -2);
+                    if (!data.form_data[cleanKey]) data.form_data[cleanKey] = [];
+                    data.form_data[cleanKey].push(value);
+                } else {
+                    data.form_data[key] = value;
+                }
+            }
+
+            // Guarda localmente también
+            proyecto_data['paso_' + paso] = proyecto_data['paso_' + paso] || {};
+            Object.assign(proyecto_data['paso_' + paso], data.form_data);
+
+            // Guarda en backend
+            fetch("{% url 'usuario:guardar_paso_proyecto' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(resp => resp.json())
+            .then(result => {
+                if (result.status === 'ok') resolve();
+                else reject(result.error);
+            })
+            .catch(err => reject(err));
+        });
+    }
+
+    // Renderiza el paso 6
+    function renderConfirmacion() {
+        const contenedor = document.querySelector('#step-6');
+        if (!contenedor) return;
+        contenedor.innerHTML = "<h2>Confirmación Final</h2>";
+    
+        // ⚡ Mostrar solo el último paso (Paso 5)
+        const lastPasoKey = 'paso_' + Math.max(...Object.keys(proyecto_data).map(k => parseInt(k.replace('paso_', ''))));
+        const pasoData = proyecto_data[lastPasoKey];
+    
+        const pasoDiv = document.createElement('div');
+        pasoDiv.classList.add('confirm-section');
+        pasoDiv.innerHTML = `<h3>${lastPasoKey.replace('paso_', 'Paso ')}</h3>`;
+    
+        const ul = document.createElement('ul');
+        for (const [campo, valor] of Object.entries(pasoData)) {
+            const li = document.createElement('li');
+            li.innerHTML = `<strong>${campo}:</strong> ${Array.isArray(valor) ? valor.join(', ') : valor}`;
+            ul.appendChild(li);
+        }
+    
+        pasoDiv.appendChild(ul);
+        contenedor.appendChild(pasoDiv);
+    }
+
+
+    // Eventos
+    nextBtn.addEventListener('click', async () => {
+        if (currentStep < totalSteps) {
+            try {
+                await guardarPaso(currentStep);
+                showStep(currentStep + 1);
+            } catch (error) {
+                console.error('Error guardando paso:', error);
+                alert('Error al guardar los datos del paso.');
+            }
+        }
+    });
+
+    prevBtn.addEventListener('click', async () => {
+        if (currentStep > 1) {
+            try {
+                await guardarPaso(currentStep);
+                showStep(currentStep - 1);
+            } catch (error) {
+                console.error('Error guardando paso:', error);
+                alert('Error al guardar los datos del paso.');
+            }
+        }
+    });
+
+    steps.forEach(el => el.addEventListener('click', async () => {
+        try {
+            await guardarPaso(currentStep);
+            showStep(parseInt(el.dataset.step));
+        } catch (error) {
+            console.error('Error guardando paso:', error);
+        }
+    }));
+
+    showStep(currentStep);
+});
+</script>
+{% endblock %}
+

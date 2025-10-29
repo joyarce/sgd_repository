@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Proyecto{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Editar Proyecto</h1>
+
+    <form id="editar-proyecto-form" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="card">
+            <div class="indicator">
+                <span>Nombre del Proyecto:</span>
+                <input type="text" name="nombre_proyecto" value="{{ proyecto.nombre_proyecto }}" class="form-input" required>
+            </div>
+            <div class="indicator">
+                <span>Descripción:</span>
+                <textarea name="proyecto_descripcion" class="form-input">{{ proyecto.proyecto_descripcion }}</textarea>
+            </div>
+            <div class="indicator">
+                <span>Número de Orden:</span>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <input type="text" id="numero_orden_input" placeholder="Número de orden" readonly
+                           style="flex:1; background-color:#f5f5f5; cursor:default;"
+                           value="{{ proyecto.numero_orden }}">
+                    <input type="hidden" id="numero_orden_hidden" name="numero_orden" value="{{ proyecto.numero_orden }}">
+                    <input type="file" id="archivo" name="archivo" onchange="leerNumeroOrden(event)" style="flex:1;">
+                </div>
+                <div id="info-match" class="info-box info">
+                    📘 El número de orden se obtiene automáticamente del archivo cargado.
+                </div>
+                <div id="mensaje-ok" class="info-box success" style="display:none;"></div>
+                <div id="mensaje-error-carga" class="info-box error" style="display:none;"></div>
+            </div>
+
+            <div class="indicator">
+                <span>Administrador:</span>
+                <select name="administrador_id" class="form-input" required>
+                    <option value="">Selecciona</option>
+                    {% for admin in administradores %}
+                    <option value="{{ admin.id }}" {% if admin.id == proyecto.administrador_id %}selected{% endif %}>
+                        {{ admin.nombre }} ({{ admin.email }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="indicator">
+                <span>Fecha Inicio:</span>
+                <input type="date" name="fecha_inicio" value="{{ proyecto.fecha_inicio }}" class="form-input">
+            </div>
+            <div class="indicator">
+                <span>Fecha Fin:</span>
+                <input type="date" name="fecha_fin" value="{{ proyecto.fecha_fin }}" class="form-input">
+            </div>
+        </div>
+
+        <div style="margin-top:20px;">
+            <a href="{% url 'usuario:lista_proyectos' %}" class="btn btn-secondary">← Volver</a>
+            <button type="submit" class="btn btn-primary" style="margin-left:10px;">💾 Guardar</button>
+        </div>
+    </form>
+
+    <style>
+    .form-input { width: 70%; padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.9rem; }
+    textarea.form-input { width: 70%; height: 60px; resize: vertical; }
+    .btn-primary { background: #007bff; color: #fff; padding: 8px 20px; border-radius: 6px; border: none; cursor: pointer; }
+    .btn-primary:hover { background: #0056b3; }
+    .btn-secondary { background: #6c757d; color: #fff; padding: 8px 20px; border-radius: 6px; text-decoration: none; }
+    .btn-secondary:hover { background: #5a6268; }
+    .info-box { margin-top:5px; font-size:0.85rem; }
+    .info { color:#333; }
+    .success { color:green; }
+    .error { color:red; }
+    </style>
+
+    <script>
+    function leerNumeroOrden(event) {
+        const archivo = event.target.files[0];
+        if (!archivo) return;
+
+        const formData = new FormData();
+        formData.append('archivo', archivo);
+
+        fetch("{% url 'usuario:leer_excel_numero_orden' %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.numero_orden) {
+                document.getElementById('numero_orden_input').value = data.numero_orden;
+                document.getElementById('numero_orden_hidden').value = data.numero_orden;
+                document.getElementById('mensaje-ok').style.display = 'block';
+                document.getElementById('mensaje-ok').textContent = '✅ Número de orden cargado correctamente.';
+                document.getElementById('mensaje-error-carga').style.display = 'none';
+            } else {
+                document.getElementById('mensaje-ok').style.display = 'none';
+                document.getElementById('mensaje-error-carga').style.display = 'block';
+                document.getElementById('mensaje-error-carga').textContent = '❌ No se pudo leer el número de orden del archivo.';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById('mensaje-ok').style.display = 'none';
+            document.getElementById('mensaje-error-carga').style.display = 'block';
+            document.getElementById('mensaje-error-carga').textContent = '❌ Error al leer el archivo.';
+        });
+    }
+    </script>
+</div>
+{% endblock %}

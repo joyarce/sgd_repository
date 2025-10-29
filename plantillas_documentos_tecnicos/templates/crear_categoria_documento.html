@@ -1,0 +1,131 @@
+<!-- crear_categoria_documento.html -->
+
+{% extends "base.html" %}
+{% block title %}Crear Categoría{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Crear Categoría de Documento</h4>
+        </div>
+
+        <div class="card-body">
+            {% if messages %}
+                <div class="mb-3">
+                    {% for message in messages %}
+                        <div class="alert 
+                            {% if message.tags == 'error' %}alert-danger
+                            {% elif message.tags == 'success' %}alert-success
+                            {% else %}alert-info{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <!-- Nombre -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nombre de la Categoría</label>
+                    <input type="text" class="form-control" id="nombre" name="nombre"
+                           placeholder="Ejemplo: Seguridad, Ingeniería, Operaciones..." required>
+                </div>
+
+                <!-- Descripción -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Descripción</label>
+                    <textarea class="form-control" id="descripcion" name="descripcion" rows="3"
+                              placeholder="Describe brevemente el propósito de la categoría."></textarea>
+                </div>
+
+                <!-- Abreviatura generada automáticamente -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Abreviatura (sigla)</label>
+                    <input type="text" class="form-control readonly-field" id="abreviatura" name="abreviatura"
+                           value="{{ abreviatura|default:'' }}" placeholder="Se generará automáticamente..." readonly>
+                    <small class="form-text text-muted">
+                        La abreviatura se genera automáticamente a partir del nombre y debe ser única en el sistema.
+                    </small>
+                </div>
+
+                <!-- Botones -->
+                <div class="text-end">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-save"></i> Validar y Crear
+                    </button>
+                    <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Volver
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Guía de nomenclatura -->
+    <div class="mt-5">
+        <h5 class="fw-bold">Guía de Nomenclatura</h5>
+        <p>
+            Cada categoría de documento debe seguir reglas claras para su nombre y abreviatura:
+        </p>
+        <ul>
+            <li>El nombre debe contener solo texto alfabético (sin números, símbolos ni caracteres especiales).</li>
+            <li>Usa palabras significativas, evitando artículos o conectores como: y, de, del, la, los, etc.</li>
+            <li>Evita términos genéricos o administrativos: LTDA, S.A., Empresa, Asociación, Compañía, Hermanos, etc.</li>
+            <li>No inventes abreviaturas; el sistema generará la sigla representativa automáticamente.</li>
+        </ul>
+
+        <h6 class="mt-3 fw-bold">Ejemplos comunes</h6>
+        <table class="table table-bordered table-sm mt-2">
+            <thead class="table-light">
+                <tr>
+                    <th>Categoría de Documento</th>
+                    <th>Nomenclatura</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Seguridad y Medio Ambiente</td><td>SMA</td></tr>
+                <tr><td>Calidad</td><td>CAL</td></tr>
+                <tr><td>Ingeniería</td><td>ING</td></tr>
+                <tr><td>Operaciones</td><td>OPE</td></tr>
+                <tr><td>Planificación</td><td>PLAN</td></tr>
+                <tr><td>Recursos Humanos</td><td>RH</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Estilo de campo solo lectura -->
+<style>
+.readonly-field {
+    background-color: #f1f1f1;
+    color: #555;
+    cursor: not-allowed;
+    border: 1px solid #ccc;
+}
+</style>
+
+<!-- Generación automática de la abreviatura -->
+<script>
+const nombreInput = document.getElementById('nombre');
+const abreviaturaInput = document.getElementById('abreviatura');
+
+nombreInput.addEventListener('input', function() {
+    let nombre = this.value.trim();
+    nombre = nombre.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '');
+    const palabras = nombre.split(/\s+/).filter(p => p.length > 0);
+
+    let abreviatura = '';
+    if (palabras.length === 1) {
+        abreviatura = palabras[0].substring(0, 3).toUpperCase();
+    } else if (palabras.length > 1) {
+        abreviatura = palabras.slice(0, 4).map(p => p[0].toUpperCase()).join('');
+    }
+
+    abreviaturaInput.value = abreviatura;
+});
+</script>
+
+{% endblock %}

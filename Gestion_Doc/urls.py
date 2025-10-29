@@ -7,5 +7,5 @@ urlpatterns = [
     path("", include("microsoft_auth.urls")),
     path("usuario/", include("Usuario.urls")),
     path("documentos/", include("Gestion_Documentos_StateMachine.urls")),
-    path("simulador/", views.simulador_estado, name="simulador_estado"),
+    path("plantillas/", include("plantillas_documentos_tecnicos.urls")),  # 👈 aquí
 ]

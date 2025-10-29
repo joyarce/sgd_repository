@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de Categoría: {{ categoria.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <a href="{% url 'plantillas:lista_plantillas' %}" class="btn btn-sm btn-outline-secondary mb-3">
+        ← Volver a categorías
+    </a>
+
+    <h2 class="mb-4">Detalle de Categoría: {{ categoria.nombre }}</h2>
+
+    <table class="table table-bordered table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Nombre (Abreviatura)</th>
+                <th>Descripción</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ categoria.id }}</td>
+                <td>
+                    {{ categoria.nombre }}
+                    {% if categoria.abreviatura %}
+                        <span class="text-muted small">({{ categoria.abreviatura }})</span>
+                    {% endif %}
+                </td>
+                <td>{{ categoria.descripcion|default:"—" }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4 class="mt-4 mb-3">Tipos de Documentos Asociados</h4>
+    {% if tipos %}
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-secondary">
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre (Abreviatura)</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tipo in tipos %}
+                <tr>
+                    <td>{{ tipo.id }}</td>
+                    <td>
+                        {{ tipo.nombre }}
+                        {% if tipo.abreviatura %}
+                            <span class="text-muted small">({{ tipo.abreviatura }})</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ tipo.descripcion|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="text-muted fst-italic">No hay tipos de documentos registrados para esta categoría.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,63 +1,87 @@
-{% extends "base.html" %}
+{% load dict_extras %}
+<div class="step-inner">
+    <h3>Paso 6: Confirmación de Datos</h3>
 
-{% block title %}Paso 6: Verificación de Datos{% endblock %}
+    {% if not proyecto_temp %}
+        <p>No se encontraron datos guardados en la sesión. Revisa los pasos anteriores.</p>
+    {% else %}
+        <!-- Datos Generales -->
+        <h4>Datos Generales</h4>
+        <p><strong>Nombre:</strong> {{ proyecto_temp.nombre|default:"-" }}</p>
+        <p><strong>Descripción:</strong> {{ proyecto_temp.descripcion|default:"-" }}</p>
+        <p><strong>Fecha Inicio:</strong> {{ proyecto_temp.fecha_inicio|date:"d/m/Y"|default:"-" }}</p>
+        <p><strong>Fecha Fin:</strong> {{ proyecto_temp.fecha_fin|date:"d/m/Y"|default:"-" }}</p>
+        <p><strong>Administrador:</strong>
+            {% for u in usuarios_administrador %}
+                {% if u.id|stringformat:"s" == proyecto_temp.administrador|stringformat:"s" %}
+                    {{ u.nombre }}
+                {% endif %}
+            {% endfor %}
+        </p>
+        <p><strong>Número de Orden:</strong> {{ proyecto_temp.numero_orden|default:"-" }}</p>
 
-{% block content %}
-<div class="container">
-    <h1>Verificación de Datos del Proyecto</h1>
+        <!-- Contrato -->
+        <h4>Contrato</h4>
+        <p><strong>Número de Contrato:</strong> {{ proyecto_temp.numero_contrato|default:"-" }}</p>
+        <p><strong>Monto Total:</strong> {{ proyecto_temp.monto_total|default:"-" }}</p>
+        <p><strong>Fecha Creación Contrato:</strong> {{ proyecto_temp.fecha_creacion|date:"d/m/Y"|default:"-" }}</p>
 
-    <div class="form-card">
-        <h2>Datos Generales</h2>
-        <p><strong>Nombre:</strong> {{ proyecto_temp.nombre }}</p>
-        <p><strong>Descripción:</strong> {{ proyecto_temp.descripcion }}</p>
-        <p><strong>Fecha Inicio:</strong> {{ proyecto_temp.fecha_inicio }}</p>
-        <p><strong>Fecha Fin:</strong> {{ proyecto_temp.fecha_fin }}</p>
-        <p><strong>Administrador:</strong> {{ proyecto_temp.administrador_id }}</p>
-        <p><strong>Número de Orden:</strong> {{ proyecto_temp.numero_orden }}</p>
+        <!-- Cliente -->
+        <h4>Cliente</h4>
+        <p><strong>Nombre:</strong> {{ proyecto_temp.cliente_nombre|default:"-" }}</p>
+        <p><strong>RUT:</strong> {{ proyecto_temp.cliente_rut|default:"-" }}</p>
+        <p><strong>Dirección:</strong> {{ proyecto_temp.cliente_direccion|default:"-" }}</p>
+        <p><strong>Correo:</strong> {{ proyecto_temp.cliente_correo|default:"-" }}</p>
+        <p><strong>Teléfono:</strong> {{ proyecto_temp.cliente_telefono|default:"-" }}</p>
 
-        <h2>Contrato</h2>
-        <p><strong>Número de Contrato:</strong> {{ proyecto_temp.numero_contrato }}</p>
-        <p><strong>Monto Total:</strong> {{ proyecto_temp.monto_total }}</p>
-        <p><strong>Fecha de Creación:</strong> {{ proyecto_temp.contrato_fecha_creacion }}</p>
-
-        <h2>Cliente</h2>
-        <p><strong>Nombre:</strong> {{ proyecto_temp.cliente_nombre }}</p>
-        <p><strong>RUT:</strong> {{ proyecto_temp.cliente_rut }}</p>
-        <p><strong>Dirección:</strong> {{ proyecto_temp.cliente_direccion }}</p>
-        <p><strong>Correo:</strong> {{ proyecto_temp.cliente_correo }}</p>
-        <p><strong>Teléfono:</strong> {{ proyecto_temp.cliente_telefono }}</p>
-
+        <!-- Máquinas -->
+        <h4>Máquinas</h4>
         {% if proyecto_temp.maquinas %}
-        <h2>Máquinas</h2>
         <ul>
-            {% for maquina in proyecto_temp.maquinas %}
-            <li>{{ maquina }}</li>
+            {% for m_id in proyecto_temp.maquinas %}
+                {% for m in maquinas %}
+                    {% if m.id|stringformat:"s" == m_id|stringformat:"s" %}
+                        <li>{{ m.nombre }}</li>
+                    {% endif %}
+                {% endfor %}
             {% endfor %}
         </ul>
+        {% else %}
+            <p>No hay máquinas seleccionadas.</p>
         {% endif %}
 
-        {% if proyecto_temp.documentos_roles %}
-        <h2>Roles por Documento</h2>
+        <!-- Grupos y Documentos -->
+        <h4>Grupos y Documentos</h4>
+        {% if proyecto_temp.grupos %}
         <ul>
-            {% for doc_id, roles in proyecto_temp.documentos_roles.items %}
-            <li>
-                Documento ID: {{ doc_id }}
-                <ul>
-                    <li>Redactores: {{ roles.redactores|join:", " }}</li>
-                    <li>Revisores: {{ roles.revisores|join:", " }}</li>
-                    <li>Aprobadores: {{ roles.aprobadores|join:", " }}</li>
-                </ul>
-            </li>
+            {% for grupo in proyecto_temp.grupos %}
+                <li>
+                    <strong>{{ grupo.nombre }}</strong>
+                    <ul>
+                        {% for doc in grupo.documentos %}
+                            <li>
+                                {{ doc.nombre }}<br>
+                                <small>
+                                    Redactor: {{ doc.redactor|default:"-" }} |
+                                    Revisor: {{ doc.revisor|default:"-" }} |
+                                    Aprobador: {{ doc.aprobador|default:"-" }}
+                                </small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </li>
             {% endfor %}
         </ul>
+        {% else %}
+            <p>No hay grupos asignados.</p>
         {% endif %}
 
+        <!-- Botones de navegación -->
         <div style="text-align:center; margin-top:20px;">
-            <a href="{% url 'usuario:crear_proyecto_wizard' paso=5 %}" class="button-link">← Anterior</a>
+            <a href="{% url 'usuario:crear_proyecto' %}" class="button-link">← Anterior</a>
             <form method="POST" style="display:inline;">{% csrf_token %}
-                <button type="submit">Confirmar y Crear Proyecto</button>
+                <button type="submit" class="btn">Confirmar y Crear Proyecto</button>
             </form>
         </div>
-    </div>
+    {% endif %}
 </div>
-{% endblock %}

@@ -1,0 +1,305 @@
+<!-- crear_tipo_documento.html -->
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<div class="container mt-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Crear Tipo de Documento Técnico</h4>
+        </div>
+
+        <div class="card-body">
+            {% if messages %}
+                <div class="mb-3">
+                    {% for message in messages %}
+                        <div class="alert 
+                            {% if message.tags == 'error' %}alert-danger
+                            {% elif message.tags == 'success' %}alert-success
+                            {% else %}alert-info{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="POST" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+
+                <!-- Categoría -->
+                <div class="mb-3">
+                    <label for="categoria_id" class="form-label fw-bold">Categoría del Documento</label>
+                    <select class="form-select" id="categoria_id" name="categoria_id" required>
+                        <option value="">-- Selecciona una categoría --</option>
+                        {% for cat in categorias %}
+                            <option value="{{ cat.id }}">{{ cat.nombre }} ({{ cat.abreviatura }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Nombre -->
+                <div class="mb-3">
+                    <label for="nombre" class="form-label fw-bold">Nombre del Tipo de Documento</label>
+                    <input type="text" class="form-control" id="nombre" name="nombre" 
+                           placeholder="Ejemplo: Informe Técnico, Acta de Reunión, etc." required>
+                </div>
+
+                <!-- Descripción -->
+                <div class="mb-3">
+                    <label for="descripcion" class="form-label fw-bold">Descripción</label>
+                    <textarea class="form-control" id="descripcion" name="descripcion" rows="3"
+                              placeholder="Describe brevemente el propósito o uso del documento."></textarea>
+                </div>
+
+                <!-- Abreviatura generada automáticamente -->
+                <div class="mb-3">
+                    <label for="abreviatura" class="form-label fw-bold">Abreviatura (sigla)</label>
+                    <input type="text" class="form-control readonly-field" id="abreviatura" name="abreviatura"
+                           placeholder="Se generará automáticamente..." readonly>
+                    <small class="form-text text-muted">
+                        La abreviatura se genera automáticamente a partir del nombre y debe ser única dentro de la categoría.
+                    </small>
+                </div>
+
+                <!-- Subir archivo -->
+                <div class="mb-3">
+                    <label for="archivo" class="form-label fw-bold">Archivo</label>
+                    <input type="file" class="form-control" id="archivo" name="archivo" required>
+                    <small class="form-text text-muted">Sube el archivo asociado al tipo de documento.</small>
+                </div>
+
+                <!-- Etiquetas detectadas -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Etiquetas</label>
+                    <div id="tags-container"></div>
+                    <small class="form-text text-muted">
+                        Las etiquetas se generan automáticamente a partir del archivo subido.
+                    </small>
+                </div>
+
+                <!-- Tablas y columnas detectadas -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tablas Detectadas y sus columnas</label>
+                    <div id="tables-container"></div>
+                    <small class="form-text text-muted">
+                        Se muestran las tablas y sus columnas detectadas en el archivo Excel.
+                    </small>
+                </div>
+
+                <!-- Botones -->
+                <div class="text-end">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-save"></i> Validar y Crear
+                    </button>
+                    <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Volver
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Guía de nomenclatura -->
+    <div class="mt-5">
+        <h5 class="fw-bold">Guía de Nomenclatura</h5>
+        <p>
+            Cada tipo de documento técnico debe seguir reglas claras para su nombre y abreviatura:
+        </p>
+        <ul>
+            <li>El nombre debe contener solo texto alfabético (sin números, símbolos ni caracteres especiales).</li>
+            <li>Usa palabras significativas, evita artículos y conectores innecesarios (y, de, del, la, los, etc.).</li>
+            <li>No inventes abreviaturas arbitrarias; el sistema genera la sigla representativa.</li>
+        </ul>
+
+        <h6 class="mt-3 fw-bold">Ejemplos comunes</h6>
+        <table class="table table-bordered table-sm mt-2">
+            <thead class="table-light">
+                <tr>
+                    <th>Tipo de Documento</th>
+                    <th>Nomenclatura</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Acta de Reunión</td><td>ACTA</td></tr>
+                <tr><td>Matriz de Riesgo</td><td>MATR</td></tr>
+                <tr><td>Informe Técnico</td><td>INF</td></tr>
+                <tr><td>Planes de Medio Ambiente</td><td>PLANMA</td></tr>
+                <tr><td>Procedimientos e Instructivos Operacionales</td><td>PROC</td></tr>
+                <tr><td>Reporte Semanal</td><td>REPS</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.readonly-field {
+    background-color: #f1f1f1;
+    color: #555;
+    cursor: not-allowed;
+    border: 1px solid #ccc;
+}
+
+/* ==== Sección de Etiquetas ==== */
+.tag-badge {
+    display: inline-block;
+    background-color: #e9f5ff;
+    color: #0d6efd;
+    border: 1px solid #bcdffd;
+    border-radius: 20px;
+    padding: 5px 12px;
+    margin: 3px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* ==== Sección de Tablas ==== */
+.table-card {
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.table-card .card-header {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    color: #333;
+    padding: 8px 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.table-card .list-group-item {
+    border: none;
+    border-bottom: 1px solid #eee;
+    padding: 6px 12px;
+}
+
+.table-card .list-group-item:last-child {
+    border-bottom: none;
+}
+
+/* ==== Sección general ==== */
+#tags-container, #tables-container {
+    margin-top: 0.5rem;
+}
+</style>
+
+<script>
+const nombreInput = document.getElementById('nombre');
+const abreviaturaInput = document.getElementById('abreviatura');
+const tagsContainer = document.getElementById('tags-container');
+const tablesContainer = document.getElementById('tables-container');
+const archivoInput = document.getElementById('archivo');
+
+// Generación automática de abreviatura
+nombreInput.addEventListener('input', function() {
+    let nombre = this.value.trim();
+    nombre = nombre.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '');
+    const palabras = nombre.split(/\s+/).filter(p => p.length > 0);
+
+    let abreviatura = '';
+    if (palabras.length === 1) {
+        abreviatura = palabras[0].substring(0, 4).toUpperCase();
+    } else if (palabras.length > 1) {
+        abreviatura = palabras.slice(0, 4).map(p => p[0].toUpperCase()).join('');
+    }
+
+    abreviaturaInput.value = abreviatura;
+});
+
+// Mostrar etiquetas como "badges"
+function mostrarEtiquetas(etiquetas){
+    tagsContainer.innerHTML = '';
+    if (!etiquetas.length) {
+        tagsContainer.innerHTML = '<p class="text-muted fst-italic">No se detectaron etiquetas.</p>';
+        return;
+    }
+
+    const wrapper = document.createElement('div');
+    etiquetas.forEach(tag => {
+        const span = document.createElement('span');
+        span.classList.add('tag-badge');
+        span.textContent = tag;
+        wrapper.appendChild(span);
+    });
+    tagsContainer.appendChild(wrapper);
+}
+
+// Mostrar tablas con columnas dentro de "cards"
+function mostrarTablas(tablas){
+    tablesContainer.innerHTML = '';
+    if (!tablas.length) {
+        tablesContainer.innerHTML = '<p class="text-muted fst-italic">No se detectaron tablas en el archivo.</p>';
+        return;
+    }
+
+    tablas.forEach(t => {
+        const card = document.createElement('div');
+        card.classList.add('table-card');
+
+        let html = `
+            <div class="card-header">
+                <i class="bi bi-table"></i> ${t.tabla}
+            </div>
+            <div class="card-body p-0">
+        `;
+
+        if (t.columnas && t.columnas.length > 0) {
+            html += `<ul class="list-group list-group-flush">`;
+            t.columnas.forEach(col => {
+                html += `<li class="list-group-item"><i class="bi bi-dot"></i> ${col}</li>`;
+            });
+            html += `</ul>`;
+        } else {
+            html += `<p class="text-muted m-2">Sin columnas detectadas.</p>`;
+        }
+
+        html += `</div>`;
+        card.innerHTML = html;
+        tablesContainer.appendChild(card);
+    });
+}
+
+// Detectar archivo y obtener columnas y tablas
+archivoInput.addEventListener('change', () => {
+    if(!archivoInput.files.length) return;
+
+    const formData = new FormData();
+    formData.append('archivo', archivoInput.files[0]);
+
+    // Columnas / etiquetas
+    fetch("{% url 'plantillas:obtener_columnas_archivo' %}", {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'},
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.columnas){
+            mostrarEtiquetas(data.columnas);
+        } else if(data.error){
+            alert(data.error);
+        }
+    })
+    .catch(err => console.error(err));
+
+    // Tablas y columnas
+    fetch("{% url 'plantillas:obtener_tablas_y_columnas' %}", {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'},
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.tablas){
+            mostrarTablas(data.tablas);
+        } else if(data.error){
+            alert(data.error);
+        }
+    })
+    .catch(err => console.error(err));
+});
+</script>
+
+{% endblock %}

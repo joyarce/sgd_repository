@@ -1,3 +1,5 @@
+<!-- usuario_usuarios.html -->
+
 {% extends "base.html" %}
 
 {% block title %}Usuarios del Sistema | Gestión Documental{% endblock %}
@@ -155,8 +157,10 @@ td:empty::before { content: '-'; color: #ccc; }
                         </td>
                         <td style="text-align:center;">
                             <div class="action-buttons">
-                                <a class="edit-btn" href="" title="Editar usuario"><i class="fas fa-user-cog"></i></a>
-                                <a class="view-stats-btn" href="" title="Ver estadísticas"><i class="fas fa-chart-bar"></i></a>
+                                <a class="edit-btn" href="{% url 'usuario:editar_usuario' user.id %}" title="Editar usuario"><i class="fas fa-user-cog"></i></a>
+                                <a class="view-stats-btn" href="{% url 'usuario:ver_estadisticas_usuario' user.id %}" title="Ver estadísticas">
+                                    <i class="fas fa-chart-bar"></i>
+                                </a>
                             </div>
                         </td>
                     </tr>

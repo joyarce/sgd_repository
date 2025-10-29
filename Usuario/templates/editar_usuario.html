@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Usuario | Gestión Documental{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:600px; margin-top:30px; background:var(--metso-white); padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.06);">
+    <h1 style="text-align:center; color:var(--text-primary); margin-bottom:20px;">Editar Usuario</h1>
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group" style="margin-bottom:15px;">
+            <label>Nombre</label>
+            <input type="text" name="nombre" class="form-control" value="{{ usuario.nombre }}" required>
+        </div>
+
+        <div class="form-group" style="margin-bottom:15px;">
+            <label>Email Corporativo</label>
+            <input type="email" name="email" class="form-control" value="{{ usuario.email }}">
+        </div>
+
+        <div class="form-group" style="margin-bottom:15px;">
+            <label>Email Secundario</label>
+            <input type="email" name="email_secundario" class="form-control" value="{{ usuario.email_secundario }}">
+        </div>
+
+        <div class="form-group" style="margin-bottom:15px;">
+            <label>Teléfono Corporativo</label>
+            <input type="text" name="telefono_corporativo" class="form-control" value="{{ usuario.telefono_corporativo }}">
+        </div>
+
+        <div class="form-group" style="margin-bottom:15px;">
+            <label>Teléfono Secundario</label>
+            <input type="text" name="telefono_secundario" class="form-control" value="{{ usuario.telefono_secundario }}">
+        </div>
+
+        <!-- Área de Trabajo -->
+        <div class="form-group" style="margin-bottom:15px;">
+            <label>Área de Trabajo</label>
+            <select name="area_trabajo" id="area_trabajo" class="form-control" required>
+                <option value="">-- Seleccione Área --</option>
+                {% for area in areas %}
+                <option value="{{ area.id }}" {% if area.nombre == usuario.area_trabajo %}selected{% endif %}>{{ area.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Cargo -->
+        <div class="form-group" style="margin-bottom:15px;">
+            <label>Cargo</label>
+            <select name="cargo_id" id="cargo" class="form-control" required>
+                <option value="">-- Seleccione Cargo --</option>
+                {% for cargo in cargos %}
+                <option value="{{ cargo.id }}" data-area="{{ cargo.area_id }}" {% if cargo.id == usuario.cargo_id %}selected{% endif %}>
+                    {{ cargo.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const areaSelect = document.getElementById('area_trabajo');
+const cargoSelect = document.getElementById('cargo');
+const allCargos = Array.from(cargoSelect.options);
+
+function filterCargos() {
+    const selectedArea = areaSelect.value;
+    cargoSelect.innerHTML = '<option value="">-- Seleccione Cargo --</option>';
+
+    allCargos.forEach(opt => {
+        if (!opt.dataset.area) return; // Ignorar placeholder
+        if (opt.dataset.area === selectedArea) {
+            cargoSelect.appendChild(opt);
+        }
+    });
+
+    // Mantener cargo seleccionado si pertenece al área
+    const selectedCargoId = "{{ usuario.cargo_id }}";
+    const cargoOption = cargoSelect.querySelector(`option[value="${selectedCargoId}"]`);
+    if (cargoOption) cargoOption.selected = true;
+}
+
+areaSelect.addEventListener('change', filterCargos);
+window.addEventListener('load', filterCargos);
+</script>
+{% endblock %}
