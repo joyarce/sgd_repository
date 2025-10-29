@@ -170,6 +170,7 @@ def detalle_proyecto(request, proyecto_id):
         P.fecha_inicio_planificacion,
         P.fecha_inicio_ejecucion,
         P.fecha_cierre_proyecto,
+        P.abreviatura AS proyecto_abreviatura,
 
         -- Administrador
         U.nombre AS administrador_nombre_completo,
@@ -182,7 +183,7 @@ def detalle_proyecto(request, proyecto_id):
         C.id AS contrato_id,
         C.numero_contrato,
         C.monto_total,
-        C.fecha_creacion AS contrato_fecha_creacion,
+        C.fecha_firma AS contrato_fecha_firma,
         C.representante_cliente_nombre,
         C.representante_cliente_correo,
         C.representante_cliente_telefono,
@@ -220,7 +221,8 @@ def detalle_proyecto(request, proyecto_id):
     LEFT JOIN public.tipo_documentos_tecnicos TDT ON RDT.tipo_documento_id = TDT.id
     LEFT JOIN UltimoEstado UE ON RDT.id = UE.requerimiento_id AND UE.rn = 1
     LEFT JOIN public.estado_documento E ON UE.estado_destino_id = E.id
-    LEFT JOIN public.maquinas M ON P.id = M.proyecto_id
+    LEFT JOIN public.proyecto_maquina PM ON P.id = PM.proyecto_id
+    LEFT JOIN public.maquinas M ON PM.maquina_id = M.id
     WHERE P.id = %s
     ORDER BY RDT.fecha_registro DESC, M.id;
     """
@@ -739,101 +741,206 @@ import pprint
 
 @login_required
 def crear_proyecto(request):
-    # Limpiar o inicializar proyecto temporal
+    import json
+    from django.db import connection
+    from django.shortcuts import render
+    from django.http import JsonResponse
+
+    # --- Sesión temporal del proyecto ---
     if 'proyecto_temp' not in request.session:
         request.session['proyecto_temp'] = {}
     proyecto_temp = request.session['proyecto_temp']
 
-    # Inicializar campos nuevos
-    for campo in ['fecha_recepcion_evaluacion', 'fecha_inicio_planificacion', 'fecha_inicio_ejecucion', 'fecha_cierre_proyecto', 'abreviatura']:
-        proyecto_temp.setdefault(campo, '')
+    # Inicializar campos vacíos
+    campos = [
+        'nombre', 'descripcion', 'fecha_recepcion_evaluacion', 'fecha_inicio_planificacion',
+        'fecha_inicio_ejecucion', 'fecha_cierre_proyecto', 'abreviatura',
+        'contrato_id', 'numero_contrato', 'monto_total', 'contrato_fecha_firma',
+        'cliente_id', 'cliente_nombre', 'cliente_rut', 'cliente_direccion',
+        'cliente_correo', 'cliente_telefono',
+        'faena_id', 'faena_nombre', 'faena_ubicacion',
+        'maquinas_ids'  # <-- lista de máquinas
+    ]
+    for campo in campos:
+        proyecto_temp.setdefault(campo, '' if campo != 'maquinas_ids' else [])
     request.session['proyecto_temp'] = proyecto_temp
 
-    steps = [
-        "Datos Generales",
-        "Contrato",
-        "Cliente",
-        "Grupos y Documentos",
-        "Confirmación"
-    ]
+    steps = ["Datos Generales", "Contrato y Cliente", "Grupos y Documentos", "Confirmación"]
 
-    # --- Datos de apoyo ---
+    # --- Cargar datos de apoyo ---
     with connection.cursor() as cursor:
-        # Todos los usuarios
+        # Usuarios
         cursor.execute("SELECT id, nombre, email FROM usuarios ORDER BY nombre")
         usuarios = [{"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()]
 
-        # Administradores (cargo_id = 4)
+        # Administradores
         cursor.execute("SELECT id, nombre, email FROM usuarios WHERE cargo_id = 4 ORDER BY nombre")
         usuarios_administrador = [{"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()]
 
-        # Categorías y tipos de documentos
+        # Grupos y documentos técnicos
         cursor.execute("SELECT id, nombre, descripcion FROM categoria_documentos_tecnicos ORDER BY nombre")
         grupos_maestros = [{"id": r[0], "nombre": r[1], "descripcion": r[2]} for r in cursor.fetchall()]
 
         cursor.execute("SELECT id, categoria_id, nombre FROM tipo_documentos_tecnicos ORDER BY nombre")
         documentos = [{"id": r[0], "categoria_id": r[1], "nombre": r[2]} for r in cursor.fetchall()]
 
-        # 🧩 MÁQUINAS → incluye abreviatura (ya reemplazó a codigo_equipo)
+        # Máquinas
         cursor.execute("SELECT id, nombre, abreviatura FROM maquinas ORDER BY nombre")
         maquinas = [{"id": r[0], "nombre": r[1], "abreviatura": r[2] or ""} for r in cursor.fetchall()]
 
-    # --- Paso 6: transformación de datos temporales ---
-    grupos_list = []
-    for key, value in proyecto_temp.items():
-        if key.startswith("grupo_"):
-            grupo_name = key.replace("grupo_", "")
-            documentos_list = []
+        # Contratos + Cliente asociado
+        cursor.execute("""
+            SELECT c.id, c.numero_contrato, c.monto_total, c.fecha_firma,
+                   c.representante_cliente_nombre, c.representante_cliente_correo,
+                   c.representante_cliente_telefono, c.cliente_id,
+                   cl.nombre, cl.rut, cl.direccion, cl.correo_contacto, cl.telefono_contacto
+            FROM contratos c
+            JOIN clientes cl ON cl.id = c.cliente_id
+            ORDER BY c.numero_contrato
+        """)
+        contratos = []
+        for r in cursor.fetchall():
+            contratos.append({
+                "id": r[0],
+                "numero_contrato": r[1],
+                "monto_total": r[2],
+                "fecha_firma": r[3],
+                "representante_cliente_nombre": r[4],
+                "representante_cliente_correo": r[5],
+                "representante_cliente_telefono": r[6],
+                "cliente_id": r[7],
+                "cliente_nombre": r[8],
+                "cliente_rut": r[9],
+                "cliente_direccion": r[10],
+                "cliente_correo": r[11],
+                "cliente_telefono": r[12],
+            })
 
-            for doc_key, doc_ids in proyecto_temp.items():
-                prefix = f"documento_{grupo_name.lower().replace(' ', '-')}_"
-                if doc_key.startswith(prefix):
-                    for doc_id in doc_ids:
-                        def to_list(x):
-                            if isinstance(x, (str, int)):
-                                return [str(x)]
-                            return [str(i) for i in x]
+        # Clientes
+        cursor.execute("SELECT id, nombre FROM clientes ORDER BY nombre")
+        clientes = [{"id": r[0], "nombre": r[1]} for r in cursor.fetchall()]
 
-                        redactor_ids = to_list(proyecto_temp.get(f"redactor_id_{doc_id}", []))
-                        revisor_ids = to_list(proyecto_temp.get(f"revisor_id_{doc_id}", []))
-                        aprobador_ids = to_list(proyecto_temp.get(f"aprobador_id_{doc_id}", []))
+        # Faenas
+        cursor.execute("SELECT id, cliente_id, nombre, ubicacion FROM faenas ORDER BY nombre")
+        faenas = [{"id": r[0], "cliente_id": r[1], "nombre": r[2], "ubicacion": r[3]} for r in cursor.fetchall()]
 
-                        def get_user_names(ids):
-                            names = [u["nombre"] for u in usuarios if str(u["id"]) in ids]
-                            return names if names else ["Sin asignar"]
+    # --- Asociar documentos a cada grupo y roles del proyecto ---
+    for grupo in grupos_maestros:
+        grupo_docs = [d for d in documentos if d["categoria_id"] == grupo["id"]]
+        for doc in grupo_docs:
+            # roles previamente seleccionados en la sesión (si hay)
+            doc["redactor_ids"] = proyecto_temp.get(f"redactor_id_{doc['id']}", [])
+            doc["revisor_ids"] = proyecto_temp.get(f"revisor_id_{doc['id']}", [])
+            doc["aprobador_ids"] = proyecto_temp.get(f"aprobador_id_{doc['id']}", [])
+        grupo["documentos"] = grupo_docs
 
-                        documentos_list.append({
-                            "nombre": next((d["nombre"] for d in documentos if str(d["id"]) == str(doc_id)), f"Documento {doc_id}"),
-                            "redactor": ", ".join(get_user_names(redactor_ids)),
-                            "revisor": ", ".join(get_user_names(revisor_ids)),
-                            "aprobador": ", ".join(get_user_names(aprobador_ids)),
-                        })
-
-            grupos_list.append({"nombre": grupo_name, "documentos": documentos_list})
-
-    proyecto_temp['grupos'] = grupos_list
-
+    # --- Procesar envío del formulario ---
     if request.method == "POST":
-        if 'proyecto_data' in request.POST:
-            proyecto_data = json.loads(request.POST.get("proyecto_data"))
-        else:
-            proyecto_data = proyecto_temp
+        proyecto_data = json.loads(request.POST.get("proyecto_data", "{}"))
 
-        import pprint; pprint.pprint(proyecto_data)
-        if 'proyecto_temp' in request.session:
-            del request.session['proyecto_temp']
-        return JsonResponse({"status": "ok"})
+        with connection.cursor() as cursor:
+            # Crear cliente si no existe
+            cliente_id = proyecto_data.get("cliente_id")
+            if not cliente_id and proyecto_data.get("cliente_nombre"):
+                cursor.execute("""
+                    INSERT INTO clientes (nombre, rut, direccion, correo_contacto, telefono_contacto)
+                    VALUES (%s, %s, %s, %s, %s) RETURNING id
+                """, [
+                    proyecto_data["cliente_nombre"], proyecto_data["cliente_rut"],
+                    proyecto_data["cliente_direccion"], proyecto_data["cliente_correo"],
+                    proyecto_data["cliente_telefono"]
+                ])
+                cliente_id = cursor.fetchone()[0]
+
+            # Crear contrato si no se seleccionó uno existente
+            contrato_id = proyecto_data.get("contrato_id")
+            if not contrato_id:
+                cursor.execute("""
+                    INSERT INTO contratos (
+                        numero_contrato, monto_total, fecha_firma,
+                        representante_cliente_nombre, representante_cliente_correo,
+                        representante_cliente_telefono, cliente_id, created_at
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                    RETURNING id
+                """, [
+                    proyecto_data["numero_contrato"], proyecto_data["monto_total"],
+                    proyecto_data["contrato_fecha_firma"],
+                    proyecto_data["representante_cliente_nombre"],
+                    proyecto_data["representante_cliente_correo"],
+                    proyecto_data["representante_cliente_telefono"],
+                    cliente_id
+                ])
+                contrato_id = cursor.fetchone()[0]
+
+            # Crear faena si no se seleccionó una existente
+            faena_id = proyecto_data.get("faena_id")
+            if not faena_id and proyecto_data.get("faena_nombre"):
+                cursor.execute("""
+                    INSERT INTO faenas (cliente_id, nombre, ubicacion)
+                    VALUES (%s, %s, %s) RETURNING id
+                """, [cliente_id, proyecto_data["faena_nombre"], proyecto_data.get("faena_ubicacion")])
+                faena_id = cursor.fetchone()[0]
+
+            # Crear proyecto
+            cursor.execute("""
+                INSERT INTO proyectos (
+                    nombre, descripcion, fecha_recepcion_evaluacion,
+                    fecha_inicio_planificacion, fecha_inicio_ejecucion,
+                    fecha_cierre_proyecto, abreviatura,
+                    administrador_id, contrato_id, cliente_id, faena_id
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, [
+                proyecto_data.get("nombre"),
+                proyecto_data.get("descripcion"),
+                proyecto_data.get("fecha_recepcion_evaluacion"),
+                proyecto_data.get("fecha_inicio_planificacion"),
+                proyecto_data.get("fecha_inicio_ejecucion"),
+                proyecto_data.get("fecha_cierre_proyecto"),
+                proyecto_data.get("abreviatura"),
+                proyecto_data.get("administrador_id"),
+                contrato_id,
+                cliente_id,
+                faena_id
+            ])
+            proyecto_id = cursor.fetchone()[0]
+
+            # --- Asociar máquinas múltiples ---
+            maquinas_ids = proyecto_data.get("maquinas_ids", [])
+            for maquina_id in maquinas_ids:
+                cursor.execute("""
+                    INSERT INTO proyecto_maquina (proyecto_id, maquina_id)
+                    VALUES (%s, %s) ON CONFLICT DO NOTHING
+                """, [proyecto_id, maquina_id])
+
+        # Limpiar la sesión
+        del request.session['proyecto_temp']
+        return JsonResponse({"status": "ok", "proyecto_id": proyecto_id})
+
+    # --- Render ---
+    step_templates = [
+        "crear_proyecto_paso1.html",
+        "crear_proyecto_paso2.html",
+        "crear_proyecto_paso3.html",
+        "crear_proyecto_paso4.html",
+    ]
 
     return render(request, "crear_proyecto.html", {
         "steps": steps,
-        "step_templates": [f"crear_proyecto_paso{i}.html" for i in range(1, len(steps)+1)],
+        "step_templates": step_templates,
         "usuarios": usuarios,
         "usuarios_administrador": usuarios_administrador,
         "grupos_maestros": grupos_maestros,
         "documentos": documentos,
         "maquinas": maquinas,
-        "proyecto_temp": proyecto_temp
+        "proyecto_temp": proyecto_temp,
+        "contratos": contratos,
+        "clientes": clientes,
+        "faenas": faenas,
     })
+
 
 
 

@@ -1,20 +1,173 @@
-<!-- crear_proyecto_paso2.html -->
+<style>
+/* Estilo para campo readonly de cliente */
+#cliente-lectura.readonly-cliente {
+    background-color: #e0e0e0;  /* Gris claro */
+    cursor: not-allowed;         /* Icono de bloqueo */
+    color: #555;
+}
+</style>
 
 <div class="step-inner">
-    <h3>Paso 2: Contrato</h3>
-
-    {% if form_error %}
-        <p id="mensaje-error" style="display:block;">Error: {{ form_error }}</p>
-    {% endif %}
+    <h3>Paso 2: Contrato y Cliente</h3>
 
     <div class="form-card">
-        <label>Número de Contrato:</label>
-        <input type="text" name="numero_contrato" value="{{ proyecto_temp.numero_contrato|default:'' }}" required>
+        <h4>Contrato</h4>
 
-        <label>Monto Total:</label>
-        <input type="text" name="monto_total" value="{{ proyecto_temp.monto_total|default:'' }}" required>
+        <label>Seleccionar Contrato Existente:</label>
+        <select name="contrato_id" id="select-contrato" onchange="onContratoChange(this.value)">
+            <option value="">-- Nuevo Contrato --</option>
+            {% for contrato in contratos %}
+            <option value="{{ contrato.id }}" 
+                data-cliente-id="{{ contrato.cliente_id }}"
+                data-cliente-nombre="{{ contrato.cliente_nombre }}"
+                {% if proyecto_temp.contrato_id|stringformat:"s" == contrato.id|stringformat:"s" %}selected{% endif %}>
+                {{ contrato.numero_contrato }}
+            </option>
+            {% endfor %}
+        </select>
 
-        <label>Fecha de Creación:</label>
-        <input type="date" name="fecha_creacion" value="{{ proyecto_temp.contrato_fecha_creacion|default:'' }}" required>
+        <!-- CAMPOS NUEVO CONTRATO -->
+        <div id="nuevo-contrato-fields" style="margin-top:15px; {% if proyecto_temp.contrato_id %}display:none{% endif %}">
+            <label>Número de Contrato:</label>
+            <input type="text" name="numero_contrato" value="{{ proyecto_temp.numero_contrato|default:'' }}" required>
+            <label>Monto Total:</label>
+            <input type="number" name="monto_total" value="{{ proyecto_temp.monto_total|default:'' }}">
+            <label>Fecha de Firma:</label>
+            <input type="date" name="contrato_fecha_firma" value="{{ proyecto_temp.contrato_fecha_firma|default:'' }}">
+            <label>Representante Cliente (Nombre):</label>
+            <input type="text" name="representante_cliente_nombre" value="{{ proyecto_temp.representante_cliente_nombre|default:'' }}">
+            <label>Correo Representante:</label>
+            <input type="email" name="representante_cliente_correo" value="{{ proyecto_temp.representante_cliente_correo|default:'' }}">
+            <label>Teléfono Representante:</label>
+            <input type="text" name="representante_cliente_telefono" value="{{ proyecto_temp.representante_cliente_telefono|default:'' }}">
+        </div>
+
+        <hr class="my-3">
+
+        <h4>Cliente</h4>
+        <input type="text" id="cliente-lectura" value="" readonly style="width:100%; margin-bottom:10px; display:none;">
+        <select name="cliente_id" id="select-cliente" onchange="onClienteChange(this.value)" style="{% if proyecto_temp.contrato_id %}display:none{% endif %}">
+            <option value="">-- Nuevo Cliente --</option>
+            {% for cliente in clientes %}
+            <option value="{{ cliente.id }}"
+                {% if proyecto_temp.cliente_id|stringformat:"s" == cliente.id|stringformat:"s" %}selected{% endif %}>
+                {{ cliente.nombre }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <div id="nuevo-cliente-fields" style="margin-top:15px; {% if proyecto_temp.cliente_id %}display:none{% endif %}">
+            <label>Nombre:</label>
+            <input type="text" name="cliente_nombre" value="{{ proyecto_temp.cliente_nombre|default:'' }}" required>
+            <label>RUT:</label>
+            <input type="text" name="cliente_rut" value="{{ proyecto_temp.cliente_rut|default:'' }}" required>
+            <label>Dirección:</label>
+            <input type="text" name="cliente_direccion" value="{{ proyecto_temp.cliente_direccion|default:'' }}">
+            <label>Correo:</label>
+            <input type="email" name="cliente_correo" value="{{ proyecto_temp.cliente_correo|default:'' }}">
+            <label>Teléfono:</label>
+            <input type="text" name="cliente_telefono" value="{{ proyecto_temp.cliente_telefono|default:'' }}">
+        </div>
+
+        <hr class="my-3">
+
+        <h4>Faena</h4>
+        <label>Seleccionar Faena:</label>
+        <select name="faena_id" id="select-faena" onchange="onFaenaChange()">
+            <option value="">-- Nueva Faena --</option>
+        </select>
+
+        <div id="nuevo-faena-fields" style="margin-top:15px; display:none;">
+            <label>Nombre de Faena:</label>
+            <input type="text" name="faena_nombre" value="">
+            <label>Ubicación:</label>
+            <input type="text" name="faena_ubicacion" value="">
+        </div>
     </div>
 </div>
+
+<script>
+function onContratoChange(contratoId) {
+    const nuevoContrato = document.getElementById('nuevo-contrato-fields');
+    const selectCliente = document.getElementById('select-cliente');
+    const clienteLectura = document.getElementById('cliente-lectura');
+    const camposCliente = document.getElementById('nuevo-cliente-fields');
+
+    if (contratoId) {
+        nuevoContrato.style.display = 'none';
+        selectCliente.style.display = 'none';
+        clienteLectura.style.display = 'block';
+        camposCliente.style.display = 'none';
+
+        const option = document.querySelector(`#select-contrato option[value="${contratoId}"]`);
+        const clienteNombre = option.dataset.clienteNombre;
+        const clienteId = option.dataset.clienteId;
+        clienteLectura.value = clienteNombre;
+
+        // Aplicar estilo de readonly con bloqueo
+        clienteLectura.classList.add('readonly-cliente');
+
+        cargarFaenas(clienteId);
+    } else {
+        nuevoContrato.style.display = 'block';
+        selectCliente.style.display = 'block';
+        clienteLectura.style.display = 'none';
+        clienteLectura.classList.remove('readonly-cliente');
+        camposCliente.style.display = 'block';
+        selectCliente.value = '';
+        toggleNuevoCliente(true);
+        cargarFaenas(null);
+    }
+}
+
+function onClienteChange(clienteId) {
+    toggleNuevoCliente(!clienteId);
+    cargarFaenas(clienteId);
+}
+
+function toggleNuevoCliente(mostrar) {
+    document.getElementById('nuevo-cliente-fields').style.display = mostrar ? 'block' : 'none';
+}
+
+function cargarFaenas(clienteId) {
+    const selectFaena = document.getElementById('select-faena');
+    const nuevoFaena = document.getElementById('nuevo-faena-fields');
+
+    selectFaena.innerHTML = '<option value="">-- Nueva Faena --</option>';
+    nuevoFaena.style.display = 'none';
+
+    if (!clienteId) return;
+
+    const faenas = {{ faenas|safe }};
+    faenas.forEach(f => {
+        if (f.cliente_id == clienteId) {
+            const opt = document.createElement('option');
+            opt.value = f.id;
+            opt.textContent = f.nombre;
+            selectFaena.appendChild(opt);
+        }
+    });
+
+    {% if proyecto_temp.faena_id %}
+    selectFaena.value = "{{ proyecto_temp.faena_id }}";
+    {% endif %}
+
+    onFaenaChange();
+}
+
+function onFaenaChange() {
+    const selectFaena = document.getElementById('select-faena');
+    const nuevoFaena = document.getElementById('nuevo-faena-fields');
+
+    if (selectFaena.value === "") {
+        nuevoFaena.style.display = 'block';
+    } else {
+        nuevoFaena.style.display = 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    onContratoChange(document.getElementById('select-contrato').value);
+    onClienteChange(document.getElementById('select-cliente').value);
+});
+</script>

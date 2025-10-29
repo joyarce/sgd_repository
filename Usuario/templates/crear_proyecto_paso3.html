@@ -1,22 +1,185 @@
-<!-- crear_proyecto_paso3.html -->
-
 <div class="step-inner">
-    <h3>Paso 3: Cliente</h3>
+    <h3>Paso 3: Grupos y Roles</h3> 
 
-    <div class="form-card">
-        <label>Nombre del Cliente:</label>
-        <input type="text" name="cliente_nombre" value="{{ proyecto_temp.cliente_nombre|default:'' }}" required>
+    {% if form_error %}
+        <p style="color: red; text-align: center; font-weight: bold;">Error: {{ form_error }}</p>
+    {% endif %}
 
-        <label>RUT:</label>
-        <input type="text" name="cliente_rut" value="{{ proyecto_temp.cliente_rut|default:'' }}" required>
+    <div id="grupos-seleccion-container">
+        {% for grupo in grupos_maestros %}
+        {% with safe_id=grupo.nombre|lower|slugify %}
+        <div class="grupo-item">
+            <!-- Header del grupo -->
+            <div class="grupo-header">
+                <label style="margin:0; display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" name="grupo_checkbox" value="{{ grupo.nombre }}" data-safe-id="{{ safe_id }}">
+                    {{ grupo.nombre }}
+                </label>
+                <span class="toggle-icon">▶</span>
+            </div>
 
-        <label>Dirección:</label>
-        <input type="text" name="cliente_direccion" value="{{ proyecto_temp.cliente_direccion|default:'' }}">
+            <!-- Lista de documentos -->
+            <div id="documentos-{{ safe_id }}" class="documento-list" style="display:none;">
+                {% for doc in grupo.documentos %}
+                <div class="documento-item-wrapper">
+                    <label class="documento-item">
+                        <input type="checkbox" name="documento_{{ safe_id }}[]" value="{{ doc.id }}" data-safe-id="{{ safe_id }}">
+                        {{ doc.nombre }}
+                        <span class="toggle-icon-doc">▶</span>
+                    </label>
 
-        <label>Correo:</label>
-        <input type="email" name="cliente_correo" value="{{ proyecto_temp.cliente_correo|default:'' }}">
+                    <!-- Roles del documento -->
+                    <div class="roles-documento" id="roles-{{ doc.id }}" style="display:none;">
+                        <div class="role-group">
+                            <label>Redactor:</label>
+                            <div class="user-selection-container">
+                                {% for user in usuarios %}
+                                <label>
+                                    <input type="checkbox" name="redactor_id_{{ doc.id }}[]" value="{{ user.id }}"
+                                    {% if user.id in doc.redactor_ids %}checked{% endif %}>
+                                    {{ user.nombre }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
 
-        <label>Teléfono:</label>
-        <input type="text" name="cliente_telefono" value="{{ proyecto_temp.cliente_telefono|default:'' }}">
+                        <div class="role-group">
+                            <label>Revisor:</label>
+                            <div class="user-selection-container">
+                                {% for user in usuarios %}
+                                <label>
+                                    <input type="checkbox" name="revisor_id_{{ doc.id }}[]" value="{{ user.id }}"
+                                    {% if user.id in doc.revisor_ids %}checked{% endif %}>
+                                    {{ user.nombre }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="role-group">
+                            <label>Aprobador:</label>
+                            <div class="user-selection-container">
+                                {% for user in usuarios %}
+                                <label>
+                                    <input type="checkbox" name="aprobador_id_{{ doc.id }}[]" value="{{ user.id }}"
+                                    {% if user.id in doc.aprobador_ids %}checked{% endif %}>
+                                    {{ user.nombre }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
     </div>
 </div>
+
+<style>
+.grupo-item {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 15px;
+    background-color: #f9f9f9;
+}
+
+.grupo-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    padding: 5px 10px;
+    font-weight: bold;
+    background-color: #e3f2fd;
+    border-radius: 4px;
+}
+
+.documento-list {
+    margin-left: 20px;
+    margin-top: 10px;
+}
+
+.documento-item-wrapper {
+    margin-bottom: 10px;
+    padding: 5px;
+    border-left: 2px solid #2196f3;
+    border-radius: 4px;
+    background-color: #f1f8ff;
+}
+
+.documento-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    padding: 3px 0;
+}
+
+.roles-documento {
+    display: flex;
+    gap: 20px;
+    margin-top: 5px;
+    flex-wrap: wrap;
+}
+
+.role-group {
+    flex: 1 1 200px; /* mínimo 200px, se adapta */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px;
+    background-color: #fff;
+}
+
+.user-selection-container {
+    max-height: 120px;
+    overflow-y: auto;
+    padding-left: 10px;
+}
+
+.toggle-icon, .toggle-icon-doc {
+    transition: transform 0.2s ease;
+    font-weight: bold;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Toggle grupos
+    document.querySelectorAll(".grupo-header").forEach(header => {
+        header.addEventListener("click", function(e) {
+            if(e.target.tagName.toLowerCase() === 'input') return;
+            const safeId = header.querySelector('input[type="checkbox"]').dataset.safeId;
+            const docList = document.getElementById("documentos-" + safeId);
+            const icon = header.querySelector(".toggle-icon");
+            if(docList.style.display === "none") {
+                docList.style.display = "block";
+                icon.style.transform = "rotate(90deg)";
+            } else {
+                docList.style.display = "none";
+                icon.style.transform = "rotate(0deg)";
+            }
+        });
+    });
+
+    // Toggle roles de cada documento
+    document.querySelectorAll(".documento-item").forEach(docLabel => {
+        docLabel.addEventListener("click", function(e) {
+            if(e.target.tagName.toLowerCase() === 'input') return;
+            const docId = docLabel.querySelector('input[type="checkbox"]').value;
+            const rolesDiv = document.getElementById("roles-" + docId);
+            const icon = docLabel.querySelector(".toggle-icon-doc");
+            if(rolesDiv.style.display === "none") {
+                rolesDiv.style.display = "flex";
+                icon.style.transform = "rotate(90deg)";
+            } else {
+                rolesDiv.style.display = "none";
+                icon.style.transform = "rotate(0deg)";
+            }
+        });
+    });
+});
+</script>

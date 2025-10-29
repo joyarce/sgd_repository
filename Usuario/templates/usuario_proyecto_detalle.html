@@ -137,6 +137,9 @@ table tr:hover { background: #fdf2e8; }
         <div class="indicator"><span>Fecha Cierre del Proyecto:</span> 
             <span>{{ proyecto.fecha_cierre_proyecto|date:"d/m/Y"|default:"(Sin fecha)" }}</span>
         </div>
+
+        <div class="indicator"><span>Abreviatura:</span> <span>{{ proyecto.proyecto_abreviatura|default:"(Sin abreviatura)" }}</span></div>
+
     </div>
 
     <!-- Contrato y Cliente lado a lado -->
@@ -174,7 +177,7 @@ table tr:hover { background: #fdf2e8; }
         <thead>
             <tr>
                 <th>Nombre</th>
-                <th>Código</th>
+                <th>Abreviatura</th>
                 <th>Marca</th>
                 <th>Modelo</th>
                 <th>Año</th>
