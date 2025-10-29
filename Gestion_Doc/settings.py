@@ -80,13 +80,13 @@ MICROSOFT_CLIENT_SECRET = "fgy8Q~KXD3foDHVQunLEKODHYG4jNB3QxKNCKaW4"
 MICROSOFT_AUTHORITY = "https://login.microsoftonline.com/common"
 MICROSOFT_REDIRECT_URI = "http://localhost:8000/callback/"
 
-# Gmail SMTP para enviar correos
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = 'smtp.office365.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'sgd.mtso.jova@gmail.com'
-EMAIL_HOST_PASSWORD = 'Loki99uexd.'
+EMAIL_HOST_USER = 'alertas_sgd@outlook.com'
+EMAIL_HOST_PASSWORD = 'tu_contraseña_o_app_password'
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 
