@@ -1173,8 +1173,8 @@ def editar_proyecto(request, proyecto_id):
         P.nombre AS nombre_proyecto,
         P.descripcion AS proyecto_descripcion,
         P.numero_orden,
-        P.fecha_inicio,
-        P.fecha_fin,
+        P.fecha_recepcion_evaluacion,
+        P.fecha_cierre_proyecto,
         U.id AS administrador_id,
         U.nombre AS administrador_nombre_completo,
         U.email AS administrador_email
@@ -1188,6 +1188,7 @@ def editar_proyecto(request, proyecto_id):
         row = cursor.fetchone()
         if not row:
             raise Http404("Proyecto no encontrado")
+
         columns = [col[0] for col in cursor.description]
         proyecto = dict(zip(columns, row))
 
@@ -1198,17 +1199,27 @@ def editar_proyecto(request, proyecto_id):
             WHERE u.cargo_id = 4
             ORDER BY u.nombre
         """)
-        administradores = [dict(zip([col[0] for col in cursor.description], r)) for r in cursor.fetchall()]
+        administradores = [
+            dict(zip([col[0] for col in cursor.description], r))
+            for r in cursor.fetchall()
+        ]
 
     # Formatear fechas para input type="date"
-    proyecto['fecha_inicio'] = proyecto['fecha_inicio'].strftime('%Y-%m-%d') if proyecto['fecha_inicio'] else ''
-    proyecto['fecha_fin'] = proyecto['fecha_fin'].strftime('%Y-%m-%d') if proyecto['fecha_fin'] else ''
+    proyecto['fecha_recepcion_evaluacion'] = (
+        proyecto['fecha_recepcion_evaluacion'].strftime('%Y-%m-%d')
+        if proyecto['fecha_recepcion_evaluacion'] else ''
+    )
+    proyecto['fecha_cierre_proyecto'] = (
+        proyecto['fecha_cierre_proyecto'].strftime('%Y-%m-%d')
+        if proyecto['fecha_cierre_proyecto'] else ''
+    )
 
     context = {
         'proyecto': proyecto,
         'administradores': administradores
     }
     return render(request, "editar_proyecto.html", context)
+
 
 
 def editar_contrato(request, contrato_id):
@@ -1219,12 +1230,16 @@ def editar_cliente(request, cliente_id):
     cliente = get_object_or_404(Cliente, id=cliente_id)
     return render(request, 'usuario/editar_cliente.html', {'cliente': cliente})
 
+@login_required
 def editar_maquina(request, maquina_id):
     with connection.cursor() as cursor:
+        # Buscar los datos de la máquina
         cursor.execute("""
-            SELECT id, nombre, abreviatura, marca, modelo, anio_fabricacion, tipo, descripcion, proyecto_id
-            FROM maquinas
-            WHERE id = %s
+            SELECT m.id, m.nombre, m.abreviatura, m.marca, m.modelo, m.anio_fabricacion,
+                   m.tipo, m.descripcion, pm.proyecto_id
+            FROM maquinas m
+            LEFT JOIN proyecto_maquina pm ON pm.maquina_id = m.id
+            WHERE m.id = %s
         """, [maquina_id])
         row = cursor.fetchone()
 
@@ -1240,7 +1255,7 @@ def editar_maquina(request, maquina_id):
         'anio_fabricacion': row[5],
         'tipo': row[6],
         'descripcion': row[7],
-        'proyecto_id': row[8],
+        'proyecto_id': row[8],  # ← tomado desde proyecto_maquina
     }
 
     return render(request, 'editar_maquina.html', {'maquina': maquina})

@@ -50,12 +50,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'Gestion_Doc.wsgi.application'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/usuario/inicio'
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+
 
 STATIC_URL = 'static/'
 
