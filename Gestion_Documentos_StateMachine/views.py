@@ -104,7 +104,6 @@ def simulador_estado(request):
 
 
 
-#################
 @login_required
 def lista_documentos_asignados(request):
     """
@@ -157,6 +156,7 @@ def lista_documentos_asignados(request):
         ON RDT.proyecto_id = P.id
     INNER JOIN public.requerimiento_equipo_rol RER
         ON RDT.id = RER.requerimiento_id
+        AND RER.activo = TRUE
     INNER JOIN public.roles_ciclodocumento RR
         ON RER.rol_id = RR.id
     WHERE RER.usuario_id = %s
@@ -225,8 +225,6 @@ def lista_documentos_asignados(request):
         "Re Estructuración": "danger",
     }
 
-
-
     context = {
         "documentos_por_proyecto": documentos_por_proyecto,
         "total_docs": total_docs,
@@ -240,6 +238,7 @@ def lista_documentos_asignados(request):
     }
 
     return render(request, "lista_documentos_asignados.html", context)
+
 
 def generar_signed_url(documento_id, version):
     # Aquí va la lógica de tu storage para obtener URL firmada
@@ -329,19 +328,26 @@ def detalle_documento(request, requerimiento_id):
                 COALESCE(EA.nombre, 'Borrador') AS estado_actual,
                 P.nombre AS nombre_proyecto
             FROM public.requerimiento_documento_tecnico RDT
-            INNER JOIN public.tipo_documentos_tecnicos TDT ON RDT.tipo_documento_id = TDT.id
-            INNER JOIN public.categoria_documentos_tecnicos CDT ON TDT.categoria_id = CDT.id
+            INNER JOIN public.tipo_documentos_tecnicos TDT 
+                ON RDT.tipo_documento_id = TDT.id
+            INNER JOIN public.categoria_documentos_tecnicos CDT 
+                ON TDT.categoria_id = CDT.id
             LEFT JOIN public.requerimiento_equipo_rol RER 
-                ON RDT.id = RER.requerimiento_id AND RER.usuario_id = %s
-            LEFT JOIN public.roles_ciclodocumento RR ON RER.rol_id = RR.id
-            INNER JOIN public.proyectos P ON RDT.proyecto_id = P.id
-            LEFT JOIN public.estado_documento EA ON EA.id = (
-                SELECT estado_destino_id
-                FROM public.log_estado_requerimiento_documento
-                WHERE requerimiento_id = RDT.id
-                ORDER BY fecha_cambio DESC
-                LIMIT 1
-            )
+                ON RDT.id = RER.requerimiento_id 
+                AND RER.usuario_id = %s
+                AND RER.activo = TRUE
+            LEFT JOIN public.roles_ciclodocumento RR 
+                ON RER.rol_id = RR.id
+            INNER JOIN public.proyectos P 
+                ON RDT.proyecto_id = P.id
+            LEFT JOIN public.estado_documento EA 
+                ON EA.id = (
+                    SELECT estado_destino_id
+                    FROM public.log_estado_requerimiento_documento
+                    WHERE requerimiento_id = RDT.id
+                    ORDER BY fecha_cambio DESC
+                    LIMIT 1
+                )
             WHERE RDT.id = %s
             LIMIT 1
         """, [request.user.id, requerimiento_id])
@@ -470,6 +476,14 @@ def detalle_documento(request, requerimiento_id):
     }
     estado_css = colores_estado.get(documento["estado_actual"], "secondary")
 
+    # 🚫 Validación adicional: el usuario no debería ver el documento si su rol no tiene eventos disponibles
+    if not eventos:
+        messages.warning(
+            request,
+            f"No tienes acciones pendientes para el documento en estado '{estado_inicial}'."
+        )
+        return redirect("lista_documentos_asignados")
+
     context = {
         "documento": documento,
         "estado_actual": documento["estado_actual"],
@@ -477,7 +491,7 @@ def detalle_documento(request, requerimiento_id):
         "estado_css": estado_css,
         "eventos_tuplas": eventos_tuplas,
         "historial_estados": historial_estados,
-        "historial_versiones": historial_versiones,  # <-- Aquí se pasa al template
+        "historial_versiones": historial_versiones,
         "historial_simulador": historial_simulador,
         "eventos_con_comentario": eventos_con_comentario,
     }
