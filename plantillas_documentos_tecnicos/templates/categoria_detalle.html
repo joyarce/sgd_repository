@@ -1,64 +1,64 @@
+<!-- categoria_detalle.html -->
 {% extends "base.html" %}
 
 {% block title %}Detalle de Categoría: {{ categoria.nombre }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container py-4">
+
     <a href="{% url 'plantillas:lista_plantillas' %}" class="btn btn-sm btn-outline-secondary mb-3">
-        ← Volver a categorías
+        <i class="bi bi-arrow-left"></i> Volver a categorías
     </a>
 
-    <h2 class="mb-4">Detalle de Categoría: {{ categoria.nombre }}</h2>
+    <!-- Información de la categoría -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <h3 class="fw-semibold text-dark mb-2">
+                {{ categoria.nombre }}
+                {% if categoria.abreviatura %}
+                    <span class="badge bg-light text-muted border ms-1">{{ categoria.abreviatura }}</span>
+                {% endif %}
+            </h3>
+            <div>
+                <h6 class="fw-bold text-secondary mb-2">Descripción</h6>
+                <p class="text-muted">{{ categoria.descripcion|default:"Sin descripción disponible." }}</p>
+            </div>
+        </div>
+    </div>
 
-    <table class="table table-bordered table-hover align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>ID</th>
-                <th>Nombre (Abreviatura)</th>
-                <th>Descripción</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>{{ categoria.id }}</td>
-                <td>
-                    {{ categoria.nombre }}
-                    {% if categoria.abreviatura %}
-                        <span class="text-muted small">({{ categoria.abreviatura }})</span>
-                    {% endif %}
-                </td>
-                <td>{{ categoria.descripcion|default:"—" }}</td>
-            </tr>
-        </tbody>
-    </table>
+    <!-- Tipos de documentos asociados -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <h5 class="fw-semibold text-dark mb-3">Tipos de Documentos Asociados</h5>
 
-    <h4 class="mt-4 mb-3">Tipos de Documentos Asociados</h4>
-    {% if tipos %}
-        <table class="table table-bordered table-hover align-middle">
-            <thead class="table-secondary">
-                <tr>
-                    <th>ID</th>
-                    <th>Nombre (Abreviatura)</th>
-                    <th>Descripción</th>
-                </tr>
-            </thead>
-            <tbody>
+            {% if tipos %}
                 {% for tipo in tipos %}
-                <tr>
-                    <td>{{ tipo.id }}</td>
-                    <td>
-                        {{ tipo.nombre }}
+                <div class="mb-3">
+                    <h6 class="fw-bold">{{ tipo.nombre }}
                         {% if tipo.abreviatura %}
-                            <span class="text-muted small">({{ tipo.abreviatura }})</span>
+                            <span class="badge bg-light text-muted border ms-1">{{ tipo.abreviatura }}</span>
                         {% endif %}
-                    </td>
-                    <td>{{ tipo.descripcion|default:"—" }}</td>
-                </tr>
+                    </h6>
+                    <p class="text-muted">{{ tipo.descripcion|default:"Sin descripción disponible." }}</p>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p class="text-muted fst-italic">No hay tipos de documentos registrados para esta categoría.</p>
-    {% endif %}
+            {% else %}
+                <p class="text-muted fst-italic">No hay tipos de documentos registrados para esta categoría.</p>
+            {% endif %}
+        </div>
+    </div>
+
 </div>
+
+<style>
+.card {
+    border-radius: 12px;
+}
+.card .badge {
+    font-size: 0.85em;
+}
+.card p {
+    margin-bottom: 0;
+}
+</style>
 {% endblock %}

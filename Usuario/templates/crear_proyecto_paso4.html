@@ -1,28 +1,62 @@
 <!-- crear_proyecto_paso4.html -->
-
 <div class="step-inner">
-    <h3>Paso 4: Máquinas</h3>
-    <div class="form-card">
-        <label>Máquinas del Proyecto:</label>
-        <select name="maquinas[]" style="width:100%;">
-            <option value="">-- Seleccione una máquina --</option>
-            {% for maquina in maquinas %}
-            <option value="{{ maquina.id }}"
-                {% if maquina.id|stringformat:"s" in proyecto_temp.maquinas %}selected{% endif %}>
-                {{ maquina.nombre }}
-            </option>
-            {% endfor %}
-        </select>
+    <h3>Paso 4: Grupos y Roles</h3>
 
-        <div id="mas-maquinas"></div>
-        <button type="button" onclick="agregarMaquina()">+ Agregar otra máquina</button>
+    {% if form_error %}
+        <p style="color: red; text-align: center; font-weight: bold;">Error: {{ form_error }}</p>
+    {% endif %}
+
+    <div id="grupos-seleccion-container">
+        {% for grupo in grupos_maestros %}
+        {% with safe_id=grupo.nombre|lower|slugify %}
+        <div class="grupo-item">
+            <div class="grupo-header">
+                <label style="margin:0; display:flex; align-items:center;">
+                    <input type="checkbox" name="grupo_checkbox" value="{{ grupo.nombre }}" data-safe-id="{{ safe_id }}">
+                    {{ grupo.nombre }}
+                </label>
+                <span class="toggle-icon">▶</span>
+            </div>
+
+            <div id="documentos-{{ safe_id }}" class="documento-list">
+                {% for doc in documentos %}
+                    {% if doc.categoria_id == grupo.id %}
+                    <label class="documento-item">
+                        <input type="checkbox" name="documento_{{ safe_id }}[]" value="{{ doc.id }}" data-safe-id="{{ safe_id }}">
+                        {{ doc.nombre }}
+                    </label>
+
+                    <div class="roles-documento" id="roles-{{ safe_id }}-{{ doc.id }}">
+                        <div class="role-group">
+                            <label>Redactor:</label>
+                            <div class="user-selection-container">
+                                {% for user in usuarios %}
+                                <label><input type="checkbox" name="redactor_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="role-group">
+                            <label>Revisor:</label>
+                            <div class="user-selection-container">
+                                {% for user in usuarios %}
+                                <label><input type="checkbox" name="revisor_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="role-group">
+                            <label>Aprobador:</label>
+                            <div class="user-selection-container">
+                                {% for user in usuarios %}
+                                <label><input type="checkbox" name="aprobador_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
     </div>
-</div> 
-
-<script>
-function agregarMaquina() {
-    const div = document.createElement('div');
-    div.innerHTML = '<input type="text" name="maquinas[]" placeholder="Ingrese el nombre de la máquina" style="margin-top:5px; width:100%;">';
-    document.getElementById('mas-maquinas').appendChild(div);
-}
-</script>
+</div>

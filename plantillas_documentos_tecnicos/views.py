@@ -113,15 +113,18 @@ def dictfetchone(cursor):
 
 def tipo_detalle(request, tipo_id):
     """
-    Muestra la información detallada de un tipo de documento técnico.
+    Muestra la información detallada de un tipo de documento técnico,
+    incluyendo etiquetas, tablas y columnas asociadas.
     """
     with connection.cursor() as cursor:
+        # Datos principales del tipo de documento
         cursor.execute("""
             SELECT 
                 t.id,
                 t.nombre,
                 t.descripcion,
                 t.creado_en,
+                t.abreviatura,
                 c.id AS categoria_id,
                 c.nombre AS categoria_nombre,
                 c.descripcion AS categoria_descripcion
@@ -131,20 +134,51 @@ def tipo_detalle(request, tipo_id):
         """, [tipo_id])
         row = cursor.fetchone()
 
-    if not row:
-        return render(request, "404.html", status=404)
+        if not row:
+            return render(request, "404.html", status=404)
 
-    tipo = {
-        "id": row[0],
-        "nombre": row[1],
-        "descripcion": row[2],
-        "creado_en": row[3],
-        "categoria_id": row[4],
-        "categoria_nombre": row[5],
-        "categoria_descripcion": row[6],
-    }
+        tipo = {
+            "id": row[0],
+            "nombre": row[1],
+            "descripcion": row[2],
+            "creado_en": row[3],
+            "abreviatura": row[4],
+            "categoria_id": row[5],
+            "categoria_nombre": row[6],
+            "categoria_descripcion": row[7],
+        }
 
-    return render(request, "tipo_detalle.html", {"tipo": tipo})
+        # Etiquetas (Metadatos de Campos)
+        cursor.execute("""
+            SELECT nombre FROM metadato_documento_campo
+            WHERE documento_id = %s
+            ORDER BY nombre
+        """, [tipo_id])
+        etiquetas = [r[0] for r in cursor.fetchall()]
+
+        # Tablas asociadas
+        cursor.execute("""
+            SELECT id, nombre FROM metadato_documento_tabla
+            WHERE documento_id = %s
+            ORDER BY nombre
+        """, [tipo_id])
+        tablas = [{"id": r[0], "nombre": r[1], "columnas": []} for r in cursor.fetchall()]
+
+        # Columnas por tabla
+        for tabla in tablas:
+            cursor.execute("""
+                SELECT nombre FROM metadato_documento_columna
+                WHERE tabla_id = %s
+                ORDER BY nombre
+            """, [tabla["id"]])
+            tabla["columnas"] = [c[0] for c in cursor.fetchall()]
+
+    return render(request, "tipo_detalle.html", {
+        "tipo": tipo,
+        "etiquetas": etiquetas,
+        "tablas": tablas
+    })
+
 
 
 

@@ -1,4 +1,3 @@
-<!-- nuevo_requerimiento.html -->
 {% extends "base.html" %}
 {% block title %}Nuevo Requerimiento Técnico{% endblock %}
 
@@ -60,7 +59,8 @@ select[multiple] option:checked { background-color: var(--metso-orange); color:#
         <p><strong>Estado:</strong> <strong style="color: #4CAF50;">En borrador</strong></p>
     </div>
 
-    <form method="POST">
+    <!-- FORMULARIO PRINCIPAL -->
+    <form method="POST" id="requerimiento-form">
         {% csrf_token %}
         {% include "nuevo_requerimiento_paso1.html" %}
         {% include "nuevo_requerimiento_paso2.html" %}
@@ -104,6 +104,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     showStep(currentStep);
+
+    // Depuración del submit
+    document.getElementById('requerimiento-form').addEventListener('submit', function(e){
+        console.log('Formulario enviado');
+        // e.preventDefault(); // descomenta para probar sin enviar al servidor
+    });
 });
 </script>
 {% endblock %}

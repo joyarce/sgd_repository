@@ -1,3 +1,4 @@
+<!-- detalle_documento.html -->
 {% extends "base.html" %}
 
 {% block title %}Detalle del Documento | Gestión Documental{% endblock %}
@@ -54,6 +55,7 @@
 
     <hr>
 
+    <!-- Historial de Estados -->
     <h4 class="mb-3">Historial de Estados</h4>
     <div class="table-responsive mb-5">
         <table class="table table-striped table-hover align-middle">
@@ -77,6 +79,48 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Historial de Versiones -->
+    <h4 class="mb-3">Historial de Versiones</h4>
+    <div class="table-responsive mb-5">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Versión</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th>Usuario</th>
+                    <th>Comentario</th>
+                    <th>URL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in historial_versiones %}
+                <tr>
+                    <td>{{ v.version }}</td>
+                    <td>{{ v.estado.nombre }}</td>
+                    <td>{{ v.fecha|date:"d-m-Y H:i" }}</td>
+                    <td>
+                        {% if v.usuario %}
+                            {{ v.usuario.nombre }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ v.comentario|default:"-" }}</td>
+                    <td>
+                        {% if v.signed_url %}
+                            <a href="{{ v.signed_url }}" target="_blank">Ver</a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
     {% endif %}
 </div>
 

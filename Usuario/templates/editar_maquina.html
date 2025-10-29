@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="container">
-    <h1>Editar Máquina (Prueba)</h1>
+    <h1>Editar Máquina</h1>
 
     <form id="editar-maquina-form">
         <div class="card">
@@ -13,8 +13,8 @@
                 <input type="text" name="nombre" value="{{ maquina.nombre }}" class="form-input">
             </div>
             <div class="indicator">
-                <span>Código:</span>
-                <input type="text" name="codigo_equipo" value="{{ maquina.codigo_equipo }}" class="form-input readonly-input" readonly>
+                <span>Abreviatura:</span>
+                <input type="text" name="abreviatura" value="{{ maquina.abreviatura }}" class="form-input readonly-input" readonly>
                 <div class="form-text">Campo de solo lectura (no editable).</div>
             </div>
             <div class="indicator">
@@ -40,13 +40,8 @@
         </div>
 
         <div style="margin-top:20px;">
-            <!-- Botón Volver -->
             <a href="{% url 'usuario:detalle_proyecto' maquina.proyecto_id %}" class="btn btn-secondary">← Volver</a>
-
-            <!-- Botón Guardar (sin acción aún) -->
             <button type="submit" class="btn btn-primary" style="margin-left:10px;">💾 Guardar</button>
-
-            <!-- Botón Eliminar (solo visual, por ahora) -->
             <button type="button" class="btn btn-danger" style="margin-left:10px;" 
                     onclick="console.log('Eliminar máquina {{ maquina.id }}');">
                 🗑️ Eliminar
@@ -80,7 +75,6 @@
         resize: vertical;
     }
 
-    /* Estilo para campo de solo lectura */
     .readonly-input {
         background-color: #f0f0f0;
         color: #555;

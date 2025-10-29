@@ -1,6 +1,8 @@
+
 from statemachine import StateMachine, State
 
 class DocumentoTecnicoStateMachine(StateMachine):
+    # Estados
     borrador = State("Borrador", initial=True)
     en_elaboracion = State("En Elaboración")
     en_revision = State("En Revisión")
@@ -9,6 +11,7 @@ class DocumentoTecnicoStateMachine(StateMachine):
     aprobado = State("Aprobado. Listo para Publicación")
     publicado = State("Publicado", final=True)
 
+    # Transiciones
     crear_documento = borrador.to(en_elaboracion)
     enviar_revision = en_elaboracion.to(en_revision)
     revision_aceptada = en_revision.to(en_aprobacion)
@@ -22,42 +25,64 @@ class DocumentoTecnicoStateMachine(StateMachine):
         super().__init__()
         self.rol_id = rol_id
         if estado_inicial:
+            # Inicializar en un estado específico
             for s in self.states:
                 if s.name == estado_inicial:
                     self.current_state = s
                     break
 
-    def puede_transicionar(self, evento):
+    def puede_transicionar(self, evento: str) -> bool:
+        """
+        Devuelve True si el rol puede ejecutar la transición
+        desde el estado actual.
+        """
+        # Permisos por rol (1=Redactor, 2=Revisor, 3=Aprobador)
         permisos = {
-            # Redactor
             "crear_documento": [1],
             "enviar_revision": [1],
             "reenviar_revision": [1],
-            # Revisor
             "revision_aceptada": [2],
             "rechazar_revision": [2],
-            # Aprobador
             "aprobar_documento": [3],
             "rechazar_aprobacion": [3],
             "publicar_documento": [3],
         }
-    
+
+        # Verifica que el evento exista
+        if evento not in permisos:
+            return False
+
+        # Restricciones especiales por estado para Redactor
+        if self.rol_id == 1:
+            estado = self.current_state.name
+            if estado == "Borrador":
+                return evento == "crear_documento"
+            if estado == "En Elaboración":
+                return evento == "enviar_revision"
+            if estado == "Re Estructuración":
+                return evento == "reenviar_revision"
+
+        # Restricciones generales por rol
+        if self.rol_id not in permisos[evento]:
+            return False
+
         # Evitar publicar si no está aprobado
         if evento == "publicar_documento" and self.current_state != self.aprobado:
             return False
-    
-        # Restricción especial por estado
-        if self.rol_id == 1:  # Redactor
-            if self.current_state.name == "Re Estructuración":
-                # Solo puede reenviar a revisión
-                return evento == "reenviar_revision"
-            elif self.current_state.name == "En Elaboración":
-                # Solo puede enviar a revisión
-                return evento == "enviar_revision"
-            elif self.current_state.name == "Borrador":
-                # Solo puede crear documento
-                return evento == "crear_documento"
-    
-        # Restricciones por rol generales
-        return self.rol_id in permisos.get(evento, [])
+
+        return True
+
+    def evento_genera_version(self, evento: str) -> bool:
+        """
+        Indica si la transición genera nueva versión del documento.
+        Ahora incluye enviar_revision para crear versión inicial con URL.
+        """
+        return evento in [
+            "enviar_revision",
+            "revision_aceptada",
+            "rechazar_revision",
+            "aprobar_documento",
+            "rechazar_aprobacion",
+            "reenviar_revision"
+        ]
     

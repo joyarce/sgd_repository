@@ -11,6 +11,7 @@ from datetime import datetime
 from django.shortcuts import render
 from django.db import connection
 from .models import FilePreview
+from django.views.decorators.csrf import csrf_exempt
 from django.db import connection 
 from collections import defaultdict
 import json 
@@ -145,10 +146,9 @@ def detalle_proyecto(request, proyecto_id):
     - Proyecto
     - Contrato
     - Cliente
-    - Máquinas
-    - Requerimientos de documentos técnicos con su último estado
+    - Máquinas (usa abreviatura)
+    - Requerimientos
     """
-
     sql = """
     WITH UltimoEstado AS (
         SELECT
@@ -195,7 +195,7 @@ def detalle_proyecto(request, proyecto_id):
         CL.correo_contacto AS cliente_correo,
         CL.telefono_contacto AS cliente_telefono,
 
-        -- Requerimientos de Documento Técnico
+        -- Requerimientos
         RDT.id AS requerimiento_id,
         TDT.nombre AS nombre_documento_tecnico,
         E.nombre AS estado_actual_documento,
@@ -204,7 +204,7 @@ def detalle_proyecto(request, proyecto_id):
         -- Máquinas
         M.id AS maquina_id,
         M.nombre AS maquina_nombre,
-        M.codigo_equipo,
+        M.abreviatura,
         M.marca,
         M.modelo,
         M.anio_fabricacion,
@@ -230,31 +230,7 @@ def detalle_proyecto(request, proyecto_id):
         columns = [col[0] for col in cursor.description]
         resultados = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-    proyecto_info = resultados[0] if resultados else {
-        'proyecto_id': proyecto_id,
-        'nombre_proyecto': '',
-        'proyecto_descripcion': '',
-        'numero_orden': '',
-        'administrador_nombre_completo': '',
-        'administrador_email': '',
-        'nombre_faena': '',
-        'numero_contrato': '',
-        'monto_total': '',
-        'contrato_fecha_creacion': None,
-        'representante_cliente_nombre': '',
-        'representante_cliente_correo': '',
-        'representante_cliente_telefono': '',
-        'cliente_nombre': '',
-        'cliente_rut': '',
-        'cliente_direccion': '',
-        'cliente_correo': '',
-        'cliente_telefono': '',
-        'fecha_recepcion_evaluacion': None,
-        'fecha_inicio_planificacion': None,
-        'fecha_inicio_ejecucion': None,
-        'fecha_cierre_proyecto': None,
-    }
-
+    proyecto_info = resultados[0] if resultados else {}
     requerimientos, maquinas = [], []
     req_ids, maquina_ids = set(), set()
 
@@ -272,7 +248,7 @@ def detalle_proyecto(request, proyecto_id):
             maquinas.append({
                 'id': row['maquina_id'],
                 'nombre': row['maquina_nombre'],
-                'codigo_equipo': row['codigo_equipo'],
+                'abreviatura': row['abreviatura'],
                 'marca': row['marca'],
                 'modelo': row['modelo'],
                 'anio_fabricacion': row['anio_fabricacion'],
@@ -281,13 +257,11 @@ def detalle_proyecto(request, proyecto_id):
             })
             maquina_ids.add(row['maquina_id'])
 
-    context = {
+    return render(request, "usuario_proyecto_detalle.html", {
         'proyecto': proyecto_info,
         'requerimientos': requerimientos,
         'maquinas': maquinas,
-    }
-
-    return render(request, "usuario_proyecto_detalle.html", context)
+    })
 
 
 
@@ -550,27 +524,21 @@ def new_folder(request):
                 return HttpResponse(f"Error al crear carpeta: {e}", status=500)
     return redirect("list_files")
 
-@login_required
+
+@login_required 
 def nuevo_requerimiento(request, proyecto_id):
     from django.utils import timezone
+    from django.db import transaction
+    from django.db import connection
 
     # --- Obtener info del proyecto ---
     with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT id, nombre, descripcion
-            FROM proyectos
-            WHERE id = %s;
-        """, [proyecto_id])
+        cursor.execute("SELECT id, nombre, descripcion FROM proyectos WHERE id=%s;", [proyecto_id])
         row = cursor.fetchone()
-
     if not row:
         return render(request, "error.html", {"mensaje": "Proyecto no encontrado."})
 
-    proyecto = {
-        "id": row[0],
-        "nombre": row[1],
-        "descripcion": row[2],
-    }
+    proyecto = {"id": row[0], "nombre": row[1], "descripcion": row[2]}
 
     # --- Obtener tipos de documento técnico ---
     with connection.cursor() as cursor:
@@ -582,83 +550,65 @@ def nuevo_requerimiento(request, proyecto_id):
         cursor.execute("SELECT id, nombre, email FROM usuarios ORDER BY nombre;")
         usuarios = cursor.fetchall()
 
-    # --- Si el formulario fue enviado ---
     if request.method == "POST":
+        # --- Paso 1: detalles ---
         tipo_doc_id = request.POST.get("tipo_documento")
         observaciones = request.POST.get("observaciones", "")
+
+        # --- Paso 2: planificación ---
+        fecha_primera_revision = request.POST.get("fecha_primera_revision")
+        alertar_dias_revision = request.POST.get("alertar_dias_revision")
+        fecha_entrega = request.POST.get("fecha_entrega")
+        alertar_dias_entrega = request.POST.get("alertar_dias_entrega")
+
+        # --- Paso 3: roles ---
         redactores = request.POST.getlist("redactores")
         revisores = request.POST.getlist("revisores")
         aprobadores = request.POST.getlist("aprobadores")
 
-        print("\n--- 📦 DATOS QUE SE GUARDARÍAN ---")
-        print(f"Proyecto ID: {proyecto_id}")
-        print(f"Tipo Documento ID: {tipo_doc_id}")
-        print(f"Observaciones: {observaciones}")
-        print(f"Redactores: {redactores}")
-        print(f"Revisores: {revisores}")
-        print(f"Aprobadores: {aprobadores}")
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    # 1️⃣ Insertar requerimiento
+                    cursor.execute("""
+                        INSERT INTO requerimiento_documento_tecnico
+                        (proyecto_id, tipo_documento_id, fecha_registro, observaciones)
+                        VALUES (%s, %s, %s, %s)
+                        RETURNING id;
+                    """, [proyecto_id, tipo_doc_id, timezone.now(), observaciones])
+                    req_id = cursor.fetchone()[0]
 
-        # Simulación de requerimiento_documento_tecnico
-        print("\n🧾 Requerimiento Documento Técnico:")
-        print({
-            "proyecto_id": proyecto_id,
-            "tipo_documento_id": tipo_doc_id,
-            "fecha_registro": timezone.now(),
-            "observaciones": observaciones
-        })
+                    # 2️⃣ Insertar log inicial
+                    cursor.execute("""
+                        INSERT INTO log_estado_requerimiento_documento
+                        (requerimiento_id, usuario_id, estado_origen_id, estado_destino_id, created_at, observaciones)
+                        VALUES (%s, %s, %s, %s, %s, %s);
+                    """, [req_id, request.user.id, None, 1, timezone.now(),
+                          "El sistema ha habilitado la plantilla en el repositorio."])
 
-        # Simulación de log_estado_requerimiento_documento
-        print("\n🪶 Log Estado Requerimiento Documento:")
-        print({
-            "requerimiento_id": "(simulado)",
-            "usuario_id": None,
-            "estado_origen_id": None,
-            "estado_destino_id": "ID de 'Borrador'",
-            "created_at": timezone.now(),
-            "observaciones": "El sistema ha habilitado la plantilla en el repositorio."
-        })
+                    # 3️⃣ Insertar roles asignados
+                    def insertar_roles(lista_usuarios, rol_id):
+                        for u in lista_usuarios:
+                            cursor.execute("""
+                                INSERT INTO requerimiento_equipo_rol
+                                (requerimiento_id, usuario_id, rol_id, fecha_asignacion, activo)
+                                VALUES (%s, %s, %s, %s, TRUE);
+                            """, [req_id, u, rol_id, timezone.now()])
 
-        # Simulación de roles asignados
-        def simular_roles(nombre_rol, lista, rol_id):
-            for u in lista:
-                print({
-                    "requerimiento_id": "(simulado)",
-                    "usuario_id": u,
-                    "rol_id": rol_id,
-                    "fecha_asignacion": timezone.now(),
-                    "activo": True
-                })
+                    insertar_roles(redactores, 1)
+                    insertar_roles(revisores, 2)
+                    insertar_roles(aprobadores, 3)
 
-        print("\n👩‍💻 Roles asignados:")
-        simular_roles("Redactor", redactores, 1)
-        simular_roles("Revisor", revisores, 2)
-        simular_roles("Aprobador", aprobadores, 3)
+            return redirect('usuario:detalle_proyecto', proyecto_id=proyecto_id)
 
-        print("\n✅ Fin de simulación. Nada se guardó en la base de datos.\n")
-
-        # --- IMPORTANTE ---
-        # Comentar o eliminar los INSERT reales
-        """
-        with connection.cursor() as cursor:
-            # 1️⃣ Insertar en requerimiento_documento_tecnico
-            cursor.execute(...)
-            req_id = cursor.fetchone()[0]
-
-            # 2️⃣ Log inicial
-            cursor.execute(...)
-
-            # 3️⃣ Asignar roles
-            ...
-        """
-
-        return redirect('usuario:detalle_proyecto', proyecto_id=proyecto_id)
+        except Exception as e:
+            return render(request, "error.html", {"mensaje": f"Error al crear el requerimiento: {str(e)}"})
 
     return render(request, "nuevo_requerimiento.html", {
         "proyecto": proyecto,
         "tipos_documento": tipos_documento,
         "usuarios": usuarios,
     })
-
 
 
 
@@ -789,63 +739,64 @@ import pprint
 
 @login_required
 def crear_proyecto(request):
-    # Limpiar cualquier proyecto temporal previo
-    if 'proyecto_temp' in request.session:
-        del request.session['proyecto_temp']
+    # Limpiar o inicializar proyecto temporal
+    if 'proyecto_temp' not in request.session:
+        request.session['proyecto_temp'] = {}
+    proyecto_temp = request.session['proyecto_temp']
+
+    # Inicializar campos nuevos
+    for campo in ['fecha_recepcion_evaluacion', 'fecha_inicio_planificacion', 'fecha_inicio_ejecucion', 'fecha_cierre_proyecto', 'abreviatura']:
+        proyecto_temp.setdefault(campo, '')
+    request.session['proyecto_temp'] = proyecto_temp
 
     steps = [
         "Datos Generales",
         "Contrato",
         "Cliente",
-        "Máquinas",
         "Grupos y Documentos",
         "Confirmación"
     ]
-    
-    # --- Datos para formularios ---
+
+    # --- Datos de apoyo ---
     with connection.cursor() as cursor:
+        # Todos los usuarios
         cursor.execute("SELECT id, nombre, email FROM usuarios ORDER BY nombre")
         usuarios = [{"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()]
 
-        cursor.execute("SELECT u.id, u.nombre, u.email FROM usuarios u WHERE u.cargo_id = 4 ORDER BY u.nombre")
+        # Administradores (cargo_id = 4)
+        cursor.execute("SELECT id, nombre, email FROM usuarios WHERE cargo_id = 4 ORDER BY nombre")
         usuarios_administrador = [{"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()]
 
+        # Categorías y tipos de documentos
         cursor.execute("SELECT id, nombre, descripcion FROM categoria_documentos_tecnicos ORDER BY nombre")
         grupos_maestros = [{"id": r[0], "nombre": r[1], "descripcion": r[2]} for r in cursor.fetchall()]
 
         cursor.execute("SELECT id, categoria_id, nombre FROM tipo_documentos_tecnicos ORDER BY nombre")
         documentos = [{"id": r[0], "categoria_id": r[1], "nombre": r[2]} for r in cursor.fetchall()]
 
-        cursor.execute("SELECT id, nombre FROM maquinas ORDER BY nombre")
-        maquinas = [{"id": r[0], "nombre": r[1]} for r in cursor.fetchall()]
+        # 🧩 MÁQUINAS → incluye abreviatura (ya reemplazó a codigo_equipo)
+        cursor.execute("SELECT id, nombre, abreviatura FROM maquinas ORDER BY nombre")
+        maquinas = [{"id": r[0], "nombre": r[1], "abreviatura": r[2] or ""} for r in cursor.fetchall()]
 
-    proyecto_temp = request.session.get('proyecto_temp', {})
-
-    # --- Transformar datos para Paso 6 ---
+    # --- Paso 6: transformación de datos temporales ---
     grupos_list = []
     for key, value in proyecto_temp.items():
         if key.startswith("grupo_"):
             grupo_name = key.replace("grupo_", "")
             documentos_list = []
 
-            # Buscar documentos asociados a este grupo
             for doc_key, doc_ids in proyecto_temp.items():
                 prefix = f"documento_{grupo_name.lower().replace(' ', '-')}_"
                 if doc_key.startswith(prefix):
                     for doc_id in doc_ids:
-                        # Asegurarse que los roles son listas
-                        redactor_ids = proyecto_temp.get(f"redactor_id_{doc_id}", [])
-                        revisor_ids = proyecto_temp.get(f"revisor_id_{doc_id}", [])
-                        aprobador_ids = proyecto_temp.get(f"aprobador_id_{doc_id}", [])
-
                         def to_list(x):
                             if isinstance(x, (str, int)):
                                 return [str(x)]
                             return [str(i) for i in x]
 
-                        redactor_ids = to_list(redactor_ids)
-                        revisor_ids = to_list(revisor_ids)
-                        aprobador_ids = to_list(aprobador_ids)
+                        redactor_ids = to_list(proyecto_temp.get(f"redactor_id_{doc_id}", []))
+                        revisor_ids = to_list(proyecto_temp.get(f"revisor_id_{doc_id}", []))
+                        aprobador_ids = to_list(proyecto_temp.get(f"aprobador_id_{doc_id}", []))
 
                         def get_user_names(ids):
                             names = [u["nombre"] for u in usuarios if str(u["id"]) in ids]
@@ -858,10 +809,7 @@ def crear_proyecto(request):
                             "aprobador": ", ".join(get_user_names(aprobador_ids)),
                         })
 
-            grupos_list.append({
-                "nombre": grupo_name,
-                "documentos": documentos_list
-            })
+            grupos_list.append({"nombre": grupo_name, "documentos": documentos_list})
 
     proyecto_temp['grupos'] = grupos_list
 
@@ -872,10 +820,8 @@ def crear_proyecto(request):
             proyecto_data = proyecto_temp
 
         import pprint; pprint.pprint(proyecto_data)
-
         if 'proyecto_temp' in request.session:
             del request.session['proyecto_temp']
-
         return JsonResponse({"status": "ok"})
 
     return render(request, "crear_proyecto.html", {
@@ -897,11 +843,7 @@ def guardar_paso_proyecto(request):
         return JsonResponse({"error": "Método no permitido"}, status=405)
 
     try:
-        import json
-        print("💡 Cuerpo recibido raw:", request.body)
         data = json.loads(request.body)
-        print("💡 JSON parseado:", data)
-
         paso = int(data.get('paso', 0))
         form_data = data.get('form_data', {})
 
@@ -931,8 +873,45 @@ def guardar_paso_proyecto(request):
         traceback.print_exc()
         return JsonResponse({"error": str(e)}, status=400)
 
+@csrf_exempt
+@login_required
+def generar_abreviatura_proyecto(request):
+    """
+    Genera la abreviatura de un proyecto a partir de:
+    - nombre de la máquina
+    - descripcion
+    - fecha_recepcion_evaluacion
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Método no permitido"}, status=405)
 
+    try:
+        data = json.loads(request.body)
+        maquina = data.get("maquina", "").strip()
+        descripcion = data.get("descripcion", "").strip().upper()
+        fecha = data.get("fecha_recepcion_evaluacion", "").strip()
 
+        if not maquina or not descripcion or not fecha:
+            return JsonResponse({"abreviatura": ""})
+
+        # Formato MMYY
+        try:
+            fecha_obj = datetime.datetime.strptime(fecha, "%Y-%m-%d")
+            mes = f"{fecha_obj.month:02}"
+            anio = str(fecha_obj.year)[-2:]
+            fecha_formato = f"{mes}{anio}"
+        except ValueError:
+            fecha_formato = ""
+
+        nombre_limpio = maquina.replace(" ", "").upper()
+        descripcion_limpio = descripcion.replace(" ", "")
+
+        abreviatura = f"{nombre_limpio}.{descripcion_limpio}.{fecha_formato}"
+
+        return JsonResponse({"abreviatura": abreviatura})
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
 
 
 def obtener_numordenservicio(path_archivo):
@@ -951,8 +930,6 @@ def obtener_numordenservicio(path_archivo):
                 return ""
     return ""
 
-
-
 @login_required
 def leer_excel_numero_orden(request):
     if request.method == "POST" and request.FILES.get("archivo"):
@@ -968,38 +945,6 @@ def leer_excel_numero_orden(request):
         os.remove(tmp_path)
         return JsonResponse({"numero_orden": numero_orden})
     return JsonResponse({"numero_orden": ""})
-
-
-
-
-
-
-
-def generar_sigla(nombre_categoria, existentes):
-    """
-    Genera la sigla de acuerdo a las reglas descritas.
-    'existentes' es una lista de siglas ya registradas en la BD.
-    """
-    # Normalizar texto
-    nombre = unidecode.unidecode(nombre_categoria).strip().upper()
-    nombre = re.sub(r'[^A-Z\s]', '', nombre)  # solo letras y espacios
-    palabras = [p for p in nombre.split() if p not in ['Y', 'DE', 'DEL', 'LA', 'LOS', 'LTDA', 'SA', 'EMPRESA', 'COMPANIA', 'ASOCIACION', 'HERMANOS']]
-
-    # Generar sigla
-    if len(palabras) == 1:
-        sigla = palabras[0][:3]
-    else:
-        sigla = ''.join(p[0] for p in palabras)
-
-    # Asegurar unicidad
-    base = sigla
-    sufijo = 1
-    while sigla in existentes:
-        sigla = f"{base}{sufijo}"
-        sufijo += 1
-
-    return sigla
-
 
 
 @login_required
@@ -1159,10 +1104,6 @@ def editar_proyecto(request, proyecto_id):
     return render(request, "editar_proyecto.html", context)
 
 
-
-
-
-
 def editar_contrato(request, contrato_id):
     contrato = get_object_or_404(Contrato, id=contrato_id)
     return render(request, 'usuario/editar_contrato.html', {'contrato': contrato})
@@ -1174,7 +1115,7 @@ def editar_cliente(request, cliente_id):
 def editar_maquina(request, maquina_id):
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT id, nombre, codigo_equipo, marca, modelo, anio_fabricacion, tipo, descripcion, proyecto_id
+            SELECT id, nombre, abreviatura, marca, modelo, anio_fabricacion, tipo, descripcion, proyecto_id
             FROM maquinas
             WHERE id = %s
         """, [maquina_id])
@@ -1186,13 +1127,13 @@ def editar_maquina(request, maquina_id):
     maquina = {
         'id': row[0],
         'nombre': row[1],
-        'codigo_equipo': row[2],
+        'abreviatura': row[2],
         'marca': row[3],
         'modelo': row[4],
         'anio_fabricacion': row[5],
         'tipo': row[6],
         'descripcion': row[7],
-        'proyecto_id': row[8],  # <- agregado
+        'proyecto_id': row[8],
     }
 
     return render(request, 'editar_maquina.html', {'maquina': maquina})

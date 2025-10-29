@@ -187,7 +187,7 @@ table tr:hover { background: #fdf2e8; }
             {% for maquina in maquinas %}
             <tr style="cursor:pointer;" onclick="console.log('Detalle máquina {{ maquina.id }}');">
                 <td>{{ maquina.nombre }}</td>
-                <td>{{ maquina.codigo_equipo }}</td>
+                <td>{{ maquina.abreviatura  }}</td>
                 <td>{{ maquina.marca }}</td>
                 <td>{{ maquina.modelo }}</td>
                 <td>{{ maquina.anio_fabricacion }}</td>

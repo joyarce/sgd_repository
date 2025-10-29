@@ -1,62 +1,83 @@
-<!-- crear_proyecto_paso5.html -->
+{% load dict_extras %}
 <div class="step-inner">
-    <h3>Paso 5: Grupos y Roles</h3>
+    <h3>Paso 5: Confirmación de Datos</h3>
 
-    {% if form_error %}
-        <p style="color: red; text-align: center; font-weight: bold;">Error: {{ form_error }}</p>
-    {% endif %}
+    {% if not proyecto_temp %}
+        <p>No se encontraron datos guardados en la sesión. Revisa los pasos anteriores.</p>
+    {% else %}
+        <!-- Datos Generales -->
+        <h4>Datos Generales</h4>
+        <p><strong>Nombre:</strong> {{ proyecto_temp.nombre|default:"-" }}</p>
+        <p><strong>Descripción:</strong> {{ proyecto_temp.descripcion|default:"-" }}</p>
+        <p><strong>Abreviatura:</strong> {{ proyecto_temp.abreviatura|default:"-" }}</p>
+        <p><strong>Fecha Recepción / Evaluación:</strong> {{ proyecto_temp.fecha_recepcion_evaluacion|date:"d/m/Y"|default:"-" }}</p>
+        <p><strong>Fecha Inicio Planificación:</strong> {{ proyecto_temp.fecha_inicio_planificacion|date:"d/m/Y"|default:"-" }}</p>
+        <p><strong>Fecha Inicio Ejecución:</strong> {{ proyecto_temp.fecha_inicio_ejecucion|date:"d/m/Y"|default:"-" }}</p>
+        <p><strong>Fecha Cierre:</strong> {{ proyecto_temp.fecha_cierre_proyecto|date:"d/m/Y"|default:"-" }}</p>
+        <p><strong>Administrador:</strong>
+            {% for u in usuarios_administrador %}
+                {% if u.id|stringformat:"s" == proyecto_temp.administrador|stringformat:"s" %}
+                    {{ u.nombre }}
+                {% endif %}
+            {% endfor %}
+        </p>
+        <p><strong>Número de Orden:</strong> {{ proyecto_temp.numero_orden|default:"-" }}</p>
 
-    <div id="grupos-seleccion-container">
-        {% for grupo in grupos_maestros %}
-        {% with safe_id=grupo.nombre|lower|slugify %}
-        <div class="grupo-item">
-            <div class="grupo-header">
-                <label style="margin:0; display:flex; align-items:center;">
-                    <input type="checkbox" name="grupo_checkbox" value="{{ grupo.nombre }}" data-safe-id="{{ safe_id }}">
-                    {{ grupo.nombre }}
-                </label>
-                <span class="toggle-icon">▶</span>
-            </div>
+        <!-- Contrato -->
+        <h4>Contrato</h4>
+        <p><strong>Número de Contrato:</strong> {{ proyecto_temp.numero_contrato|default:"-" }}</p>
+        <p><strong>Monto Total:</strong> {{ proyecto_temp.monto_total|default:"-" }}</p>
+        <p><strong>Fecha Creación Contrato:</strong> {{ proyecto_temp.fecha_creacion|date:"d/m/Y"|default:"-" }}</p>
 
-            <div id="documentos-{{ safe_id }}" class="documento-list">
-                {% for doc in documentos %}
-                    {% if doc.categoria_id == grupo.id %}
-                    <label class="documento-item">
-                        <input type="checkbox" name="documento_{{ safe_id }}[]" value="{{ doc.id }}" data-safe-id="{{ safe_id }}">
-                        {{ doc.nombre }}
-                    </label>
+        <!-- Cliente -->
+        <h4>Cliente</h4>
+        <p><strong>Nombre:</strong> {{ proyecto_temp.cliente_nombre|default:"-" }}</p>
+        <p><strong>RUT:</strong> {{ proyecto_temp.cliente_rut|default:"-" }}</p>
+        <p><strong>Dirección:</strong> {{ proyecto_temp.cliente_direccion|default:"-" }}</p>
+        <p><strong>Correo:</strong> {{ proyecto_temp.cliente_correo|default:"-" }}</p>
+        <p><strong>Teléfono:</strong> {{ proyecto_temp.cliente_telefono|default:"-" }}</p>
 
-                    <div class="roles-documento" id="roles-{{ safe_id }}-{{ doc.id }}">
-                        <div class="role-group">
-                            <label>Redactor:</label>
-                            <div class="user-selection-container">
-                                {% for user in usuarios %}
-                                <label><input type="checkbox" name="redactor_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        <div class="role-group">
-                            <label>Revisor:</label>
-                            <div class="user-selection-container">
-                                {% for user in usuarios %}
-                                <label><input type="checkbox" name="revisor_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        <div class="role-group">
-                            <label>Aprobador:</label>
-                            <div class="user-selection-container">
-                                {% for user in usuarios %}
-                                <label><input type="checkbox" name="aprobador_id_{{ doc.id }}[]" value="{{ user.id }}"> {{ user.nombre }}</label>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
+        <!-- Máquinas -->
+        <h4>Máquinas</h4>
+        {% if proyecto_temp.maquinas %}
+        <ul>
+            {% for m_id in proyecto_temp.maquinas %}
+                {% for m in maquinas %}
+                    {% if m.id|stringformat:"s" == m_id|stringformat:"s" %}
+                        <li>{{ m.nombre }}</li>
                     {% endif %}
                 {% endfor %}
-            </div>
-        </div>
-        {% endwith %}
-        {% endfor %}
-    </div>
+            {% endfor %}
+        </ul>
+        {% else %}
+            <p>No hay máquinas seleccionadas.</p>
+        {% endif %}
+
+        <!-- Grupos y Documentos -->
+        <h4>Grupos y Documentos</h4>
+        {% if proyecto_temp.grupos %}
+        <ul>
+            {% for grupo in proyecto_temp.grupos %}
+                <li>
+                    <strong>{{ grupo.nombre }}</strong>
+                    <ul>
+                        {% for doc in grupo.documentos %}
+                            <li>
+                                {{ doc.nombre }}<br>
+                                <small>
+                                    Redactor: {{ doc.redactor|default:"-" }} |
+                                    Revisor: {{ doc.revisor|default:"-" }} |
+                                    Aprobador: {{ doc.aprobador|default:"-" }}
+                                </small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+            <p>No hay grupos asignados.</p>
+        {% endif %}
+
+    {% endif %}
 </div>

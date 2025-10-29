@@ -104,11 +104,6 @@ def simulador_estado(request):
 
 
 
-
-
-
-
-
 #################
 @login_required
 def lista_documentos_asignados(request):
@@ -246,10 +241,80 @@ def lista_documentos_asignados(request):
 
     return render(request, "lista_documentos_asignados.html", context)
 
+def generar_signed_url(documento_id, version):
+    # Aquí va la lógica de tu storage para obtener URL firmada
+    # Por ahora podemos simular
+    return f"https://storage.simulado.com/doc_{documento_id}_{version}.pdf"
+
+
+class VersionManager:
+    def __init__(self, requerimiento_id, cursor):
+        self.requerimiento_id = requerimiento_id
+        self.cursor = cursor
+        self.version_actual = self.obtener_ultima_version()
+
+    def obtener_ultima_version(self):
+        """Obtiene la última versión registrada para este documento"""
+        self.cursor.execute("""
+            SELECT version
+            FROM version_documento_tecnico
+            WHERE requerimiento_documento_id = %s
+            ORDER BY fecha DESC
+            LIMIT 1
+        """, [self.requerimiento_id])
+        row = self.cursor.fetchone()
+        return row[0] if row else "v0.0.0"
+
+    def nueva_version(self, evento):
+        """Calcula la nueva versión según la lógica de FSM y eventos"""
+        base, *sufijo = self.version_actual.split("-")
+        c1, c2, c3 = map(int, base.strip("v").split("."))
+
+        if evento == "revision_aceptada":
+            c1 += 1
+            c2 = 0
+            c3 = 0
+            sufijo = []
+        elif evento == "rechazar_revision":
+            sufijo = ["RR"]
+        elif evento == "reenviar_revision":
+            c2 += 1
+        elif evento == "aprobar_documento":
+            c3 += 1
+            sufijo = []
+        elif evento == "rechazar_aprobacion":
+            sufijo = ["RA"]
+
+        nueva = f"v{c1}.{c2}.{c3}"
+        if sufijo:
+            nueva += f"-{'-'.join(sufijo)}"
+        self.version_actual = nueva
+        return nueva
+
+    def registrar_version(self, evento, estado_nombre, usuario_id, comentario):
+        nueva_version = self.nueva_version(evento)
+        url = generar_signed_url(self.requerimiento_id, nueva_version)
+        self.cursor.execute("""
+            INSERT INTO version_documento_tecnico
+            (requerimiento_documento_id, version, estado_id, fecha, comentario, usuario_id, signed_url)
+            VALUES (
+                %s,
+                %s,
+                (SELECT id FROM estado_documento WHERE nombre = %s),
+                NOW(),
+                %s,
+                %s,
+                %s
+            )
+        """, [self.requerimiento_id, nueva_version, estado_nombre, comentario, usuario_id, url])
+        return nueva_version
+
 
 
 @login_required
 def detalle_documento(request, requerimiento_id):
+    mensaje = ""
+    
     # --- Obtener datos del documento ---
     with connection.cursor() as cursor:
         cursor.execute("""
@@ -270,11 +335,6 @@ def detalle_documento(request, requerimiento_id):
                 ON RDT.id = RER.requerimiento_id AND RER.usuario_id = %s
             LEFT JOIN public.roles_ciclodocumento RR ON RER.rol_id = RR.id
             INNER JOIN public.proyectos P ON RDT.proyecto_id = P.id
-            LEFT JOIN (
-                SELECT requerimiento_id, MAX(fecha_cambio) AS ultima_fecha
-                FROM public.log_estado_requerimiento_documento
-                GROUP BY requerimiento_id
-            ) ult ON RDT.id = ult.requerimiento_id
             LEFT JOIN public.estado_documento EA ON EA.id = (
                 SELECT estado_destino_id
                 FROM public.log_estado_requerimiento_documento
@@ -311,11 +371,31 @@ def detalle_documento(request, requerimiento_id):
             for row in cursor.fetchall()
         ]
 
+    # --- Historial de versiones ---
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT 
+                VDT.version,
+                E.nombre AS estado_nombre,
+                VDT.fecha,
+                U.nombre AS usuario_nombre,
+                VDT.comentario,
+                VDT.signed_url
+            FROM public.version_documento_tecnico VDT
+            LEFT JOIN public.estado_documento E ON VDT.estado_id = E.id
+            LEFT JOIN public.usuarios U ON VDT.usuario_id = U.id
+            WHERE VDT.requerimiento_documento_id = %s
+            ORDER BY VDT.fecha ASC
+        """, [requerimiento_id])
+        historial_versiones = [
+            dict(zip([col[0] for col in cursor.description], row))
+            for row in cursor.fetchall()
+        ]
+
     # --- Máquina de estados ---
     estado_inicial = documento["estado_actual"] or "Borrador"
     rol_id = documento.get("rol_id")
     machine = DocumentoTecnicoStateMachine(rol_id=rol_id, estado_inicial=estado_inicial)
-    mensaje = ""
     historial_simulador = request.session.get("historial_simulador", [])
 
     # --- Manejo de POST ---
@@ -334,8 +414,8 @@ def detalle_documento(request, requerimiento_id):
                     nuevo_estado = machine.current_state.name
                     documento["estado_actual"] = nuevo_estado
 
-                    # Guardar en log
                     with connection.cursor() as cursor:
+                        # Registrar log de estado
                         cursor.execute("""
                             INSERT INTO public.log_estado_requerimiento_documento
                                 (requerimiento_id, estado_destino_id, usuario_id, fecha_cambio, observaciones)
@@ -343,6 +423,11 @@ def detalle_documento(request, requerimiento_id):
                             FROM public.estado_documento
                             WHERE nombre = %s
                         """, [requerimiento_id, request.user.id, comentario or f"Evento: {evento}", nuevo_estado])
+
+                        # Registrar versión si aplica
+                        if machine.evento_genera_version(evento):
+                            vm = VersionManager(requerimiento_id=requerimiento_id, cursor=cursor)
+                            vm.registrar_version(evento, nuevo_estado, request.user.id, comentario or f"Evento: {evento}")
 
                     historial_simulador.append({
                         "evento": evento,
@@ -370,14 +455,10 @@ def detalle_documento(request, requerimiento_id):
     ]
     eventos = [ev for ev in todos_eventos if machine.puede_transicionar(ev)]
     eventos_formateados = [ev.replace("_", " ").capitalize() for ev in eventos]
-    
-    # --- Preparar lista de tuplas para template ---
     eventos_tuplas = list(zip(eventos, eventos_formateados))
-
-    # --- Eventos que requieren comentario ---
     eventos_con_comentario = ["rechazar_revision", "rechazar_aprobacion"]
 
-    # --- Mapeo de estado a clase de color Bootstrap ---
+    # --- Mapeo de estado a color Bootstrap ---
     colores_estado = {
         "Borrador": "secondary",
         "En Elaboración": "info",
@@ -387,18 +468,18 @@ def detalle_documento(request, requerimiento_id):
         "Publicado": "success",
         "Re Estructuración": "danger",
     }
-
-    # Tomar el color correspondiente al estado actual
     estado_css = colores_estado.get(documento["estado_actual"], "secondary")
 
     context = {
         "documento": documento,
         "estado_actual": documento["estado_actual"],
         "mensaje": mensaje,
-        "estado_css": estado_css,  # <-- aquí pasamos el color
+        "estado_css": estado_css,
         "eventos_tuplas": eventos_tuplas,
         "historial_estados": historial_estados,
+        "historial_versiones": historial_versiones,  # <-- Aquí se pasa al template
         "historial_simulador": historial_simulador,
         "eventos_con_comentario": eventos_con_comentario,
     }
+
     return render(request, "detalle_documento.html", context)

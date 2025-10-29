@@ -38,23 +38,30 @@ button.btn:active { transform: translateY(1px); box-shadow:0 2px 4px rgba(243,11
 .step:last-child .progress-line { display: none; }
 .form-navigation { text-align: right; margin-top: 20px; }
 
-#step-5 { padding: 15px; background-color: #f7f9fb; border-radius: 8px; }
-#step-5 .grupo-item { margin-bottom: 8px; border-radius: 6px; background-color: var(--metso-white); border: 1px solid #e0e0e0; overflow: hidden; transition: all 0.2s ease; }
-#step-5 .grupo-item.active { border-color: var(--metso-orange); box-shadow: 0 2px 10px rgba(243, 111, 33, 0.1); }
-#step-5 .grupo-header { padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: 600; color: var(--metso-dark-gray); transition: background-color 0.15s ease; user-select: none; }
-#step-5 .grupo-header:hover { background-color: #f0f0f0; }
-#step-5 .grupo-header .toggle-icon { font-size: 1.1em; font-weight: 900; transition: transform 0.2s; color: var(--metso-orange); }
-#step-5 .grupo-item.active .grupo-header .toggle-icon { transform: rotate(90deg); }
-#step-5 .documento-list { padding: 10px 15px 10px 35px; background-color: #fcfcfc; border-top: 1px solid #eee; display: none; max-height: 200px; overflow-y: auto; }
-#step-5 .documento-item { padding: 8px 0; display: flex; align-items: center; cursor: pointer; font-size: 0.9em; border-bottom: 1px dashed #eee; }
-#step-5 .documento-item:last-child { border-bottom: none; }
-#step-5 .documento-item input[type="checkbox"] { margin-right: 8px; }
-#step-5 .roles-documento { margin: 15px 0; padding: 10px 15px; border: 1px solid #d0d0d0; border-radius: 6px; background-color: #f0f0f0; display: none; max-height: 180px; overflow-y: auto; }
-#step-5 .role-group { margin-bottom: 15px; padding-bottom: 5px; border-bottom: 1px dotted #ccc; }
-#step-5 .role-group:last-child { border-bottom: none; margin-bottom: 0; }
-#step-5 .role-group > label { font-weight: 700; display: block; margin-bottom: 8px; color: var(--metso-dark-gray); font-size: 0.9rem; }
-#step-5 .user-selection-container { display: flex; flex-wrap: wrap; gap: 5px 15px; max-height: 120px; overflow-y: auto; padding: 5px; background-color: var(--metso-white); border: 1px solid #e0e0e0; border-radius: 4px; }
-#step-5 .user-selection-container label { font-weight: normal; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; }
+/* Paso 4 (anterior Paso 5) */
+.step-content#step-4 { padding: 15px; background-color: #f7f9fb; border-radius: 8px; }
+.step-content#step-4 .grupo-item { margin-bottom: 8px; border-radius: 6px; background-color: var(--metso-white); border: 1px solid #e0e0e0; overflow: hidden; transition: all 0.2s ease; }
+.step-content#step-4 .grupo-item.active { border-color: var(--metso-orange); box-shadow: 0 2px 10px rgba(243, 111, 33, 0.1); }
+.step-content#step-4 .grupo-header { padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: 600; color: var(--metso-dark-gray); transition: background-color 0.15s ease; user-select: none; }
+.step-content#step-4 .grupo-header:hover { background-color: #f0f0f0; }
+.step-content#step-4 .grupo-header .toggle-icon { font-size: 1.1em; font-weight: 900; transition: transform 0.2s; color: var(--metso-orange); }
+.step-content#step-4 .grupo-item.active .grupo-header .toggle-icon { transform: rotate(90deg); }
+.step-content#step-4 .documento-list { padding: 10px 15px 10px 35px; background-color: #fcfcfc; border-top: 1px solid #eee; display: none; max-height: 200px; overflow-y: auto; }
+.step-content#step-4 .documento-item { padding: 8px 0; display: flex; align-items: center; cursor: pointer; font-size: 0.9em; border-bottom: 1px dashed #eee; }
+.step-content#step-4 .documento-item:last-child { border-bottom: none; }
+.step-content#step-4 .documento-item input[type="checkbox"] { margin-right: 8px; }
+.step-content#step-4 .roles-documento { margin: 15px 0; padding: 10px 15px; border: 1px solid #d0d0d0; border-radius: 6px; background-color: #f0f0f0; display: none; max-height: 180px; overflow-y: auto; }
+.step-content#step-4 .role-group { margin-bottom: 15px; padding-bottom: 5px; border-bottom: 1px dotted #ccc; }
+.step-content#step-4 .role-group:last-child { border-bottom: none; margin-bottom: 0; }
+.step-content#step-4 .role-group > label { font-weight: 700; display: block; margin-bottom: 8px; color: var(--metso-dark-gray); font-size: 0.9rem; }
+.step-content#step-4 .user-selection-container { display: flex; flex-wrap: wrap; gap: 5px 15px; max-height: 120px; overflow-y: auto; padding: 5px; background-color: var(--metso-white); border: 1px solid #e0e0e0; border-radius: 4px; }
+.step-content#step-4 .user-selection-container label { font-weight: normal; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; }
+
+/* Confirmación final Paso 4 */
+#paso4-confirmacion { display: none; margin-top: 20px; }
+#paso4-confirmacion h2 { font-size: 1.5rem; margin-bottom: 10px; }
+#paso4-confirmacion ul { list-style: disc; margin-left: 20px; }
+#paso4-confirmacion li { margin-bottom: 5px; }
 </style>
 {% endblock %}
 
@@ -109,14 +116,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const stepCircles = document.querySelectorAll('.step-circle');
     const contents = document.querySelectorAll('.step-content');
     const currentStepInput = document.getElementById('current_step');
-    const proyecto_data = {}; // <-- almacenamiento local de los pasos
+    const proyecto_data = {};
 
-    // Inicializa paso 5 (ya existente)
-    function initPaso5() {
+    function initPaso4() {
+        const stepContainer = document.querySelector('#step-4');
+        if (!stepContainer) return;
+
         const toggleGrupo = (grupoItem, isChecked) => {
             const docDiv = grupoItem.querySelector('.documento-list');
             const checkbox = grupoItem.querySelector('input[name="grupo_checkbox"]');
-
             if (isChecked) {
                 docDiv.style.display = 'block';
                 grupoItem.classList.add('active');
@@ -133,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        document.querySelectorAll('#step-5 .grupo-item').forEach(grupoItem => {
+        stepContainer.querySelectorAll('.grupo-item').forEach(grupoItem => {
             const header = grupoItem.querySelector('.grupo-header');
             const checkbox = grupoItem.querySelector('input[name="grupo_checkbox"]');
 
@@ -149,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (checkbox.checked) toggleGrupo(grupoItem, true);
         });
 
-        document.querySelectorAll('#step-5 .documento-list input[type="checkbox"]').forEach(cb => {
+        stepContainer.querySelectorAll('.documento-list input[type="checkbox"]').forEach(cb => {
             cb.addEventListener('change', function() {
                 const rolesDiv = document.getElementById('roles-' + this.dataset.safeId + '-' + this.value);
                 if (rolesDiv) rolesDiv.style.display = this.checked ? 'block' : 'none';
@@ -159,12 +167,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        document.querySelectorAll('#step-5 .roles-documento').forEach(div => {
+        stepContainer.querySelectorAll('.roles-documento').forEach(div => {
             div.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                 cb.addEventListener('change', function() {
                     const roleName = this.name;
                     if (this.checked) {
-                        document.querySelectorAll(`#step-5 input[name="${roleName}"]`).forEach(other => {
+                        stepContainer.querySelectorAll(`input[name="${roleName}"]`).forEach(other => {
                             if (other !== this) other.checked = false;
                         });
                     }
@@ -192,11 +200,12 @@ document.addEventListener('DOMContentLoaded', function() {
         nextBtn.style.display = step < totalSteps ? 'inline-block' : 'none';
         submitBtn.style.display = step === totalSteps ? 'inline-block' : 'none';
 
-        if (step === 5) initPaso5();
-        if (step === 6) renderConfirmacion(); // 🔥 mostrar resumen final
+        if (step === 4) {
+            initPaso4();
+            renderConfirmacion();
+        }
     }
 
-    // Guardar datos del paso actual
     function guardarPaso(paso) {
         return new Promise((resolve, reject) => {
             const form = document.querySelector('form');
@@ -216,90 +225,64 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // Guarda localmente también
             proyecto_data['paso_' + paso] = proyecto_data['paso_' + paso] || {};
             Object.assign(proyecto_data['paso_' + paso], data.form_data);
 
-            // Guarda en backend
             fetch("{% url 'usuario:guardar_paso_proyecto' %}", {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                 body: JSON.stringify(data)
             })
             .then(resp => resp.json())
-            .then(result => {
-                if (result.status === 'ok') resolve();
-                else reject(result.error);
-            })
+            .then(result => { if (result.status === 'ok') resolve(); else reject(result.error); })
             .catch(err => reject(err));
         });
     }
 
-    // Renderiza el paso 6
     function renderConfirmacion() {
-        const contenedor = document.querySelector('#step-6');
+        const contenedor = document.getElementById('paso4-confirmacion');
         if (!contenedor) return;
         contenedor.innerHTML = "<h2>Confirmación Final</h2>";
-    
-        // ⚡ Mostrar solo el último paso (Paso 5)
+
         const lastPasoKey = 'paso_' + Math.max(...Object.keys(proyecto_data).map(k => parseInt(k.replace('paso_', ''))));
         const pasoData = proyecto_data[lastPasoKey];
-    
+
         const pasoDiv = document.createElement('div');
         pasoDiv.classList.add('confirm-section');
         pasoDiv.innerHTML = `<h3>${lastPasoKey.replace('paso_', 'Paso ')}</h3>`;
-    
+
         const ul = document.createElement('ul');
         for (const [campo, valor] of Object.entries(pasoData)) {
             const li = document.createElement('li');
             li.innerHTML = `<strong>${campo}:</strong> ${Array.isArray(valor) ? valor.join(', ') : valor}`;
             ul.appendChild(li);
         }
-    
+
         pasoDiv.appendChild(ul);
         contenedor.appendChild(pasoDiv);
+        contenedor.style.display = 'block';
     }
 
-
-    // Eventos
     nextBtn.addEventListener('click', async () => {
         if (currentStep < totalSteps) {
-            try {
-                await guardarPaso(currentStep);
-                showStep(currentStep + 1);
-            } catch (error) {
-                console.error('Error guardando paso:', error);
-                alert('Error al guardar los datos del paso.');
-            }
+            try { await guardarPaso(currentStep); showStep(currentStep + 1); } 
+            catch (error) { console.error(error); alert('Error al guardar los datos del paso.'); }
         }
     });
 
     prevBtn.addEventListener('click', async () => {
         if (currentStep > 1) {
-            try {
-                await guardarPaso(currentStep);
-                showStep(currentStep - 1);
-            } catch (error) {
-                console.error('Error guardando paso:', error);
-                alert('Error al guardar los datos del paso.');
-            }
+            try { await guardarPaso(currentStep); showStep(currentStep - 1); } 
+            catch (error) { console.error(error); alert('Error al guardar los datos del paso.'); }
         }
     });
 
     steps.forEach(el => el.addEventListener('click', async () => {
-        try {
-            await guardarPaso(currentStep);
-            showStep(parseInt(el.dataset.step));
-        } catch (error) {
-            console.error('Error guardando paso:', error);
-        }
+        try { await guardarPaso(currentStep); showStep(parseInt(el.dataset.step)); } 
+        catch (error) { console.error(error); }
     }));
 
     showStep(currentStep);
 });
 </script>
 {% endblock %}
-
