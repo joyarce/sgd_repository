@@ -9,3 +9,6 @@ urlpatterns = [
     path("documentos/", include("Gestion_Documentos_StateMachine.urls")),
     path("plantillas/", include("plantillas_documentos_tecnicos.urls")),  # 👈 aquí
 ]
+
+
+###
