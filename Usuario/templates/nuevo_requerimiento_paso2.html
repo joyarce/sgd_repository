@@ -1,21 +1,57 @@
 <!-- nuevo_requerimiento_paso2.html -->
 <div class="step-content" id="step-2" style="display:none;">
-    <div class="card">
-        <h3>Planificación de Hitos</h3>
-        <label for="fecha_primera_revision">Fecha Tentativa de Primera Revisión</label>
-        <input type="date" id="fecha_primera_revision" name="fecha_primera_revision" >
-        <small>Documento listo para su primera revisión técnica.</small>
+    <div class="card shadow-sm p-4">
+        <h3 class="mb-4 text-primary fw-semibold">
+            <i class="fa-solid fa-calendar-alt me-2"></i> Planificación de Hitos del Ciclo de Vida
+        </h3>
 
-        <label for="alertar_dias_revision">Notificación (Días Antes de Revisión)</label>
-        <input type="number" id="alertar_dias_revision" name="alertar_dias_revision" min="1" placeholder="Ej: 2" >
-        <small>Días de anticipación para enviar alerta por correo a los revisores.</small>
+        <!-- 1️⃣ Inicio de Elaboración -->
+        <div class="mb-4">
+            <h5 class="fw-semibold text-secondary">Inicio de Elaboración</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="fecha_inicio_elaboracion" class="form-label">Fecha de inicio</label>
+                    <input type="date" id="fecha_inicio_elaboracion" name="fecha_inicio_elaboracion" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label for="alertar_dias_inicio" class="form-label">Notificar días antes</label>
+                    <input type="number" id="alertar_dias_inicio" name="alertar_dias_inicio" min="1" class="form-control" placeholder="Ej: 1">
+                </div>
+            </div>
+        </div>
 
-        <label for="fecha_entrega" style="margin-top:20px;">Fecha Tentativa de Entrega Final</label>
-        <input type="date" id="fecha_entrega" name="fecha_entrega" >
-        <small>Documento finalizado, revisado y aprobado.</small>
+        <hr>
 
-        <label for="alertar_dias_entrega">Notificación (Días Antes de Entrega Final)</label>
-        <input type="number" id="alertar_dias_entrega" name="alertar_dias_entrega" min="1" placeholder="Ej: 3" >
-        <small>Días de anticipación para enviar alerta por correo a los involucrados.</small>
+        <!-- 2️⃣ Revisión Técnica -->
+        <div class="mb-4">
+            <h5 class="fw-semibold text-secondary">Primera Revisión Técnica</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="fecha_primera_revision" class="form-label">Fecha tentativa</label>
+                    <input type="date" id="fecha_primera_revision" name="fecha_primera_revision" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label for="alertar_dias_revision" class="form-label">Notificar días antes</label>
+                    <input type="number" id="alertar_dias_revision" name="alertar_dias_revision" min="1" class="form-control" placeholder="Ej: 3">
+                </div>
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- 3️⃣ Aprobación Final -->
+        <div class="mb-4">
+            <h5 class="fw-semibold text-secondary">Entrega / Aprobación Final</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="fecha_entrega" class="form-label">Fecha tentativa</label>
+                    <input type="date" id="fecha_entrega" name="fecha_entrega" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label for="alertar_dias_entrega" class="form-label">Notificar días antes</label>
+                    <input type="number" id="alertar_dias_entrega" name="alertar_dias_entrega" min="1" class="form-control" placeholder="Ej: 5">
+                </div>
+            </div>
+        </div>
     </div>
 </div>

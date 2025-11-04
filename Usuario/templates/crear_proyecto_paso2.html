@@ -1,9 +1,33 @@
+<!-- crear_proyecto_paso2.html -->
 <style>
-/* Estilo para campo readonly de cliente */
+/* === Estilos visuales === */
 #cliente-lectura.readonly-cliente {
-    background-color: #e0e0e0;  /* Gris claro */
-    cursor: not-allowed;         /* Icono de bloqueo */
+    background-color: #e0e0e0;
+    cursor: not-allowed;
     color: #555;
+}
+
+/* Abreviatura de cliente: campo gris bloqueado con ícono de candado */
+.readonly-abreviatura {
+    background-color: #e0e0e0;
+    color: #555;
+    cursor: not-allowed;
+    border: 1px solid #ccc;
+    width: 100%;
+    border-radius: 4px;
+    padding: 6px;
+}
+.readonly-abreviatura:hover {
+    background-color: #d9d9d9;
+    position: relative;
+}
+.readonly-abreviatura:hover::after {
+    content: "🔒";
+    position: absolute;
+    right: 10px;
+    top: 5px;
+    font-size: 1.1rem;
+    color: #444;
 }
 </style>
 
@@ -56,9 +80,27 @@
             {% endfor %}
         </select>
 
+        <!-- Campo abreviatura visible para cliente existente -->
+        <div id="cliente-abreviatura-container" style="display:none; margin-top:10px;">
+            <label>Abreviatura del Cliente:</label>
+            <input type="text" id="cliente_abreviatura_existente"
+                   readonly
+                   class="readonly-abreviatura"
+                   title="Abreviatura registrada en la base de datos">
+        </div>
+
+        <!-- CAMPOS NUEVO CLIENTE -->
         <div id="nuevo-cliente-fields" style="margin-top:15px; {% if proyecto_temp.cliente_id %}display:none{% endif %}">
             <label>Nombre:</label>
             <input type="text" name="cliente_nombre" value="{{ proyecto_temp.cliente_nombre|default:'' }}" required>
+
+            <label>Abreviatura del Cliente:</label>
+            <input type="text" id="cliente_abreviatura" name="cliente_abreviatura"
+                   value="{{ proyecto_temp.cliente_abreviatura|default:'' }}"
+                   readonly class="readonly-abreviatura"
+                   title="Campo bloqueado: se genera automáticamente">
+            <small>La abreviatura se genera o carga automáticamente según el cliente seleccionado.</small>
+
             <label>RUT:</label>
             <input type="text" name="cliente_rut" value="{{ proyecto_temp.cliente_rut|default:'' }}" required>
             <label>Dirección:</label>
@@ -103,8 +145,6 @@ function onContratoChange(contratoId) {
         const clienteNombre = option.dataset.clienteNombre;
         const clienteId = option.dataset.clienteId;
         clienteLectura.value = clienteNombre;
-
-        // Aplicar estilo de readonly con bloqueo
         clienteLectura.classList.add('readonly-cliente');
 
         cargarFaenas(clienteId);
@@ -121,8 +161,56 @@ function onContratoChange(contratoId) {
 }
 
 function onClienteChange(clienteId) {
+    const campoAbrevNuevo = document.getElementById('cliente_abreviatura');
+    const contenedorAbrevExistente = document.getElementById('cliente-abreviatura-container');
+    const campoAbrevExistente = document.getElementById('cliente_abreviatura_existente');
+
     toggleNuevoCliente(!clienteId);
     cargarFaenas(clienteId);
+
+    if (clienteId) {
+        // Cliente existente → obtener abreviatura desde backend
+        contenedorAbrevExistente.style.display = 'block';
+        campoAbrevNuevo.parentElement.style.display = 'none';
+
+        fetch(`/usuario/obtener_abreviatura_cliente/${clienteId}/`, {
+            headers: { "Cache-Control": "no-cache" }
+        })
+            .then(response => response.json())
+            .then(data => {
+                campoAbrevExistente.value = data.abreviatura || "(sin abreviatura)";
+            })
+            .catch(() => {
+                campoAbrevExistente.value = "(error al obtener abreviatura)";
+            });
+    } else {
+        // Nuevo cliente → mostrar campo generador
+        contenedorAbrevExistente.style.display = 'none';
+        campoAbrevNuevo.parentElement.style.display = 'block';
+        generarAbreviaturaCliente();
+    }
+}
+
+function generarAbreviaturaCliente() {
+    const nombreCliente = document.querySelector('input[name="cliente_nombre"]').value.trim();
+    const campoAbrev = document.getElementById('cliente_abreviatura');
+
+    if (!nombreCliente) {
+        campoAbrev.value = "";
+        return;
+    }
+
+    fetch(`/usuario/generar_abreviatura_cliente_ajax/?nombre=${encodeURIComponent(nombreCliente)}`, {
+        headers: { "Cache-Control": "no-cache" }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.abreviatura) campoAbrev.value = data.abreviatura;
+            else campoAbrev.value = "(sin abreviatura)";
+        })
+        .catch(() => {
+            campoAbrev.value = "(error al generar abreviatura)";
+        });
 }
 
 function toggleNuevoCliente(mostrar) {
@@ -132,12 +220,10 @@ function toggleNuevoCliente(mostrar) {
 function cargarFaenas(clienteId) {
     const selectFaena = document.getElementById('select-faena');
     const nuevoFaena = document.getElementById('nuevo-faena-fields');
-
     selectFaena.innerHTML = '<option value="">-- Nueva Faena --</option>';
     nuevoFaena.style.display = 'none';
 
     if (!clienteId) return;
-
     const faenas = {{ faenas|safe }};
     faenas.forEach(f => {
         if (f.cliente_id == clienteId) {
@@ -151,22 +237,19 @@ function cargarFaenas(clienteId) {
     {% if proyecto_temp.faena_id %}
     selectFaena.value = "{{ proyecto_temp.faena_id }}";
     {% endif %}
-
     onFaenaChange();
 }
 
 function onFaenaChange() {
     const selectFaena = document.getElementById('select-faena');
     const nuevoFaena = document.getElementById('nuevo-faena-fields');
-
-    if (selectFaena.value === "") {
-        nuevoFaena.style.display = 'block';
-    } else {
-        nuevoFaena.style.display = 'none';
-    }
+    nuevoFaena.style.display = (selectFaena.value === "") ? 'block' : 'none';
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    const nombreClienteInput = document.querySelector('input[name="cliente_nombre"]');
+    if (nombreClienteInput) nombreClienteInput.addEventListener("input", generarAbreviaturaCliente);
+
     onContratoChange(document.getElementById('select-contrato').value);
     onClienteChange(document.getElementById('select-cliente').value);
 });

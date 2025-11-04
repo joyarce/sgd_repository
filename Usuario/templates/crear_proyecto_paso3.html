@@ -1,185 +1,216 @@
+<!-- crear_proyecto_paso3.html -->
 <div class="step-inner">
-    <h3>Paso 3: Grupos y Roles</h3> 
+  <h3>Documentos Técnicos del Proyecto</h3>
+  <p class="subtexto-paso">Selecciona los documentos requeridos y asigna sus responsables.</p>
 
-    {% if form_error %}
-        <p style="color: red; text-align: center; font-weight: bold;">Error: {{ form_error }}</p>
-    {% endif %}
+  <!-- 🔎 Buscador + Filtros -->
+  <div class="filtros">
+    <input type="text" id="filtroBusqueda" placeholder="Buscar documento..." />
+    <select id="filtroGrupo">
+      <option value="">Todos los grupos</option>
+      {% for grupo in grupos_maestros %}
+      <option value="{{ grupo.nombre }}">{{ grupo.nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
 
-    <div id="grupos-seleccion-container">
-        {% for grupo in grupos_maestros %}
-        {% with safe_id=grupo.nombre|lower|slugify %}
-        <div class="grupo-item">
-            <!-- Header del grupo -->
-            <div class="grupo-header">
-                <label style="margin:0; display:flex; align-items:center; gap:8px;">
-                    <input type="checkbox" name="grupo_checkbox" value="{{ grupo.nombre }}" data-safe-id="{{ safe_id }}">
-                    {{ grupo.nombre }}
-                </label>
-                <span class="toggle-icon">▶</span>
-            </div>
+  <!-- 📄 Lista de documentos -->
+  <div id="listaDocumentos" class="lista-documentos">
+    {% for grupo in grupos_maestros %}
+    {% for doc in grupo.documentos %}
+    <label class="doc-item" data-grupo="{{ grupo.nombre }}">
+      <input type="checkbox" class="doc-checkbox" value="{{ doc.id }}" data-nombre="{{ doc.nombre }}">
+      <span class="doc-nombre">{{ doc.nombre }}</span>
+      <small class="doc-grupo">({{ grupo.nombre }})</small>
+    </label>
+    {% endfor %}
+    {% endfor %}
+  </div>
 
-            <!-- Lista de documentos -->
-            <div id="documentos-{{ safe_id }}" class="documento-list" style="display:none;">
-                {% for doc in grupo.documentos %}
-                <div class="documento-item-wrapper">
-                    <label class="documento-item">
-                        <input type="checkbox" name="documento_{{ safe_id }}[]" value="{{ doc.id }}" data-safe-id="{{ safe_id }}">
-                        {{ doc.nombre }}
-                        <span class="toggle-icon-doc">▶</span>
-                    </label>
-
-                    <!-- Roles del documento -->
-                    <div class="roles-documento" id="roles-{{ doc.id }}" style="display:none;">
-                        <div class="role-group">
-                            <label>Redactor:</label>
-                            <div class="user-selection-container">
-                                {% for user in usuarios %}
-                                <label>
-                                    <input type="checkbox" name="redactor_id_{{ doc.id }}[]" value="{{ user.id }}"
-                                    {% if user.id in doc.redactor_ids %}checked{% endif %}>
-                                    {{ user.nombre }}
-                                </label>
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                        <div class="role-group">
-                            <label>Revisor:</label>
-                            <div class="user-selection-container">
-                                {% for user in usuarios %}
-                                <label>
-                                    <input type="checkbox" name="revisor_id_{{ doc.id }}[]" value="{{ user.id }}"
-                                    {% if user.id in doc.revisor_ids %}checked{% endif %}>
-                                    {{ user.nombre }}
-                                </label>
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                        <div class="role-group">
-                            <label>Aprobador:</label>
-                            <div class="user-selection-container">
-                                {% for user in usuarios %}
-                                <label>
-                                    <input type="checkbox" name="aprobador_id_{{ doc.id }}[]" value="{{ user.id }}"
-                                    {% if user.id in doc.aprobador_ids %}checked{% endif %}>
-                                    {{ user.nombre }}
-                                </label>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endwith %}
-        {% endfor %}
-    </div>
+  <!-- 🧾 Tabla dinámica de asignaciones -->
+  <div id="tablaAsignaciones" class="tabla-asignaciones" style="display:none;">
+    <h4>Documentos Seleccionados</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>Documento</th>
+          <th>Redactor(es)</th>
+          <th>Revisor(es)</th>
+          <th>Aprobador(es)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tablaBody"></tbody>
+    </table>
+  </div>
 </div>
 
 <style>
-.grupo-item {
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 10px;
-    margin-bottom: 15px;
-    background-color: #f9f9f9;
+.step-inner { background:#fff; border-radius:8px; padding:25px; box-shadow:0 3px 12px rgba(0,0,0,.06); }
+h3 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
+.subtexto-paso { color:#555; margin-bottom:15px; }
+
+.filtros { display:flex; gap:10px; margin-bottom:15px; }
+.filtros input, .filtros select {
+  padding:8px 12px; border:1px solid #ddd; border-radius:6px; font-size:.9rem; flex:1;
 }
 
-.grupo-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    padding: 5px 10px;
-    font-weight: bold;
-    background-color: #e3f2fd;
-    border-radius: 4px;
+.lista-documentos {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:8px; margin-bottom:25px;
+  max-height:260px; overflow-y:auto; background:#fafafa;
+  border:1px solid #eee; padding:10px; border-radius:8px;
 }
+.doc-item {
+  display:flex; flex-direction:column;
+  background:#fff; border:1px solid #e0e0e0;
+  border-radius:6px; padding:10px;
+  font-size:.9rem; cursor:pointer; transition:all .15s ease;
+}
+.doc-item:hover { background:#fdf7f3; border-color:#f36f21; }
+.doc-item input { margin-bottom:4px; }
+.doc-grupo { color:#777; font-size:.8rem; }
 
-.documento-list {
-    margin-left: 20px;
-    margin-top: 10px;
+.tabla-asignaciones h4 { margin-bottom:10px; color:#333; }
+.tabla-asignaciones table { width:100%; border-collapse:collapse; }
+.tabla-asignaciones th, .tabla-asignaciones td {
+  border:1px solid #e6e6e6; padding:10px; vertical-align:top;
 }
+.tabla-asignaciones th { background:#f0f4fa; text-align:left; }
 
-.documento-item-wrapper {
-    margin-bottom: 10px;
-    padding: 5px;
-    border-left: 2px solid #2196f3;
-    border-radius: 4px;
-    background-color: #f1f8ff;
+.btn-remove {
+  background:#f8d7da; border:none; color:#721c24;
+  border-radius:6px; padding:4px 10px; cursor:pointer;
+  font-size:.8rem;
 }
+.btn-remove:hover { background:#f5c6cb; }
 
-.documento-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    padding: 3px 0;
-}
-
-.roles-documento {
-    display: flex;
-    gap: 20px;
-    margin-top: 5px;
-    flex-wrap: wrap;
-}
-
-.role-group {
-    flex: 1 1 200px; /* mínimo 200px, se adapta */
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 5px;
-    background-color: #fff;
-}
-
-.user-selection-container {
-    max-height: 120px;
-    overflow-y: auto;
-    padding-left: 10px;
-}
-
-.toggle-icon, .toggle-icon-doc {
-    transition: transform 0.2s ease;
-    font-weight: bold;
-}
+/* Tom Select */
+.ts-control { border-radius:6px !important; border-color:#ccc !important; }
+.ts-control .item { background:#f36f21 !important; color:#fff !important; border-radius:12px; }
+.ts-dropdown { border-radius:8px !important; z-index:9999 !important; }
 </style>
 
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet" />
+
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    // Toggle grupos
-    document.querySelectorAll(".grupo-header").forEach(header => {
-        header.addEventListener("click", function(e) {
-            if(e.target.tagName.toLowerCase() === 'input') return;
-            const safeId = header.querySelector('input[type="checkbox"]').dataset.safeId;
-            const docList = document.getElementById("documentos-" + safeId);
-            const icon = header.querySelector(".toggle-icon");
-            if(docList.style.display === "none") {
-                docList.style.display = "block";
-                icon.style.transform = "rotate(90deg)";
-            } else {
-                docList.style.display = "none";
-                icon.style.transform = "rotate(0deg)";
-            }
-        });
+document.addEventListener("DOMContentLoaded", () => {
+  const lista = document.getElementById("listaDocumentos");
+  const tabla = document.getElementById("tablaAsignaciones");
+  const tbody = document.getElementById("tablaBody");
+  const filtroTxt = document.getElementById("filtroBusqueda");
+  const filtroGrupo = document.getElementById("filtroGrupo");
+
+  // === Diccionario de usuarios disponibles ===
+  const usuarios = [
+    {% for u in usuarios %}
+      {value:"{{u.id}}", text:"{{u.nombre|escapejs}}"},
+    {% endfor %}
+  ];
+
+  // 🟢 Exportar diccionario global (para el Paso 4)
+  window.usuarios_dict = usuarios.reduce((map, obj) => {
+    map[obj.value] = obj.text;
+    return map;
+  }, {});
+
+  // === Objeto de selección ===
+  const seleccionados = {}; // guarda roles por documento
+
+  // 📄 Manejar selección de documentos
+  lista.addEventListener("change", e => {
+    if (!e.target.classList.contains("doc-checkbox")) return;
+    const chk = e.target;
+    const id = chk.value;
+    const nombre = chk.dataset.nombre;
+
+    if (chk.checked) addRow(id, nombre);
+    else removeRow(id);
+    tabla.style.display = Object.keys(seleccionados).length ? "block" : "none";
+  });
+
+  // 🧱 Crear fila dinámica con selectores
+  function addRow(id, nombre) {
+    if (seleccionados[id]) return;
+    seleccionados[id] = { redactores: [], revisores: [], aprobadores: [] };
+
+    const tr = document.createElement("tr");
+    tr.id = "row-" + id;
+    tr.innerHTML = `
+      <td><strong>${nombre}</strong><input type="hidden" name="documento_id[]" value="${id}"></td>
+      <td><div id="hidden-redactor-${id}"></div><select id="selRed-${id}" multiple></select></td>
+      <td><div id="hidden-revisor-${id}"></div><select id="selRev-${id}" multiple></select></td>
+      <td><div id="hidden-aprobador-${id}"></div><select id="selApr-${id}" multiple></select></td>
+      <td><button type="button" class="btn-remove" data-id="${id}">Quitar</button></td>
+    `;
+    tbody.appendChild(tr);
+
+    crearSelector(`#selRed-${id}`, "redactores", `hidden-redactor-${id}`, id);
+    crearSelector(`#selRev-${id}`, "revisores", `hidden-revisor-${id}`, id);
+    crearSelector(`#selApr-${id}`, "aprobadores", `hidden-aprobador-${id}`, id);
+
+    tr.querySelector(".btn-remove").addEventListener("click", () => {
+      document.querySelector(`.doc-checkbox[value="${id}"]`).checked = false;
+      removeRow(id);
+      tabla.style.display = Object.keys(seleccionados).length ? "block" : "none";
+    });
+  }
+
+  // 🧩 Crear selector TomSelect sincronizado
+  function crearSelector(selectId, role, hiddenDivId, docId) {
+    const ts = new TomSelect(selectId, {
+      plugins: ["remove_button"],
+      options: usuarios,
+      hideSelected: true,
+      placeholder: "Seleccionar...",
     });
 
-    // Toggle roles de cada documento
-    document.querySelectorAll(".documento-item").forEach(docLabel => {
-        docLabel.addEventListener("click", function(e) {
-            if(e.target.tagName.toLowerCase() === 'input') return;
-            const docId = docLabel.querySelector('input[type="checkbox"]').value;
-            const rolesDiv = document.getElementById("roles-" + docId);
-            const icon = docLabel.querySelector(".toggle-icon-doc");
-            if(rolesDiv.style.display === "none") {
-                rolesDiv.style.display = "flex";
-                icon.style.transform = "rotate(90deg)";
-            } else {
-                rolesDiv.style.display = "none";
-                icon.style.transform = "rotate(0deg)";
-            }
-        });
+    ts.on("change", function() {
+      const valores = ts.getValue();
+      seleccionados[docId][role] = valores;
+      syncHidden(hiddenDivId, role, docId, valores);
     });
+  }
+
+  // 🪄 Sincronizar inputs ocultos para envío de datos
+  function syncHidden(hiddenDivId, role, docId, valores) {
+    const host = document.getElementById(hiddenDivId);
+    host.innerHTML = "";
+    const roleMap = {
+      redactores: "redactor",
+      revisores: "revisor",
+      aprobadores: "aprobador"
+    };
+    valores.forEach(v => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = `${roleMap[role]}_id_${docId}[]`;
+      input.value = v;
+      host.appendChild(input);
+    });
+  }
+
+  // 🗑️ Eliminar fila
+  function removeRow(id) {
+    delete seleccionados[id];
+    const tr = document.getElementById("row-" + id);
+    if (tr) tr.remove();
+  }
+
+  // 🔎 Filtros dinámicos
+  function filtrar() {
+    const texto = filtroTxt.value.toLowerCase();
+    const grupoSel = filtroGrupo.value;
+    lista.querySelectorAll(".doc-item").forEach(item => {
+      const matchTexto = item.querySelector(".doc-nombre").textContent.toLowerCase().includes(texto);
+      const matchGrupo = !grupoSel || item.dataset.grupo === grupoSel;
+      item.style.display = (matchTexto && matchGrupo) ? "flex" : "none";
+    });
+  }
+
+  filtroTxt.addEventListener("input", filtrar);
+  filtroGrupo.addEventListener("change", filtrar);
 });
 </script>
+

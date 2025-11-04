@@ -137,9 +137,7 @@ table tr:hover { background: #fdf2e8; }
         <div class="indicator"><span>Fecha Cierre del Proyecto:</span> 
             <span>{{ proyecto.fecha_cierre_proyecto|date:"d/m/Y"|default:"(Sin fecha)" }}</span>
         </div>
-
         <div class="indicator"><span>Abreviatura:</span> <span>{{ proyecto.proyecto_abreviatura|default:"(Sin abreviatura)" }}</span></div>
-
     </div>
 
     <!-- Contrato y Cliente lado a lado -->
@@ -162,54 +160,50 @@ table tr:hover { background: #fdf2e8; }
                 <a href="" class="edit-icon" title="Editar Cliente">✏️</a>
             </h2>
             <div class="indicator"><span>Nombre:</span> <span>{{ proyecto.cliente_nombre }}</span></div>
+            <div class="indicator"><span>Abreviatura:</span> <span>{{ proyecto.cliente_abreviatura|default:"(Sin abreviatura)" }}</span></div>
             <div class="indicator"><span>RUT:</span> <span>{{ proyecto.cliente_rut }}</span></div>
             <div class="indicator"><span>Dirección:</span> <span>{{ proyecto.cliente_direccion }}</span></div>
             <div class="indicator"><span>Correo:</span> <span>{{ proyecto.cliente_correo }}</span></div>
             <div class="indicator"><span>Teléfono:</span> <span>{{ proyecto.cliente_telefono }}</span></div>
-            
         </div>
     </div>
 
-<!-- Máquinas Asociadas con scroll horizontal -->
-<div class="card table-scroll">
-    <h2>Máquinas Asociadas</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>Abreviatura</th>
-                <th>Marca</th>
-                <th>Modelo</th>
-                <th>Año</th>
-                <th>Tipo</th>
-                <th>Descripción</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for maquina in maquinas %}
-            <tr style="cursor:pointer;" onclick="console.log('Detalle máquina {{ maquina.id }}');">
-                <td>{{ maquina.nombre }}</td>
-                <td>{{ maquina.abreviatura  }}</td>
-                <td>{{ maquina.marca }}</td>
-                <td>{{ maquina.modelo }}</td>
-                <td>{{ maquina.anio_fabricacion }}</td>
-                <td>{{ maquina.tipo }}</td>
-                <td>{{ maquina.descripcion }}</td>
-                <td>
-                    <!-- Icono Editar -->
-                    <span class="edit-icon" title="Editar" onclick="event.stopPropagation(); window.location.href='{% url 'usuario:editar_maquina' maquina.id %}'">✏️</span>
-
-
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="8" class="text-muted">No hay máquinas asociadas.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
+    <!-- Máquinas Asociadas -->
+    <div class="card table-scroll">
+        <h2>Máquinas Asociadas</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Abreviatura</th>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Año</th>
+                    <th>Tipo</th>
+                    <th>Descripción</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for maquina in maquinas %}
+                <tr style="cursor:pointer;" onclick="console.log('Detalle máquina {{ maquina.id }}');">
+                    <td>{{ maquina.nombre }}</td>
+                    <td>{{ maquina.abreviatura }}</td>
+                    <td>{{ maquina.marca }}</td>
+                    <td>{{ maquina.modelo }}</td>
+                    <td>{{ maquina.anio_fabricacion }}</td>
+                    <td>{{ maquina.tipo }}</td>
+                    <td>{{ maquina.descripcion }}</td>
+                    <td>
+                        <span class="edit-icon" title="Editar" onclick="event.stopPropagation(); window.location.href='{% url 'usuario:editar_maquina' maquina.id %}'">✏️</span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" class="text-muted">No hay máquinas asociadas.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
     <!-- Requerimientos de Documentos -->
     <div class="card section-docs">
@@ -218,6 +212,7 @@ table tr:hover { background: #fdf2e8; }
             <thead>
                 <tr>
                     <th>Documento Técnico</th>
+                    <th>Abrev.</th>
                     <th>Estado Actual</th>
                     <th>Fecha Registro</th>
                     <th>Acciones</th>
@@ -227,6 +222,7 @@ table tr:hover { background: #fdf2e8; }
                 {% for req in requerimientos %}
                 <tr style="cursor:pointer;" onclick="window.location.href='{% url 'usuario:detalle_documento' req.id %}'">
                     <td>{{ req.nombre_documento_tecnico }}</td>
+                    <td>{{ req.abreviatura|default:"-" }}</td>
                     <td>{{ req.estado_actual }}</td>
                     <td>{{ req.fecha_registro|date:"d/m/Y H:i" }}</td>
                     <td>
@@ -235,17 +231,15 @@ table tr:hover { background: #fdf2e8; }
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="text-muted">No hay documentos requeridos.</td>
+                    <td colspan="5" class="text-muted">No hay documentos requeridos.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        
-    <a href="{% url 'usuario:nuevo_requerimiento' proyecto.proyecto_id %}" class="btn btn-secondary">
-        Crear nuevo requerimiento
-    </a>
 
+        <a href="{% url 'usuario:nuevo_requerimiento' proyecto.proyecto_id %}" class="btn btn-secondary">
+            Crear nuevo requerimiento
+        </a>
     </div>
-
 </div>
 {% endblock %}

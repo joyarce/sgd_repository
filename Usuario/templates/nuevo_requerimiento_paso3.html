@@ -1,28 +1,150 @@
 <!-- nuevo_requerimiento_paso3.html -->
 <div class="step-content" id="step-3" style="display:none;">
-    <div class="card">
-        <h3>Asignación de Equipo</h3>
-        <small style="margin-bottom:15px; color: var(--metso-dark-gray);">Seleccione a los participantes con el rol correspondiente.</small>
+    <div class="card shadow-sm p-4">
+        <h3 class="mb-3 text-primary fw-semibold">
+            <i class="fa-solid fa-users-gear me-2"></i> Asignación de Equipo de Trabajo
+        </h3>
 
-        <label for="redactores">Redactores</label>
-        <select id="redactores" name="redactores" multiple required>
-            {% for u in usuarios %}
-                <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
-            {% endfor %}
-        </select>
+        <p class="text-muted mb-4" style="color: var(--metso-dark-gray);">
+            Seleccione a los participantes con el rol correspondiente.  
+            Cada rol define los permisos dentro del ciclo de vida del documento técnico.
+        </p>
 
-        <label for="revisores">Revisores</label>
-        <select id="revisores" name="revisores" multiple required>
-            {% for u in usuarios %}
-                <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
-            {% endfor %}
-        </select>
+        <div class="row g-4">
+            <!-- Redactores -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="text-secondary fw-semibold mb-3">
+                            <i class="fa-solid fa-pen-to-square me-2"></i> Redactores
+                        </h5>
+                        <select id="select-redactores" name="redactores" multiple required class="form-select form-select-sm">
+                            {% for u in usuarios %}
+                                <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Responsables de crear y modificar el documento.</small>
+                    </div>
+                </div>
+            </div>
 
-        <label for="aprobadores">Aprobadores</label>
-        <select id="aprobadores" name="aprobadores" multiple required>
-            {% for u in usuarios %}
-                <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
-            {% endfor %}
-        </select>
+            <!-- Revisores -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="text-secondary fw-semibold mb-3">
+                            <i class="fa-solid fa-magnifying-glass me-2"></i> Revisores
+                        </h5>
+                        <select id="select-revisores" name="revisores" multiple required class="form-select form-select-sm">
+                            {% for u in usuarios %}
+                                <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Evalúan el contenido técnico y su coherencia.</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aprobadores -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="text-secondary fw-semibold mb-3">
+                            <i class="fa-solid fa-check-double me-2"></i> Aprobadores
+                        </h5>
+                        <select id="select-aprobadores" name="aprobadores" multiple required class="form-select form-select-sm">
+                            {% for u in usuarios %}
+                                <option value="{{ u.0 }}">{{ u.1 }} ({{ u.2 }})</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Autorizan la publicación del documento final.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- Mensaje de validación -->
+        <div id="alerta-rol" class="alert alert-warning py-2 px-3 d-none" style="font-size: 0.9rem;">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> Un usuario no puede ser Redactor y Revisor al mismo tiempo.
+        </div>
+
+        <!-- Resumen dinámico -->
+        <div class="mt-3">
+            <h6 class="fw-semibold text-secondary mb-2">
+                <i class="fa-solid fa-list-check me-1"></i> Equipo Seleccionado:
+            </h6>
+            <div id="resumen-equipo" class="small text-muted">
+                Aún no se han seleccionado usuarios.
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Estilos -->
+<style>
+.step-content select[multiple] {
+    min-height: 150px;
+    width: 100%;
+    font-size: 0.9rem;
+    padding: 6px;
+    border: 1px solid #d6d6d6;
+    border-radius: 6px;
+    background-color: #fdfdfd;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+}
+.step-content select[multiple]:focus {
+    border-color: #ff6600;
+    outline: none;
+}
+.card .card-body { min-height: 270px; padding: 1rem 1.25rem; }
+hr { border-top: 1px solid #e5e5e5; }
+</style>
+
+<!-- Script -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const selects = {
+        redactores: document.getElementById("select-redactores"),
+        revisores: document.getElementById("select-revisores"),
+        aprobadores: document.getElementById("select-aprobadores")
+    };
+    const resumen = document.getElementById("resumen-equipo");
+    const alertaRol = document.getElementById("alerta-rol");
+
+    function actualizarResumen() {
+        let html = "";
+        Object.entries(selects).forEach(([rol, sel]) => {
+            const seleccionados = Array.from(sel.selectedOptions).map(o => o.text);
+            if (seleccionados.length > 0)
+                html += `<b>${rol.charAt(0).toUpperCase() + rol.slice(1)}:</b> ${seleccionados.join(", ")}<br>`;
+        });
+        resumen.innerHTML = html || "Aún no se han seleccionado usuarios.";
+    }
+
+    // Regla: nadie puede ser Redactor y Revisor simultáneamente
+    function validarRoles() {
+        const redactores = Array.from(selects.redactores.selectedOptions).map(o => o.value);
+        const revisores = Array.from(selects.revisores.selectedOptions).map(o => o.value);
+
+        const conflicto = redactores.filter(id => revisores.includes(id));
+        if (conflicto.length > 0) {
+            // quitar de revisores automáticamente
+            conflicto.forEach(id => {
+                const option = selects.revisores.querySelector(`option[value="${id}"]`);
+                if (option) option.selected = false;
+            });
+            alertaRol.classList.remove("d-none");
+            setTimeout(() => alertaRol.classList.add("d-none"), 4000);
+        }
+    }
+
+    Object.values(selects).forEach(sel => {
+        sel.addEventListener("change", () => {
+            validarRoles();
+            actualizarResumen();
+        });
+    });
+});
+</script>

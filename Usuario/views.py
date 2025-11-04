@@ -145,9 +145,9 @@ def detalle_proyecto(request, proyecto_id):
     Muestra los detalles completos de un proyecto incluyendo:
     - Proyecto
     - Contrato
-    - Cliente
+    - Cliente (con abreviatura)
     - Máquinas (usa abreviatura)
-    - Requerimientos
+    - Requerimientos (incluye abreviatura del documento técnico)
     """
     sql = """
     WITH UltimoEstado AS (
@@ -191,6 +191,7 @@ def detalle_proyecto(request, proyecto_id):
         -- Cliente
         CL.id AS cliente_id,
         CL.nombre AS cliente_nombre,
+        CL.abreviatura AS cliente_abreviatura,
         CL.rut AS cliente_rut,
         CL.direccion AS cliente_direccion,
         CL.correo_contacto AS cliente_correo,
@@ -199,6 +200,7 @@ def detalle_proyecto(request, proyecto_id):
         -- Requerimientos
         RDT.id AS requerimiento_id,
         TDT.nombre AS nombre_documento_tecnico,
+        TDT.abreviatura AS abreviatura_documento_tecnico,
         E.nombre AS estado_actual_documento,
         RDT.fecha_registro AS requerimiento_fecha,
 
@@ -237,15 +239,18 @@ def detalle_proyecto(request, proyecto_id):
     req_ids, maquina_ids = set(), set()
 
     for row in resultados:
+        # Requerimientos únicos
         if row['requerimiento_id'] and row['requerimiento_id'] not in req_ids:
             requerimientos.append({
                 'id': row['requerimiento_id'],
                 'nombre_documento_tecnico': row['nombre_documento_tecnico'],
+                'abreviatura': row['abreviatura_documento_tecnico'],
                 'estado_actual': row['estado_actual_documento'],
                 'fecha_registro': row['requerimiento_fecha'],
             })
             req_ids.add(row['requerimiento_id'])
 
+        # Máquinas únicas
         if row['maquina_id'] and row['maquina_id'] not in maquina_ids:
             maquinas.append({
                 'id': row['maquina_id'],
@@ -264,6 +269,7 @@ def detalle_proyecto(request, proyecto_id):
         'requerimientos': requerimientos,
         'maquinas': maquinas,
     })
+
 
 
 
@@ -527,6 +533,17 @@ def new_folder(request):
     return redirect("list_files")
 
 
+# # Evita solapamiento de Redactor y Revisor
+# redactores = set(proyecto_temp["equipo_roles"]["redactores"])
+# revisores = set(proyecto_temp["equipo_roles"]["revisores"])
+# if redactores & revisores:
+#     raise ValidationError("Un usuario no puede ser Redactor y Revisor simultáneamente.")
+
+
+
+
+
+
 @login_required 
 def nuevo_requerimiento(request, proyecto_id):
     from django.utils import timezone
@@ -739,56 +756,47 @@ from django.http import JsonResponse
 import json
 import pprint
 
+def _get_nombres_por_ids(valor, usuarios):
+    """
+    Convierte una lista o string de IDs en una cadena de nombres de usuario.
+    Ejemplo: '1' -> 'Juan Pérez', ['1','2'] -> 'Juan Pérez, María Gómez'
+    """
+    if not valor:
+        return "-"
+    if isinstance(valor, str):
+        valor = [valor]
+    nombres = []
+    for v in valor:
+        for u in usuarios:
+            if str(u["id"]) == str(v):
+                nombres.append(u["nombre"])
+    return ", ".join(nombres) if nombres else "-"
+
+
 @login_required
 def crear_proyecto(request):
-    import json
     from django.db import connection
-    from django.shortcuts import render
-    from django.http import JsonResponse
 
-    # --- Sesión temporal del proyecto ---
-    if 'proyecto_temp' not in request.session:
-        request.session['proyecto_temp'] = {}
-    proyecto_temp = request.session['proyecto_temp']
-
-    # Inicializar campos vacíos
-    campos = [
-        'nombre', 'descripcion', 'fecha_recepcion_evaluacion', 'fecha_inicio_planificacion',
-        'fecha_inicio_ejecucion', 'fecha_cierre_proyecto', 'abreviatura',
-        'contrato_id', 'numero_contrato', 'monto_total', 'contrato_fecha_firma',
-        'cliente_id', 'cliente_nombre', 'cliente_rut', 'cliente_direccion',
-        'cliente_correo', 'cliente_telefono',
-        'faena_id', 'faena_nombre', 'faena_ubicacion',
-        'maquinas_ids'  # <-- lista de máquinas
-    ]
-    for campo in campos:
-        proyecto_temp.setdefault(campo, '' if campo != 'maquinas_ids' else [])
-    request.session['proyecto_temp'] = proyecto_temp
-
+    # === Definir pasos ===
     steps = ["Datos Generales", "Contrato y Cliente", "Grupos y Documentos", "Confirmación"]
 
-    # --- Cargar datos de apoyo ---
+    # === Cargar datos para selects ===
     with connection.cursor() as cursor:
-        # Usuarios
         cursor.execute("SELECT id, nombre, email FROM usuarios ORDER BY nombre")
         usuarios = [{"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()]
 
-        # Administradores
         cursor.execute("SELECT id, nombre, email FROM usuarios WHERE cargo_id = 4 ORDER BY nombre")
         usuarios_administrador = [{"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()]
 
-        # Grupos y documentos técnicos
         cursor.execute("SELECT id, nombre, descripcion FROM categoria_documentos_tecnicos ORDER BY nombre")
         grupos_maestros = [{"id": r[0], "nombre": r[1], "descripcion": r[2]} for r in cursor.fetchall()]
 
         cursor.execute("SELECT id, categoria_id, nombre FROM tipo_documentos_tecnicos ORDER BY nombre")
         documentos = [{"id": r[0], "categoria_id": r[1], "nombre": r[2]} for r in cursor.fetchall()]
 
-        # Máquinas
         cursor.execute("SELECT id, nombre, abreviatura FROM maquinas ORDER BY nombre")
         maquinas = [{"id": r[0], "nombre": r[1], "abreviatura": r[2] or ""} for r in cursor.fetchall()]
 
-        # Contratos + Cliente asociado
         cursor.execute("""
             SELECT c.id, c.numero_contrato, c.monto_total, c.fecha_firma,
                    c.representante_cliente_nombre, c.representante_cliente_correo,
@@ -798,134 +806,192 @@ def crear_proyecto(request):
             JOIN clientes cl ON cl.id = c.cliente_id
             ORDER BY c.numero_contrato
         """)
-        contratos = []
-        for r in cursor.fetchall():
-            contratos.append({
-                "id": r[0],
-                "numero_contrato": r[1],
-                "monto_total": r[2],
-                "fecha_firma": r[3],
-                "representante_cliente_nombre": r[4],
-                "representante_cliente_correo": r[5],
-                "representante_cliente_telefono": r[6],
-                "cliente_id": r[7],
-                "cliente_nombre": r[8],
-                "cliente_rut": r[9],
-                "cliente_direccion": r[10],
-                "cliente_correo": r[11],
-                "cliente_telefono": r[12],
-            })
+        contratos = [{
+            "id": r[0],
+            "numero_contrato": r[1],
+            "monto_total": r[2],
+            "fecha_firma": r[3],
+            "representante_cliente_nombre": r[4],
+            "representante_cliente_correo": r[5],
+            "representante_cliente_telefono": r[6],
+            "cliente_id": r[7],
+            "cliente_nombre": r[8],
+            "cliente_rut": r[9],
+            "cliente_direccion": r[10],
+            "cliente_correo": r[11],
+            "cliente_telefono": r[12],
+        } for r in cursor.fetchall()]
 
-        # Clientes
         cursor.execute("SELECT id, nombre FROM clientes ORDER BY nombre")
         clientes = [{"id": r[0], "nombre": r[1]} for r in cursor.fetchall()]
 
-        # Faenas
         cursor.execute("SELECT id, cliente_id, nombre, ubicacion FROM faenas ORDER BY nombre")
         faenas = [{"id": r[0], "cliente_id": r[1], "nombre": r[2], "ubicacion": r[3]} for r in cursor.fetchall()]
 
-    # --- Asociar documentos a cada grupo y roles del proyecto ---
+    # Vincular documentos con su grupo
     for grupo in grupos_maestros:
         grupo_docs = [d for d in documentos if d["categoria_id"] == grupo["id"]]
-        for doc in grupo_docs:
-            # roles previamente seleccionados en la sesión (si hay)
-            doc["redactor_ids"] = proyecto_temp.get(f"redactor_id_{doc['id']}", [])
-            doc["revisor_ids"] = proyecto_temp.get(f"revisor_id_{doc['id']}", [])
-            doc["aprobador_ids"] = proyecto_temp.get(f"aprobador_id_{doc['id']}", [])
         grupo["documentos"] = grupo_docs
 
-    # --- Procesar envío del formulario ---
+    # === POST FINAL: simular inserciones ===
     if request.method == "POST":
-        proyecto_data = json.loads(request.POST.get("proyecto_data", "{}"))
+        form_data = request.POST
 
         with connection.cursor() as cursor:
-            # Crear cliente si no existe
-            cliente_id = proyecto_data.get("cliente_id")
-            if not cliente_id and proyecto_data.get("cliente_nombre"):
-                cursor.execute("""
-                    INSERT INTO clientes (nombre, rut, direccion, correo_contacto, telefono_contacto)
-                    VALUES (%s, %s, %s, %s, %s) RETURNING id
-                """, [
-                    proyecto_data["cliente_nombre"], proyecto_data["cliente_rut"],
-                    proyecto_data["cliente_direccion"], proyecto_data["cliente_correo"],
-                    proyecto_data["cliente_telefono"]
-                ])
-                cliente_id = cursor.fetchone()[0]
+            print("\n" + "=" * 90)
+            print("💡 [MODO DESARROLLO] Simulación de inserciones SQL")
+            print("=" * 90)
 
-            # Crear contrato si no se seleccionó uno existente
-            contrato_id = proyecto_data.get("contrato_id")
+            # CLIENTE
+            cliente_id = form_data.get("cliente_id")
+            if not cliente_id and form_data.get("cliente_nombre"):
+                # cursor.execute("""
+                #     INSERT INTO clientes (nombre, rut, direccion, correo_contacto, telefono_contacto)
+                #     VALUES (%s, %s, %s, %s, %s) RETURNING id
+                # """, [
+                #     form_data.get("cliente_nombre"),
+                #     form_data.get("cliente_rut"),
+                #     form_data.get("cliente_direccion"),
+                #     form_data.get("cliente_correo"),
+                #     form_data.get("cliente_telefono")
+                # ])
+                print("🧾 INSERT CLIENTE →", {
+                    "nombre": form_data.get("cliente_nombre"),
+                    "rut": form_data.get("cliente_rut"),
+                    "direccion": form_data.get("cliente_direccion"),
+                    "correo_contacto": form_data.get("cliente_correo"),
+                    "telefono_contacto": form_data.get("cliente_telefono")
+                })
+                cliente_id = "SIM_CLIENTE_ID"
+
+            # CONTRATO
+            contrato_id = form_data.get("contrato_id")
             if not contrato_id:
-                cursor.execute("""
-                    INSERT INTO contratos (
-                        numero_contrato, monto_total, fecha_firma,
-                        representante_cliente_nombre, representante_cliente_correo,
-                        representante_cliente_telefono, cliente_id, created_at
-                    )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-                    RETURNING id
-                """, [
-                    proyecto_data["numero_contrato"], proyecto_data["monto_total"],
-                    proyecto_data["contrato_fecha_firma"],
-                    proyecto_data["representante_cliente_nombre"],
-                    proyecto_data["representante_cliente_correo"],
-                    proyecto_data["representante_cliente_telefono"],
-                    cliente_id
-                ])
-                contrato_id = cursor.fetchone()[0]
+                # cursor.execute("""
+                #     INSERT INTO contratos (
+                #         numero_contrato, monto_total, fecha_firma,
+                #         representante_cliente_nombre, representante_cliente_correo,
+                #         representante_cliente_telefono, cliente_id, created_at
+                #     )
+                #     VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                #     RETURNING id
+                # """, [
+                #     form_data.get("numero_contrato"),
+                #     form_data.get("monto_total"),
+                #     form_data.get("contrato_fecha_firma"),
+                #     form_data.get("representante_cliente_nombre"),
+                #     form_data.get("representante_cliente_correo"),
+                #     form_data.get("representante_cliente_telefono"),
+                #     cliente_id
+                # ])
+                print("📑 INSERT CONTRATO →", {
+                    "numero_contrato": form_data.get("numero_contrato"),
+                    "monto_total": form_data.get("monto_total"),
+                    "fecha_firma": form_data.get("contrato_fecha_firma"),
+                    "representante_cliente_nombre": form_data.get("representante_cliente_nombre"),
+                    "representante_cliente_correo": form_data.get("representante_cliente_correo"),
+                    "representante_cliente_telefono": form_data.get("representante_cliente_telefono"),
+                    "cliente_id": cliente_id
+                })
+                contrato_id = "SIM_CONTRATO_ID"
 
-            # Crear faena si no se seleccionó una existente
-            faena_id = proyecto_data.get("faena_id")
-            if not faena_id and proyecto_data.get("faena_nombre"):
-                cursor.execute("""
-                    INSERT INTO faenas (cliente_id, nombre, ubicacion)
-                    VALUES (%s, %s, %s) RETURNING id
-                """, [cliente_id, proyecto_data["faena_nombre"], proyecto_data.get("faena_ubicacion")])
-                faena_id = cursor.fetchone()[0]
+            # FAENA
+            faena_id = form_data.get("faena_id")
+            if not faena_id and form_data.get("faena_nombre"):
+                # cursor.execute("""
+                #     INSERT INTO faenas (cliente_id, nombre, ubicacion)
+                #     VALUES (%s, %s, %s) RETURNING id
+                # """, [cliente_id, form_data.get("faena_nombre"), form_data.get("faena_ubicacion")])
+                print("🏗️ INSERT FAENA →", {
+                    "cliente_id": cliente_id,
+                    "nombre": form_data.get("faena_nombre"),
+                    "ubicacion": form_data.get("faena_ubicacion")
+                })
+                faena_id = "SIM_FAENA_ID"
 
-            # Crear proyecto
-            cursor.execute("""
-                INSERT INTO proyectos (
-                    nombre, descripcion, fecha_recepcion_evaluacion,
-                    fecha_inicio_planificacion, fecha_inicio_ejecucion,
-                    fecha_cierre_proyecto, abreviatura,
-                    administrador_id, contrato_id, cliente_id, faena_id
-                )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id
-            """, [
-                proyecto_data.get("nombre"),
-                proyecto_data.get("descripcion"),
-                proyecto_data.get("fecha_recepcion_evaluacion"),
-                proyecto_data.get("fecha_inicio_planificacion"),
-                proyecto_data.get("fecha_inicio_ejecucion"),
-                proyecto_data.get("fecha_cierre_proyecto"),
-                proyecto_data.get("abreviatura"),
-                proyecto_data.get("administrador_id"),
-                contrato_id,
-                cliente_id,
-                faena_id
-            ])
-            proyecto_id = cursor.fetchone()[0]
+            # PROYECTO
+            # cursor.execute("""
+            #     INSERT INTO proyectos (
+            #         nombre, descripcion, fecha_recepcion_evaluacion,
+            #         fecha_inicio_planificacion, fecha_inicio_ejecucion,
+            #         fecha_cierre_proyecto, abreviatura,
+            #         administrador_id, contrato_id, cliente_id, faena_id
+            #     )
+            #     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            #     RETURNING id
+            # """, [
+            #     form_data.get("nombre"),
+            #     form_data.get("descripcion"),
+            #     form_data.get("fecha_recepcion_evaluacion"),
+            #     form_data.get("fecha_inicio_planificacion"),
+            #     form_data.get("fecha_inicio_ejecucion"),
+            #     form_data.get("fecha_cierre_proyecto"),
+            #     form_data.get("abreviatura"),
+            #     form_data.get("administrador") or form_data.get("administrador_id"),
+            #     contrato_id,
+            #     cliente_id,
+            #     faena_id
+            # ])
+            print("📋 INSERT PROYECTO →", {
+                "nombre": form_data.get("nombre"),
+                "descripcion": form_data.get("descripcion"),
+                "fecha_recepcion_evaluacion": form_data.get("fecha_recepcion_evaluacion"),
+                "fecha_inicio_planificacion": form_data.get("fecha_inicio_planificacion"),
+                "fecha_inicio_ejecucion": form_data.get("fecha_inicio_ejecucion"),
+                "fecha_cierre_proyecto": form_data.get("fecha_cierre_proyecto"),
+                "abreviatura": form_data.get("abreviatura"),
+                "administrador_id": form_data.get("administrador") or form_data.get("administrador_id"),
+                "contrato_id": contrato_id,
+                "cliente_id": cliente_id,
+                "faena_id": faena_id
+            })
+            proyecto_id = "SIM_PROYECTO_ID"
 
-            # --- Asociar máquinas múltiples ---
-            maquinas_ids = proyecto_data.get("maquinas_ids", [])
+            # MÁQUINAS
+            maquinas_ids = form_data.getlist("maquinas_ids[]")
             for maquina_id in maquinas_ids:
-                cursor.execute("""
-                    INSERT INTO proyecto_maquina (proyecto_id, maquina_id)
-                    VALUES (%s, %s) ON CONFLICT DO NOTHING
-                """, [proyecto_id, maquina_id])
+                # cursor.execute("""
+                #     INSERT INTO proyecto_maquina (proyecto_id, maquina_id)
+                #     VALUES (%s, %s) ON CONFLICT DO NOTHING
+                # """, [proyecto_id, maquina_id])
+                print("🔩 INSERT PROYECTO_MAQUINA →", {"proyecto_id": proyecto_id, "maquina_id": maquina_id})
 
-        # Limpiar la sesión
-        del request.session['proyecto_temp']
-        return JsonResponse({"status": "ok", "proyecto_id": proyecto_id})
+            # DOCUMENTOS TÉCNICOS Y ROLES
+            print("\n📂 Documentos técnicos seleccionados y asignaciones:")
+            documentos_ids = form_data.getlist("documento_id[]")
 
-    # --- Render ---
+            for doc_id in documentos_ids:
+                redactores = form_data.getlist(f"redactor_id_{doc_id}[]")
+                revisores = form_data.getlist(f"revisor_id_{doc_id}[]")
+                aprobadores = form_data.getlist(f"aprobador_id_{doc_id}[]")
+
+                # cursor.execute("""
+                #     INSERT INTO requerimiento_documento_tecnico (proyecto_id, tipo_documento_id)
+                #     VALUES (%s, %s) RETURNING id
+                # """, [proyecto_id, doc_id])
+                # requerimiento_id = cursor.fetchone()[0]
+
+                print({
+                    "documento_id": doc_id,
+                    "redactores": redactores,
+                    "revisores": revisores,
+                    "aprobadores": aprobadores
+                })
+
+            print("=" * 90 + "\n")
+
+        messages.info(request, "💡 [Modo desarrollo] Datos impresos en consola, sin guardar en la BDD.")
+        return redirect("usuario:lista_proyectos")
+
+    # === Render ===
     step_templates = [
         "crear_proyecto_paso1.html",
         "crear_proyecto_paso2.html",
         "crear_proyecto_paso3.html",
         "crear_proyecto_paso4.html",
     ]
+
+    step_actual = int(request.GET.get("step", "1"))
 
     return render(request, "crear_proyecto.html", {
         "steps": steps,
@@ -935,51 +1001,15 @@ def crear_proyecto(request):
         "grupos_maestros": grupos_maestros,
         "documentos": documentos,
         "maquinas": maquinas,
-        "proyecto_temp": proyecto_temp,
         "contratos": contratos,
         "clientes": clientes,
         "faenas": faenas,
+        "step_actual": step_actual,
     })
 
 
 
-
-@login_required
-def guardar_paso_proyecto(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Método no permitido"}, status=405)
-
-    try:
-        data = json.loads(request.body)
-        paso = int(data.get('paso', 0))
-        form_data = data.get('form_data', {})
-
-        # ⚠️ Omitir archivos temporales si existen
-        form_data.pop('archivo', None)
-
-        # Obtener proyecto temporal de la sesión
-        proyecto_temp = request.session.get('proyecto_temp', {})
-
-        # Guardar cada paso en su propia clave, sin sobrescribir otros pasos
-        paso_key = f'paso_{paso}'
-        if paso_key not in proyecto_temp:
-            proyecto_temp[paso_key] = {}
-
-        # Actualiza solo las claves de este paso
-        proyecto_temp[paso_key].update(form_data)
-
-        # Guardar de nuevo en sesión
-        request.session['proyecto_temp'] = proyecto_temp
-
-        print(f"✅ Paso {paso} guardado en sesión:", proyecto_temp[paso_key])
-
-        return JsonResponse({"status": "ok"})
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({"error": str(e)}, status=400)
-
+#Paso 1
 @csrf_exempt
 @login_required
 def generar_abreviatura_proyecto(request):
@@ -1019,6 +1049,83 @@ def generar_abreviatura_proyecto(request):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
+#paso2 ####################  ####################    ####################    ####################  
+
+
+def generar_abreviatura_cliente(nombre):
+    nombre = unidecode.unidecode(nombre.upper().strip())
+    nombre = re.sub(r'[^A-ZÑ\s]', ' ', nombre)
+    nombre = re.sub(r'\s+', ' ', nombre).strip()
+    palabras = nombre.split()
+
+    stopwords = {
+        "DE", "DEL", "LA", "LOS", "LAS", "Y", "E", "S", "SA", "SAA",
+        "LTDA", "LIMITADA", "COMPANIA", "COMPAÑIA", "CORPORACION",
+        "CORPORACIÓN", "EMPRESA", "GRUPO", "INDUSTRIAL", "SERVICIOS"
+    }
+    palabras = [p for p in palabras if p not in stopwords]
+
+    if not palabras:
+        base = "GEN"
+    elif len(palabras) == 1:
+        base = palabras[0][:6]
+    else:
+        partes = [p[:3] for p in palabras[:3]]
+        base = ''.join(partes).upper()
+        base = base[:6] if len(base) > 6 else base
+
+    abrev_final = base
+    contador = 1
+    with connection.cursor() as cursor:
+        while True:
+            cursor.execute("SELECT COUNT(*) FROM clientes WHERE abreviatura = %s;", [abrev_final])
+            if cursor.fetchone()[0] == 0:
+                break
+            abrev_final = f"{base}{contador}"
+            contador += 1
+    return abrev_final
+
+
+
+@csrf_exempt
+@login_required
+def generar_abreviatura_cliente_ajax(request):
+    """
+    Genera la abreviatura desde el backend según el nombre enviado por AJAX.
+    Mantiene las mismas reglas que generar_abreviatura_cliente().
+    """
+    try:
+        nombre = request.GET.get("nombre", "").strip()
+        if not nombre:
+            return JsonResponse({"abreviatura": ""})
+        
+        abreviatura = generar_abreviatura_cliente(nombre)
+        return JsonResponse({"abreviatura": abreviatura})
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+
+@login_required
+@csrf_exempt
+def obtener_abreviatura_cliente(request, cliente_id):
+    """
+    Devuelve la abreviatura registrada para un cliente existente.
+    """
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT abreviatura FROM clientes WHERE id = %s;", [cliente_id])
+            result = cursor.fetchone()
+            if result and result[0]:
+                return JsonResponse({"abreviatura": result[0]})
+            else:
+                return JsonResponse({"abreviatura": None})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+    
+
+ ####################  ####################    ####################    ####################     
 
 
 def obtener_numordenservicio(path_archivo):
