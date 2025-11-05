@@ -1,0 +1,45 @@
+<!-- nuevo_requerimiento_paso4.html -->
+<div class="step-content" id="step-4" style="display:none;">
+  <div class="container" style="max-width:900px; margin-top:40px;">
+    <h2 style="color:#2f2f8c; font-weight:700;">🧾 Confirmación del Requerimiento Técnico</h2>
+    <p style="color:#666;">Revisa todos los datos antes de confirmar la creación del requerimiento.</p>
+
+    <!-- 📄 Proyecto -->
+    <div class="card" style="padding:20px; margin-top:20px;">
+      <h4>📄 Proyecto</h4>
+      <p><strong>ID:</strong> {{ proyecto.id }}</p>
+      <p><strong>Nombre:</strong> {{ proyecto.nombre }}</p>
+      <p><strong>Descripción:</strong> {{ proyecto.descripcion }}</p>
+    </div>
+
+    <!-- 📘 Documento Técnico -->
+    <div class="card" style="padding:20px; margin-top:20px;">
+      <h4>📘 Tipo de Documento Técnico</h4>
+      <p><strong>ID:</strong> {{ tipo_doc_id }}</p>
+      <p><strong>Observaciones:</strong> {{ observaciones|default:"-" }}</p>
+    </div>
+
+    <!-- 📅 Planificación completa -->
+    <div class="card" style="padding:20px; margin-top:20px;">
+      <h4>📅 Planificación</h4>
+      <ul>
+        <li><strong>Inicio de elaboración:</strong> {{ fecha_inicio_elaboracion|default:"-" }}</li>
+        <li><strong>Alertar días antes inicio:</strong> {{ alertar_dias_inicio|default:"-" }}</li>
+        <hr>
+        <li><strong>Primera revisión:</strong> {{ fecha_primera_revision|default:"-" }}</li>
+        <li><strong>Alertar días antes revisión:</strong> {{ alertar_dias_revision|default:"-" }}</li>
+        <hr>
+        <li><strong>Entrega final:</strong> {{ fecha_entrega|default:"-" }}</li>
+        <li><strong>Alertar días antes entrega:</strong> {{ alertar_dias_entrega|default:"-" }}</li>
+      </ul>
+    </div>
+
+    <!-- 👥 Roles -->
+    <div class="card" style="padding:20px; margin-top:20px;">
+      <h4>👥 Roles Asignados</h4>
+      <p><strong>Redactores:</strong> {{ redactores|join:", "|default:"-" }}</p>
+      <p><strong>Revisores:</strong> {{ revisores|join:", "|default:"-" }}</p>
+      <p><strong>Aprobadores:</strong> {{ aprobadores|join:", "|default:"-" }}</p>
+    </div>
+  </div>
+</div>

@@ -544,11 +544,10 @@ def new_folder(request):
 
 
 
-@login_required 
+@login_required
 def nuevo_requerimiento(request, proyecto_id):
     from django.utils import timezone
-    from django.db import transaction
-    from django.db import connection
+    from django.db import transaction, connection
 
     # --- Obtener info del proyecto ---
     with connection.cursor() as cursor:
@@ -559,75 +558,201 @@ def nuevo_requerimiento(request, proyecto_id):
 
     proyecto = {"id": row[0], "nombre": row[1], "descripcion": row[2]}
 
-    # --- Obtener tipos de documento técnico ---
+    # --- Tipos de documento técnico ---
     with connection.cursor() as cursor:
         cursor.execute("SELECT id, nombre FROM tipo_documentos_tecnicos ORDER BY nombre;")
         tipos_documento = cursor.fetchall()
 
-    # --- Obtener usuarios ---
+    # --- Usuarios disponibles ---
     with connection.cursor() as cursor:
         cursor.execute("SELECT id, nombre, email FROM usuarios ORDER BY nombre;")
         usuarios = cursor.fetchall()
 
+    # ===========================================================
+    # POST
+    # ===========================================================
     if request.method == "POST":
-        # --- Paso 1: detalles ---
+        paso = request.POST.get("paso_actual", "3")
+
+        # -------------------------------------------------------
+        # 🟠 PASO 4 → Confirmación final (simulación de inserción)
+        # -------------------------------------------------------
+        if paso == "4":
+            tipo_doc_id = request.POST.get("tipo_documento")
+            observaciones = request.POST.get("observaciones", "")
+            fecha_inicio_elaboracion = request.POST.get("fecha_inicio_elaboracion")
+            alertar_dias_inicio = request.POST.get("alertar_dias_inicio")
+            fecha_primera_revision = request.POST.get("fecha_primera_revision")
+            alertar_dias_revision = request.POST.get("alertar_dias_revision")
+            fecha_entrega = request.POST.get("fecha_entrega")
+            alertar_dias_entrega = request.POST.get("alertar_dias_entrega")
+            redactores = request.POST.getlist("redactores")
+            revisores = request.POST.getlist("revisores")
+            aprobadores = request.POST.getlist("aprobadores")
+
+            try:
+                with transaction.atomic():
+                    print("\n========== SIMULACIÓN FINAL DE INSERCIÓN ==========")
+                    print(f"📄 Proyecto ID: {proyecto_id}")
+                    print(f"📘 Tipo Documento Técnico ID: {tipo_doc_id}")
+                    print(f"🕒 Fecha de Registro: {timezone.now()}")
+                    print(f"🗒️ Observaciones: {observaciones}")
+                    print(f"🧱 Inicio Elaboración={fecha_inicio_elaboracion}, "
+                          f"Alertar={alertar_dias_inicio}")
+                    print(f"📆 Revisión={fecha_primera_revision}, Entrega={fecha_entrega}")
+                    print(f"🔔 Alertas: rev={alertar_dias_revision}, entr={alertar_dias_entrega}")
+
+                    # ====================================================
+                    # 🔸 Inserción del requerimiento (comentada)
+                    # ====================================================
+                    # cursor.execute("""
+                    #     INSERT INTO requerimiento_documento_tecnico
+                    #     (proyecto_id, tipo_documento_id, fecha_registro, observaciones)
+                    #     VALUES (%s, %s, %s, %s)
+                    #     RETURNING id;
+                    # """, [proyecto_id, tipo_doc_id, timezone.now(), observaciones])
+                    # req_id = cursor.fetchone()[0]
+
+                    req_id = 9999  # ID simulado para depuración
+                    print(f"✅ Se insertaría un nuevo requerimiento con ID simulado: {req_id}")
+
+                    # ====================================================
+                    # 🔸 Log inicial (comentado)
+                    # ====================================================
+                    print({
+                        "requerimiento_id": req_id,
+                        "usuario_id": request.user.id,
+                        "estado_origen_id": None,
+                        "estado_destino_id": 1,
+                        "created_at": timezone.now(),
+                        "observaciones": "El sistema ha habilitado la plantilla en el repositorio."
+                    })
+
+                    # cursor.execute("""
+                    #     INSERT INTO log_estado_requerimiento_documento
+                    #     (requerimiento_id, usuario_id, estado_origen_id, estado_destino_id, created_at, observaciones)
+                    #     VALUES (%s, %s, %s, %s, %s, %s);
+                    # """, [req_id, request.user.id, None, 1, timezone.now(),
+                    #      "El sistema ha habilitado la plantilla en el repositorio."])
+
+                    # ====================================================
+                    # 🔸 Asignación de roles (comentada)
+                    # ====================================================
+                    def imprimir_roles(lista, rol_id, nombre_rol):
+                        for u in lista:
+                            print(f"\n👤 Rol: {nombre_rol}")
+                            print({
+                                "requerimiento_id": req_id,
+                                "usuario_id": u,
+                                "rol_id": rol_id,
+                                "fecha_asignacion": timezone.now(),
+                                "activo": True
+                            })
+                            # cursor.execute("""
+                            #     INSERT INTO requerimiento_equipo_rol
+                            #     (requerimiento_id, usuario_id, rol_id, fecha_asignacion, activo)
+                            #     VALUES (%s, %s, %s, %s, TRUE);
+                            # """, [req_id, u, rol_id, timezone.now()])
+
+                    imprimir_roles(redactores, 1, "Redactor")
+                    imprimir_roles(revisores, 2, "Revisor")
+                    imprimir_roles(aprobadores, 3, "Aprobador")
+
+                    print("\n✅ SIMULACIÓN COMPLETA — no se ha modificado la base de datos.")
+                    print("====================================================")
+
+                return render(request, "simulacion_requerimiento.html", {
+                    "proyecto": proyecto,
+                    "tipo_doc_id": tipo_doc_id,
+                    "observaciones": observaciones,
+                    "redactores": redactores,
+                    "revisores": revisores,
+                    "aprobadores": aprobadores,
+                    "fecha_inicio_elaboracion": fecha_inicio_elaboracion,
+                    "alertar_dias_inicio": alertar_dias_inicio,
+                    "fecha_primera_revision": fecha_primera_revision,
+                    "alertar_dias_revision": alertar_dias_revision,
+                    "fecha_entrega": fecha_entrega,
+                    "alertar_dias_entrega": alertar_dias_entrega,
+                })
+
+            except Exception as e:
+                print(f"❌ Error en simulación: {e}")
+                return render(request, "error.html",
+                              {"mensaje": f"Error al simular creación: {str(e)}"})
+
+        # -------------------------------------------------------
+        # 🟠 PASO 3 → Avanza al paso 4 (confirmación)
+        # -------------------------------------------------------
         tipo_doc_id = request.POST.get("tipo_documento")
         observaciones = request.POST.get("observaciones", "")
-
-        # --- Paso 2: planificación ---
+        fecha_inicio_elaboracion = request.POST.get("fecha_inicio_elaboracion")
+        alertar_dias_inicio = request.POST.get("alertar_dias_inicio")
         fecha_primera_revision = request.POST.get("fecha_primera_revision")
         alertar_dias_revision = request.POST.get("alertar_dias_revision")
         fecha_entrega = request.POST.get("fecha_entrega")
         alertar_dias_entrega = request.POST.get("alertar_dias_entrega")
-
-        # --- Paso 3: roles ---
         redactores = request.POST.getlist("redactores")
         revisores = request.POST.getlist("revisores")
         aprobadores = request.POST.getlist("aprobadores")
 
-        try:
-            with transaction.atomic():
-                with connection.cursor() as cursor:
-                    # 1️⃣ Insertar requerimiento
-                    cursor.execute("""
-                        INSERT INTO requerimiento_documento_tecnico
-                        (proyecto_id, tipo_documento_id, fecha_registro, observaciones)
-                        VALUES (%s, %s, %s, %s)
-                        RETURNING id;
-                    """, [proyecto_id, tipo_doc_id, timezone.now(), observaciones])
-                    req_id = cursor.fetchone()[0]
+        # 🔍 Debug: imprimir todo lo que llega al paso 4
+        print("\n========== DATOS RECIBIDOS PARA EL PASO 4 ==========")
+        print(f"📄 Proyecto ID: {proyecto_id}")
+        print(f"📘 Tipo Documento Técnico ID: {tipo_doc_id}")
+        print(f"🗒️ Observaciones: {observaciones}")
+        print(f"🧱 Fecha inicio elaboración: {fecha_inicio_elaboracion}")
+        print(f"🔔 Alertar días antes inicio: {alertar_dias_inicio}")
+        print(f"📆 Fecha primera revisión: {fecha_primera_revision}")
+        print(f"🔔 Alertar días antes revisión: {alertar_dias_revision}")
+        print(f"📆 Fecha entrega final: {fecha_entrega}")
+        print(f"🔔 Alertar días antes entrega: {alertar_dias_entrega}")
+        print(f"👤 Redactores: {redactores}")
+        print(f"🔍 Revisores: {revisores}")
+        print(f"✅ Aprobadores: {aprobadores}")
+        print("====================================================\n")
 
-                    # 2️⃣ Insertar log inicial
-                    cursor.execute("""
-                        INSERT INTO log_estado_requerimiento_documento
-                        (requerimiento_id, usuario_id, estado_origen_id, estado_destino_id, created_at, observaciones)
-                        VALUES (%s, %s, %s, %s, %s, %s);
-                    """, [req_id, request.user.id, None, 1, timezone.now(),
-                          "El sistema ha habilitado la plantilla en el repositorio."])
+        return render(request, "nuevo_requerimiento_paso4.html", {
+            "proyecto": proyecto,
+            "tipo_doc_id": tipo_doc_id,
+            "observaciones": observaciones,
+            "fecha_inicio_elaboracion": fecha_inicio_elaboracion,
+            "alertar_dias_inicio": alertar_dias_inicio,
+            "fecha_primera_revision": fecha_primera_revision,
+            "alertar_dias_revision": alertar_dias_revision,
+            "fecha_entrega": fecha_entrega,
+            "alertar_dias_entrega": alertar_dias_entrega,
+            "redactores": redactores,
+            "revisores": revisores,
+            "aprobadores": aprobadores,
+            # 🔸 datos para debug en navegador
+            "debug_json": {
+                "tipo_doc_id": tipo_doc_id,
+                "observaciones": observaciones,
+                "fecha_inicio_elaboracion": fecha_inicio_elaboracion,
+                "alertar_dias_inicio": alertar_dias_inicio,
+                "fecha_primera_revision": fecha_primera_revision,
+                "alertar_dias_revision": alertar_dias_revision,
+                "fecha_entrega": fecha_entrega,
+                "alertar_dias_entrega": alertar_dias_entrega,
+                "redactores": redactores,
+                "revisores": revisores,
+                "aprobadores": aprobadores,
+            }
+        })
 
-                    # 3️⃣ Insertar roles asignados
-                    def insertar_roles(lista_usuarios, rol_id):
-                        for u in lista_usuarios:
-                            cursor.execute("""
-                                INSERT INTO requerimiento_equipo_rol
-                                (requerimiento_id, usuario_id, rol_id, fecha_asignacion, activo)
-                                VALUES (%s, %s, %s, %s, TRUE);
-                            """, [req_id, u, rol_id, timezone.now()])
-
-                    insertar_roles(redactores, 1)
-                    insertar_roles(revisores, 2)
-                    insertar_roles(aprobadores, 3)
-
-            return redirect('usuario:detalle_proyecto', proyecto_id=proyecto_id)
-
-        except Exception as e:
-            return render(request, "error.html", {"mensaje": f"Error al crear el requerimiento: {str(e)}"})
-
+    # ===========================================================
+    # GET inicial
+    # ===========================================================
     return render(request, "nuevo_requerimiento.html", {
         "proyecto": proyecto,
         "tipos_documento": tipos_documento,
         "usuarios": usuarios,
     })
+
+
+
+
 
 
 
