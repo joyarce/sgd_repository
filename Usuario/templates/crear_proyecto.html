@@ -1,316 +1,129 @@
 <!-- crear_proyecto.html -->
 {% extends "base.html" %}
+{% block title %}Nuevo Proyecto{% endblock %}
 
 {% block extra_css %}
 <style>
+/* 🎨 Estilos idénticos a tu plantilla original */
 :root {
-    --metso-dark-gray: #333;
-    --metso-light-gray: #f7f7f7;
-    --metso-orange: #f36f21;
-    --metso-orange-hover: #d65c1a;
-    --metso-white: #fff;
-    --metso-border-radius: 10px;
+  --metso-dark-gray: #333;
+  --metso-light-gray: #f7f7f7;
+  --metso-orange: #f36f21;
+  --metso-orange-hover: #d65c1a;
+  --metso-white: #fff;
+  --metso-border-radius: 10px;
 }
-
 body { background-color: var(--metso-light-gray); font-family: 'Inter', sans-serif; margin:0; }
-
 .container {
-    max-width: 1100px;
-    margin: 40px auto;
-    padding: 0 20px;
-    color: var(--metso-dark-gray);
+  max-width: 1100px; margin: 40px auto; padding: 0 20px; color: var(--metso-dark-gray);
 }
-
 h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 5px; }
 .subtitle { color: #6a6a6a; margin-bottom: 30px; font-size: 1rem; }
 
 .card {
-    background: var(--metso-white);
-    border-radius: var(--metso-border-radius);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    padding: 30px;
-    margin-bottom: 25px;
-    border: 1px solid #eee;
-    transition: all 0.2s ease;
+  background: var(--metso-white); border-radius: var(--metso-border-radius);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05); padding: 30px;
+  margin-bottom: 25px; border: 1px solid #eee; transition: all 0.2s ease;
 }
-
 label { display:block; margin-top:15px; margin-bottom:6px; font-weight:600; font-size: 0.95rem; }
 input, select, textarea {
-    width:100%; padding:12px; border:1px solid #e0e0e0; border-radius:var(--metso-border-radius);
-    font-size:15px; background:#fcfcfc; transition:border-color 0.2s, box-shadow 0.2s;
+  width:100%; padding:12px; border:1px solid #e0e0e0; border-radius:var(--metso-border-radius);
+  font-size:15px; background:#fcfcfc; transition:border-color 0.2s, box-shadow 0.2s;
 }
 input:focus, select:focus, textarea:focus {
-    border-color: var(--metso-orange);
-    box-shadow:0 0 0 3px rgba(243,111,33,0.2);
-    background:#fff; outline:none;
+  border-color: var(--metso-orange); box-shadow:0 0 0 3px rgba(243,111,33,0.2);
+  background:#fff; outline:none;
 }
 textarea { resize: vertical; min-height: 100px; }
 
 button.btn {
-    background-color: var(--metso-orange);
-    color: var(--metso-white);
-    border:none; padding:12px 25px;
-    border-radius:var(--metso-border-radius);
-    font-size:15px; cursor:pointer;
-    font-weight:600;
-    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
-    box-shadow:0 4px 8px rgba(243,111,33,0.2);
+  background-color: var(--metso-orange); color: var(--metso-white);
+  border:none; padding:12px 25px; border-radius:var(--metso-border-radius);
+  font-size:15px; cursor:pointer; font-weight:600;
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+  box-shadow:0 4px 8px rgba(243,111,33,0.2);
 }
 button.btn:hover {
-    background-color: var(--metso-orange-hover);
-    transform: translateY(-1px);
-    box-shadow:0 6px 12px rgba(243,111,33,0.3);
+  background-color: var(--metso-orange-hover);
+  transform: translateY(-1px);
+  box-shadow:0 6px 12px rgba(243,111,33,0.3);
 }
 button.btn:active {
-    transform: translateY(1px);
-    box-shadow:0 2px 4px rgba(243,111,33,0.2);
+  transform: translateY(1px);
+  box-shadow:0 2px 4px rgba(243,111,33,0.2);
 }
-.btn-secondary {
-    background-color:#aaa;
-    box-shadow: none;
-}
-.btn-secondary:hover {
-    background-color:#999;
-}
+.btn-secondary { background-color:#aaa; box-shadow: none; }
+.btn-secondary:hover { background-color:#999; }
 
-/* === Barra de progreso superior === */
+/* === Barra de progreso === */
 .progress-bar {
-    display:flex;
-    justify-content:space-between;
-    margin-bottom:40px;
-    padding:0 10%;
+  display:flex; justify-content:space-between; margin-bottom:40px; padding:0 10%;
 }
-.step {
-    text-align:center;
-    position:relative;
-    cursor:pointer;
-}
+.step { text-align:center; position:relative; }
 .step-circle {
-    width:35px; height:35px; border-radius:50%;
-    background:#ccc; color:#fff;
-    line-height:35px; font-weight:600;
-    margin:0 auto 8px;
-    transition:background 0.3s;
-    border:3px solid #fff;
-    box-shadow:0 2px 5px rgba(0,0,0,0.1);
+  width:35px; height:35px; border-radius:50%;
+  background:#ccc; color:#fff; line-height:35px; font-weight:600;
+  margin:0 auto 8px; transition:background 0.3s; border:3px solid #fff;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 .step-circle.active { background-color: var(--metso-orange); }
 .step-label { font-size:13px; color:#6a6a6a; }
 .progress-line {
-    position:absolute;
-    top:17px;
-    height:3px;
-    background-color:#ddd;
-    z-index:-1;
+  position:absolute; top:17px; height:3px; background-color:#ddd; z-index:-1;
 }
 .step:not(:last-child) .progress-line {
-    left: calc(50% + 17.5px);
-    right: calc(-50% + 17.5px);
-    width:100%;
+  left: calc(50% + 17.5px); right: calc(-50% + 17.5px); width:100%;
 }
-
-/* === Contenido de pasos === */
-.step-content { display:none; }
-.step-content.active { display:block; }
-
-.form-navigation { text-align: right; margin-top: 20px; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-    <h1>Crear Proyecto</h1>
-    <p class="subtitle">Flujo de trabajo multi-paso para el registro de un nuevo proyecto.</p>
+  <h1>Crear Proyecto</h1>
+  <p class="subtitle">Flujo de trabajo multi-paso para el registro de un nuevo proyecto.</p>
 
-    <!-- 🔶 Barra de progreso superior -->
-    <div class="progress-bar">
-        {% for label in steps %}
-        <div class="step" data-step="{{ forloop.counter }}">
-            <div class="step-circle {% if forloop.first %}active{% endif %}">{{ forloop.counter }}</div>
-            <div class="step-label">{{ label }}</div>
-            <div class="progress-line"></div>
+  <!-- 🔶 Barra de progreso -->
+  <div class="progress-bar">
+    {% for label in steps %}
+      <div class="step">
+        <div class="step-circle {% if forloop.counter <= paso_actual|add:'0' %}active{% endif %}">
+
+          {{ forloop.counter }}
         </div>
-        {% endfor %}
+        <div class="step-label">{{ label }}</div>
+        <div class="progress-line"></div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- 🧩 Formulario principal -->
+  <form method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="paso_actual" value="{{ paso_actual|default:'1' }}">
+
+    <div class="card">
+      {% if paso_actual == '1' %}
+        {% include "flujo_paso1.html" %}
+      {% elif paso_actual == '2' %}
+        {% include "flujo_paso2.html" %}
+      {% elif paso_actual == '3' %}
+        {% include "flujo_paso3.html" %}
+      {% elif paso_actual == '4' %}
+        {% include "flujo_paso4.html" %}
+      {% endif %}
     </div>
 
-    <!-- 🧩 Formulario principal -->
-    <form method="POST" enctype="multipart/form-data">
-        {% csrf_token %}
-        <input type="hidden" name="current_step" id="current_step" value="1">
-
-        {% for step_template in step_templates %}
-        <div class="card step-content {% if forloop.first %}active{% endif %}" id="step-{{ forloop.counter }}">
-            {% include step_template %}
-        </div>
-        {% endfor %}
-
-        <div class="form-navigation">
-            <button type="button" class="btn btn-secondary" id="prev-step" style="display:none;">← Anterior</button>
-            <button type="button" class="btn" id="next-step">Siguiente →</button>
-            <button type="submit" class="btn" id="submit-form" style="display:none;">💾 Crear Proyecto</button>
-        </div>
-    </form>
+    <!-- 🔘 Navegación -->
+    <div style="text-align:right; margin-top:30px;">
+      {% if paso_actual != '1' %}
+        <button type="submit" class="btn btn-secondary" name="accion" value="anterior">← Anterior</button>
+      {% endif %}
+      {% if paso_actual != '4' %}
+        <button type="submit" class="btn" name="accion" value="siguiente">Siguiente →</button>
+      {% else %}
+        <button type="submit" class="btn" name="accion" value="confirmar">💾 Confirmar y Crear</button>
+      {% endif %}
+    </div>
+  </form>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  let currentStep = {{ step_actual|default:"1" }};
-  const totalSteps = {{ steps|length }};
-  const nextBtn = document.getElementById('next-step');
-  const prevBtn = document.getElementById('prev-step');
-  const submitBtn = document.getElementById('submit-form');
-  const steps = document.querySelectorAll('.step');
-  const circles = document.querySelectorAll('.step-circle');
-  const contents = document.querySelectorAll('.step-content');
-  const currentStepInput = document.getElementById('current_step');
-
-  // === Mostrar paso ===
-  function showStep(step) {
-    currentStep = step;
-    currentStepInput.value = step;
-
-    contents.forEach(c => {
-      c.classList.remove('active');
-      c.querySelectorAll('[required]').forEach(el => el.removeAttribute('required'));
-    });
-
-    const activeStep = document.getElementById(`step-${step}`);
-    activeStep.classList.add('active');
-    activeStep.querySelectorAll('[data-required]').forEach(el => el.setAttribute('required', 'true'));
-
-    circles.forEach((c, i) => c.classList.toggle('active', i < step));
-
-    prevBtn.style.display = step > 1 ? 'inline-block' : 'none';
-    nextBtn.style.display = step < totalSteps ? 'inline-block' : 'none';
-    submitBtn.style.display = step === totalSteps ? 'inline-block' : 'none';
-
-    const url = new URL(window.location);
-    url.searchParams.set("step", step);
-    window.history.replaceState({}, "", url);
-
-    // Si llegamos al paso 4, actualizar resumen
-    if (step === totalSteps) generarResumen();
-  }
-
-  // === Generar resumen dinámico ===
-  function generarResumen() {
-    const resumen = document.getElementById('resumen-dinamico');
-    if (!resumen) return;
-
-    const usuarios = {};
-    document.querySelectorAll("select option[data-usuario]").forEach(opt => usuarios[opt.value] = opt.textContent.trim());
-    const clientes = {};
-    document.querySelectorAll("select[name='cliente_id'] option").forEach(opt => clientes[opt.value] = opt.textContent.trim());
-    const contratos = {};
-    document.querySelectorAll("select[name='contrato_id'] option").forEach(opt => contratos[opt.value] = opt.textContent.trim());
-    const faenas = {};
-    document.querySelectorAll("select[name='faena_id'] option").forEach(opt => faenas[opt.value] = opt.textContent.trim());
-    const maquinas = {};
-    document.querySelectorAll("select[name='maquinas_ids[]'] option").forEach(opt => maquinas[opt.value] = opt.textContent.trim());
-    const documentos = {};
-    document.querySelectorAll("input.doc-checkbox").forEach(chk => documentos[chk.value] = chk.dataset.nombre);
-
-    const campos = document.querySelectorAll("input, select, textarea");
-    const grupos = {
-      "Datos Generales": [],
-      "Contrato y Cliente": [],
-      "Máquinas Seleccionadas": [],
-      "Documentos Técnicos y Roles": []
-    };
-
-    campos.forEach(el => {
-      if (!el.name || el.type === "hidden" || el.type === "file") return;
-
-      let valor = "";
-      if (el.type === "checkbox") {
-        if (el.classList.contains("doc-checkbox")) return; 
-        valor = el.checked ? "✅ Sí" : "❌ No";
-      } else if (el.multiple) {
-        valor = Array.from(el.selectedOptions).map(o => o.text).join(", ");
-      } else {
-        valor = el.value.trim() || "-";
-      }
-
-      const labelEl = el.closest("label");
-      const nombreCampo = labelEl ? labelEl.textContent.trim() : el.name;
-
-      if (el.closest("#step-1")) grupos["Datos Generales"].push({campo: nombreCampo, valor});
-      else if (el.closest("#step-2")) grupos["Contrato y Cliente"].push({campo: nombreCampo, valor});
-      else if (el.closest("#step-3") && el.name.startsWith("maquinas_ids")) {
-        grupos["Máquinas Seleccionadas"].push({campo: nombreCampo, valor});
-      }
-    });
-
-    // === Documentos seleccionados y roles
-    const documentosSeleccionados = [];
-    document.querySelectorAll("input.doc-checkbox:checked").forEach(chk => {
-      const docId = chk.value;
-      const docNombre = documentos[docId] || `Documento ${docId}`;
-
-      const redactores = Array.from(document.querySelectorAll(`[name='redactor_id_${docId}[]'] option:checked`))
-        .map(o => usuarios[o.value] || o.textContent.trim());
-      const revisores = Array.from(document.querySelectorAll(`[name='revisor_id_${docId}[]'] option:checked`))
-        .map(o => usuarios[o.value] || o.textContent.trim());
-      const aprobadores = Array.from(document.querySelectorAll(`[name='aprobador_id_${docId}[]'] option:checked`))
-        .map(o => usuarios[o.value] || o.textContent.trim());
-
-      documentosSeleccionados.push({
-        nombre: docNombre,
-        redactor: redactores.join(", ") || "-",
-        revisor: revisores.join(", ") || "-",
-        aprobador: aprobadores.join(", ") || "-"
-      });
-    });
-
-    let html = "";
-
-    for (const [titulo, lista] of Object.entries(grupos)) {
-      if (lista.length === 0) continue;
-      html += `<h4 style="color:#f36f21;margin-top:20px;">${titulo}</h4><table><tbody>`;
-      lista.forEach(item => {
-        let valor = item.valor;
-        if (item.campo.includes("cliente_id")) valor = clientes[valor] || valor;
-        if (item.campo.includes("contrato_id")) valor = contratos[valor] || valor;
-        if (item.campo.includes("faena_id")) valor = faenas[valor] || valor;
-        if (item.campo.includes("maquinas_ids")) valor = maquinas[valor] || valor;
-        html += `<tr><td><strong>${item.campo}</strong></td><td>${valor}</td></tr>`;
-      });
-      html += `</tbody></table>`;
-    }
-
-    html += `<h4 style="color:#f36f21;margin-top:20px;">Documentos Técnicos y Roles</h4>`;
-    if (documentosSeleccionados.length > 0) {
-      html += `<table><thead><tr>
-        <th>Documento</th><th>Redactor(es)</th><th>Revisor(es)</th><th>Aprobador(es)</th>
-      </tr></thead><tbody>`;
-      documentosSeleccionados.forEach(d => {
-        html += `<tr><td>${d.nombre}</td><td>${d.redactor}</td><td>${d.revisor}</td><td>${d.aprobador}</td></tr>`;
-      });
-      html += `</tbody></table>`;
-    } else {
-      html += `<p>No hay documentos seleccionados.</p>`;
-    }
-
-    resumen.innerHTML = html || "<p>No hay datos disponibles.</p>";
-  }
-
-  // === Navegación
-  nextBtn.addEventListener('click', () => {
-    if (currentStep < totalSteps) showStep(currentStep + 1);
-  });
-  prevBtn.addEventListener('click', () => {
-    if (currentStep > 1) showStep(currentStep - 1);
-  });
-  steps.forEach(el => {
-    el.addEventListener('click', () => {
-      const step = parseInt(el.dataset.step);
-      showStep(step);
-    });
-  });
-
-  showStep(currentStep);
-});
-</script>
 {% endblock %}

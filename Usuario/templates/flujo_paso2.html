@@ -1,0 +1,377 @@
+<!-- flujo_paso2.html -->
+<style>
+/* === Estilos visuales generales === */
+#cliente-lectura.readonly-cliente {
+  background-color: #e0e0e0;
+  cursor: not-allowed;
+  color: #555;
+}
+
+.readonly-abreviatura {
+  background-color: #e0e0e0;
+  color: #555;
+  cursor: not-allowed;
+  border: 1px solid #ccc;
+  width: 100%;
+  border-radius: 4px;
+  padding: 6px;
+  transition: background-color 0.2s;
+}
+.readonly-abreviatura:hover {
+  background-color: #d9d9d9;
+  position: relative;
+}
+.readonly-abreviatura:hover::after {
+  content: "🔒";
+  position: absolute;
+  right: 10px;
+  top: 5px;
+  font-size: 1.1rem;
+  color: #444;
+}
+
+/* === Animación suave de FAENA === */
+.fade-box {
+  transition: all 0.25s ease-in-out;
+  overflow: hidden;
+}
+.fade-box.show {
+  display: block !important;
+  opacity: 1;
+  max-height: 500px;
+}
+.fade-box.hide {
+  opacity: 0;
+  max-height: 0;
+}
+
+/* === Grid limpio para faena === */
+.faena-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px 25px;
+}
+.faena-grid label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.faena-grid input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+</style>
+
+<div class="step-inner">
+  <h3>📑 Paso 2 — Cliente, Faena y Contrato</h3>
+
+  <div class="form-card">
+
+    <!-- 🧑‍💼 CLIENTE -->
+    <h4>Cliente</h4>
+    <input type="text" id="cliente-lectura" value="" readonly style="width:100%; margin-bottom:10px; display:none;">
+
+    <select name="cliente_id" id="select-cliente" onchange="onClienteChange(this.value)">
+      <option value="">-- Nuevo Cliente --</option>
+      {% for cliente in clientes %}
+      <option value="{{ cliente.id }}" {% if proyecto_temp.cliente_id|stringformat:"s" == cliente.id|stringformat:"s" %}selected{% endif %}>
+        {{ cliente.nombre }}
+      </option>
+      {% endfor %}
+    </select>
+
+    <div id="cliente-abreviatura-container" style="display:none; margin-top:10px;">
+      <label>Abreviatura del Cliente:</label>
+      <input type="text" id="cliente_abreviatura_existente" readonly class="readonly-abreviatura" title="Abreviatura registrada en la base de datos">
+    </div>
+
+    <div id="nuevo-cliente-fields" style="margin-top:15px; {% if proyecto_temp.cliente_id %}display:none{% endif %}">
+      <label>Nombre:</label>
+      <input type="text" name="cliente_nombre" data-requerido="true" required value="{{ proyecto_temp.cliente_nombre|default:'' }}">
+
+      <label>Abreviatura del Cliente:</label>
+      <input type="text" id="cliente_abreviatura" name="cliente_abreviatura"
+             value="{{ proyecto_temp.cliente_abreviatura|default:'' }}"
+             readonly class="readonly-abreviatura"
+             title="Campo bloqueado: se genera automáticamente">
+      <small>La abreviatura se genera o carga automáticamente según el cliente seleccionado.</small>
+
+      <label>RUT:</label>
+      <input type="text" name="cliente_rut" data-requerido="true" required value="{{ proyecto_temp.cliente_rut|default:'' }}">
+
+      <label>Dirección:</label>
+      <input type="text" name="cliente_direccion" value="{{ proyecto_temp.cliente_direccion|default:'' }}">
+
+      <label>Correo:</label>
+      <input type="email" name="cliente_correo" value="{{ proyecto_temp.cliente_correo|default:'' }}">
+
+      <label>Teléfono:</label>
+      <input type="text" name="cliente_telefono" value="{{ proyecto_temp.cliente_telefono|default:'' }}">
+    </div>
+
+    <hr class="my-3">
+
+    <!-- ⛏️ FAENA -->
+    <h4>Faena</h4>
+    <label>Seleccionar Faena:</label>
+    <select name="faena_id" id="select-faena" onchange="onFaenaChange()">
+      <option value="">-- Nueva Faena --</option>
+    </select>
+
+    <div id="nuevo-faena-fields" class="fade-box show" style="margin-top:15px;">
+      <div class="faena-grid">
+        <div>
+          <label>Nombre de Faena:</label>
+          <input type="text" name="faena_nombre" data-requerido="true" required value="{{ proyecto_temp.faena_nombre|default:'' }}">
+        </div>
+        <div>
+          <label>Ubicación:</label>
+          <input type="text" name="faena_ubicacion" value="{{ proyecto_temp.faena_ubicacion|default:'' }}">
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-3">
+
+    <!-- 📜 CONTRATO -->
+    <h4>Contrato</h4>
+    <label>Seleccionar Contrato Existente:</label>
+    <select name="contrato_id" id="select-contrato" onchange="onContratoChange(this.value)">
+      <option value="">-- Nuevo Contrato --</option>
+    </select>
+
+    <div id="nuevo-contrato-fields" style="margin-top:15px;">
+      <label>Número de Contrato:</label>
+      <input type="text" name="numero_contrato" data-requerido="true" required value="{{ proyecto_temp.numero_contrato|default:'' }}">
+      <label>Monto Total:</label>
+      <input type="number" name="monto_total" value="{{ proyecto_temp.monto_total|default:'' }}">
+      <label>Fecha de Firma:</label>
+      <input type="date" name="contrato_fecha_firma" data-requerido="true" required value="{{ proyecto_temp.contrato_fecha_firma|default:'' }}">
+      <label>Representante Cliente (Nombre):</label>
+      <input type="text" name="representante_cliente_nombre" value="{{ proyecto_temp.representante_cliente_nombre|default:'' }}">
+      <label>Correo Representante:</label>
+      <input type="email" name="representante_cliente_correo" value="{{ proyecto_temp.representante_cliente_correo|default:'' }}">
+      <label>Teléfono Representante:</label>
+      <input type="text" name="representante_cliente_telefono" value="{{ proyecto_temp.representante_cliente_telefono|default:'' }}">
+    </div>
+  </div>
+</div>
+
+<script>
+/* === Depurador: detectar campos ocultos requeridos === */
+document.addEventListener('submit', (e) => {
+  const ocultos = [];
+  document.querySelectorAll('input[required], select[required], textarea[required]').forEach(el => {
+    const style = getComputedStyle(el);
+    const visible =
+      el.offsetParent !== null &&
+      style.visibility !== 'hidden' &&
+      style.display !== 'none' &&
+      el.closest('[style*="display: none"]') === null &&
+      el.closest('.hide') === null;
+    if (!visible) ocultos.push(el.name || el.id);
+  });
+  if (ocultos.length > 0) {
+    e.preventDefault();
+    alert("⚠️ Campo(s) requeridos ocultos: " + ocultos.join(', '));
+    console.warn("Campos ocultos pero requeridos:", ocultos);
+  }
+});
+
+/* === Actualiza los "required" solo en campos visibles === */
+function actualizarRequiredCampos() {
+  document.querySelectorAll('input, select, textarea').forEach(el => {
+    const style = getComputedStyle(el);
+    const visible =
+      el.offsetParent !== null &&
+      style.visibility !== 'hidden' &&
+      style.display !== 'none' &&
+      style.opacity !== '0' &&
+      el.closest('[style*="display: none"]') === null &&
+      el.closest('.hide') === null;
+    if (!visible) {
+      el.removeAttribute('required');
+    } else if (el.dataset.requerido === "true") {
+      el.setAttribute('required', 'true');
+    }
+  });
+}
+
+/* === CLIENTE === */
+function onClienteChange(clienteId) {
+  const nuevoClienteFields = document.getElementById('nuevo-cliente-fields');
+  const contenedorAbrevExistente = document.getElementById('cliente-abreviatura-container');
+  const campoAbrevExistente = document.getElementById('cliente_abreviatura_existente');
+
+  sessionStorage.clear();
+  resetFaenaUI();
+  resetContratoUI();
+
+  if (!clienteId) {
+    nuevoClienteFields.style.display = 'block';
+    contenedorAbrevExistente.style.display = 'none';
+    generarAbreviaturaCliente();
+    actualizarRequiredCampos();
+    return;
+  }
+
+  nuevoClienteFields.style.display = 'none';
+  contenedorAbrevExistente.style.display = 'block';
+
+  fetch(`/usuario/obtener_datos_cliente/${clienteId}/`)
+    .then(r => r.json())
+    .then(data => {
+      campoAbrevExistente.value = data.abreviatura || "(sin abreviatura)";
+      sessionStorage.setItem('cliente_resumen', JSON.stringify(data));
+      cargarFaenas(clienteId);
+      cargarContratos(clienteId);
+    })
+    .catch(err => console.error("Error al cargar cliente:", err))
+    .finally(() => actualizarRequiredCampos());
+}
+
+/* === FAENA === */
+function onFaenaChange() {
+  const selectFaena = document.getElementById('select-faena');
+  const nuevoFaena = document.getElementById('nuevo-faena-fields');
+
+  if (!selectFaena.value) {
+    nuevoFaena.classList.add('show');
+    nuevoFaena.classList.remove('hide');
+    sessionStorage.removeItem('faena_resumen');
+  } else {
+    nuevoFaena.classList.add('hide');
+    nuevoFaena.classList.remove('show');
+    fetch(`/usuario/obtener_datos_faena/${selectFaena.value}/`)
+      .then(r => r.json())
+      .then(data => sessionStorage.setItem('faena_resumen', JSON.stringify(data)));
+  }
+  actualizarRequiredCampos();
+}
+
+/* === CONTRATO === */
+function onContratoChange(contratoId) {
+  const nuevoContrato = document.getElementById('nuevo-contrato-fields');
+
+  if (!contratoId) {
+    nuevoContrato.style.display = 'block';
+    sessionStorage.removeItem('contrato_resumen');
+  } else {
+    nuevoContrato.style.display = 'none';
+    fetch(`/usuario/obtener_datos_contrato/${contratoId}/`)
+      .then(r => r.json())
+      .then(data => sessionStorage.setItem('contrato_resumen', JSON.stringify(data)));
+  }
+  actualizarRequiredCampos();
+}
+
+/* === Cargar FAENAS === */
+function cargarFaenas(clienteId) {
+  const selectFaena = document.getElementById('select-faena');
+  const nuevoFaena = document.getElementById('nuevo-faena-fields');
+  const faenas = JSON.parse(document.getElementById('faenas-data').textContent || '[]');
+
+  const seleccionActual = selectFaena.value; // recuerda la selección actual
+  selectFaena.innerHTML = '<option value="">-- Nueva Faena --</option>';
+
+  let count = 0;
+  faenas.forEach(f => {
+    if (String(f.cliente_id) === String(clienteId)) {
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = f.nombre;
+      selectFaena.appendChild(opt);
+      count++;
+    }
+  });
+
+  // 🔹 Mostrar siempre el bloque si se mantiene "-- Nueva Faena --"
+  if (seleccionActual === "" || !selectFaena.value) {
+    nuevoFaena.classList.add('show');
+    nuevoFaena.classList.remove('hide');
+  } else {
+    nuevoFaena.classList.add('hide');
+    nuevoFaena.classList.remove('show');
+  }
+
+  actualizarRequiredCampos();
+}
+
+/* === Cargar CONTRATOS === */
+function cargarContratos(clienteId) {
+  const selectContrato = document.getElementById('select-contrato');
+  const nuevoContrato = document.getElementById('nuevo-contrato-fields');
+  const contratos = JSON.parse(document.getElementById('contratos-data').textContent || '[]');
+
+  const seleccionActual = selectContrato.value;
+  selectContrato.innerHTML = '<option value="">-- Nuevo Contrato --</option>';
+
+  let count = 0;
+  contratos.forEach(c => {
+    if (String(c.cliente_id) === String(clienteId)) {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.numero_contrato;
+      selectContrato.appendChild(opt);
+      count++;
+    }
+  });
+
+  // 🔹 Mantener siempre visible el bloque si está en "-- Nuevo Contrato --"
+  if (seleccionActual === "" || !selectContrato.value) {
+    nuevoContrato.style.display = 'block';
+  } else {
+    nuevoContrato.style.display = 'none';
+  }
+
+  actualizarRequiredCampos();
+}
+
+/* === Reset UIs === */
+function resetFaenaUI() {
+  const selectFaena = document.getElementById('select-faena');
+  const nuevoFaena = document.getElementById('nuevo-faena-fields');
+  selectFaena.innerHTML = '<option value="">-- Nueva Faena --</option>';
+  nuevoFaena.classList.add('show');
+  nuevoFaena.classList.remove('hide');
+}
+function resetContratoUI() {
+  const selectContrato = document.getElementById('select-contrato');
+  const nuevoContrato = document.getElementById('nuevo-contrato-fields');
+  selectContrato.innerHTML = '<option value="">-- Nuevo Contrato --</option>';
+  nuevoContrato.style.display = 'block';
+}
+
+/* === Abreviatura automática === */
+function generarAbreviaturaCliente() {
+  const input = document.querySelector('input[name="cliente_nombre"]');
+  const campo = document.getElementById('cliente_abreviatura');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    const nombre = input.value.trim();
+    if (!nombre) return campo.value = "";
+    fetch(`/usuario/generar_abreviatura_cliente_ajax/?nombre=${encodeURIComponent(nombre)}`)
+      .then(r => r.json())
+      .then(data => campo.value = data.abreviatura || "");
+  });
+}
+
+/* === Inicialización === */
+document.addEventListener('DOMContentLoaded', () => {
+  const clienteId = document.getElementById('select-cliente').value;
+  if (clienteId) {
+    cargarFaenas(clienteId);
+    cargarContratos(clienteId);
+  } else {
+    resetFaenaUI();
+    resetContratoUI();
+  }
+  actualizarRequiredCampos();
+});
+</script>
+
+
+<!-- 🔹 JSON seguros -->
+{{ contratos|json_script:"contratos-data" }}
+{{ faenas|json_script:"faenas-data" }}

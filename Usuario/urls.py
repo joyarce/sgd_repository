@@ -31,4 +31,10 @@ urlpatterns = [
     path('obtener_abreviatura_cliente/<int:cliente_id>/',views.obtener_abreviatura_cliente,name='obtener_abreviatura_cliente'),
     path('generar_abreviatura_cliente_ajax/', views.generar_abreviatura_cliente_ajax, name='generar_abreviatura_cliente_ajax'),
 
+
+
+    path("obtener_datos_contrato/<int:contrato_id>/", views.obtener_datos_contrato),
+    path("obtener_datos_cliente/<int:cliente_id>/", views.obtener_datos_cliente),
+    path("obtener_datos_faena/<int:faena_id>/", views.obtener_datos_faena),
+
 ]

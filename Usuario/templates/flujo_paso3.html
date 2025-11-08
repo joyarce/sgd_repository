@@ -1,7 +1,9 @@
-<!-- crear_proyecto_paso3.html -->
+<!-- flujo_paso3.html -->
 <div class="step-inner">
-  <h3>Documentos Técnicos del Proyecto</h3>
-  <p class="subtexto-paso">Selecciona los documentos requeridos y asigna sus responsables.</p>
+  <h2>📄 Paso 3 — Documentos Técnicos del Proyecto</h2>
+  <p class="subtexto-paso">
+    Selecciona los documentos requeridos y asigna los responsables por rol.
+  </p>
 
   <!-- 🔎 Buscador + Filtros -->
   <div class="filtros">
@@ -9,7 +11,7 @@
     <select id="filtroGrupo">
       <option value="">Todos los grupos</option>
       {% for grupo in grupos_maestros %}
-      <option value="{{ grupo.nombre }}">{{ grupo.nombre }}</option>
+        <option value="{{ grupo.nombre }}">{{ grupo.nombre }}</option>
       {% endfor %}
     </select>
   </div>
@@ -17,19 +19,21 @@
   <!-- 📄 Lista de documentos -->
   <div id="listaDocumentos" class="lista-documentos">
     {% for grupo in grupos_maestros %}
-    {% for doc in grupo.documentos %}
-    <label class="doc-item" data-grupo="{{ grupo.nombre }}">
-      <input type="checkbox" class="doc-checkbox" value="{{ doc.id }}" data-nombre="{{ doc.nombre }}">
-      <span class="doc-nombre">{{ doc.nombre }}</span>
-      <small class="doc-grupo">({{ grupo.nombre }})</small>
-    </label>
-    {% endfor %}
+      {% for doc in grupo.documentos %}
+      <label class="doc-item" data-grupo="{{ grupo.nombre }}">
+        <input type="checkbox" class="doc-checkbox"
+               name="documentos_ids[]" value="{{ doc.id }}"
+               data-nombre="{{ doc.nombre }}">
+        <span class="doc-nombre">{{ doc.nombre }}</span>
+        <small class="doc-grupo">({{ grupo.nombre }})</small>
+      </label>
+      {% endfor %}
     {% endfor %}
   </div>
 
   <!-- 🧾 Tabla dinámica de asignaciones -->
   <div id="tablaAsignaciones" class="tabla-asignaciones" style="display:none;">
-    <h4>Documentos Seleccionados</h4>
+    <h4>📑 Documentos Seleccionados</h4>
     <table>
       <thead>
         <tr>
@@ -45,9 +49,10 @@
   </div>
 </div>
 
+<!-- === ESTILOS === -->
 <style>
 .step-inner { background:#fff; border-radius:8px; padding:25px; box-shadow:0 3px 12px rgba(0,0,0,.06); }
-h3 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
+h2, h3 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
 .subtexto-paso { color:#555; margin-bottom:15px; }
 
 .filtros { display:flex; gap:10px; margin-bottom:15px; }
@@ -91,9 +96,11 @@ h3 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
 .ts-dropdown { border-radius:8px !important; z-index:9999 !important; }
 </style>
 
+<!-- === LIBRERÍAS === -->
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet" />
 
+<!-- === SCRIPT === -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const lista = document.getElementById("listaDocumentos");
@@ -102,23 +109,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const filtroTxt = document.getElementById("filtroBusqueda");
   const filtroGrupo = document.getElementById("filtroGrupo");
 
-  // === Diccionario de usuarios disponibles ===
+  // === Diccionario de usuarios disponibles (TODOS LOS USUARIOS) ===
   const usuarios = [
-    {% for u in usuarios %}
+    {% for u in usuarios_todos %}
       {value:"{{u.id}}", text:"{{u.nombre|escapejs}}"},
     {% endfor %}
   ];
 
-  // 🟢 Exportar diccionario global (para el Paso 4)
-  window.usuarios_dict = usuarios.reduce((map, obj) => {
-    map[obj.value] = obj.text;
-    return map;
-  }, {});
+  // === Objeto de selección local ===
+  const seleccionados = {}; // { doc_id: { redactores:[], revisores:[], aprobadores:[] } }
 
-  // === Objeto de selección ===
-  const seleccionados = {}; // guarda roles por documento
-
-  // 📄 Manejar selección de documentos
+  // === Manejar selección de documentos ===
   lista.addEventListener("change", e => {
     if (!e.target.classList.contains("doc-checkbox")) return;
     const chk = e.target;
@@ -127,10 +128,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (chk.checked) addRow(id, nombre);
     else removeRow(id);
+
     tabla.style.display = Object.keys(seleccionados).length ? "block" : "none";
   });
 
-  // 🧱 Crear fila dinámica con selectores
+  // === Crear fila de asignación ===
   function addRow(id, nombre) {
     if (seleccionados[id]) return;
     seleccionados[id] = { redactores: [], revisores: [], aprobadores: [] };
@@ -157,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 🧩 Crear selector TomSelect sincronizado
+  // === Crear selector TomSelect ===
   function crearSelector(selectId, role, hiddenDivId, docId) {
     const ts = new TomSelect(selectId, {
       plugins: ["remove_button"],
@@ -173,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 🪄 Sincronizar inputs ocultos para envío de datos
+  // === Sincronizar inputs ocultos (para enviar en POST) ===
   function syncHidden(hiddenDivId, role, docId, valores) {
     const host = document.getElementById(hiddenDivId);
     host.innerHTML = "";
@@ -191,14 +193,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 🗑️ Eliminar fila
+  // === Eliminar fila ===
   function removeRow(id) {
     delete seleccionados[id];
     const tr = document.getElementById("row-" + id);
     if (tr) tr.remove();
   }
 
-  // 🔎 Filtros dinámicos
+  // === Filtros dinámicos ===
   function filtrar() {
     const texto = filtroTxt.value.toLowerCase();
     const grupoSel = filtroGrupo.value;
@@ -208,9 +210,7 @@ document.addEventListener("DOMContentLoaded", () => {
       item.style.display = (matchTexto && matchGrupo) ? "flex" : "none";
     });
   }
-
   filtroTxt.addEventListener("input", filtrar);
   filtroGrupo.addEventListener("change", filtrar);
 });
 </script>
-

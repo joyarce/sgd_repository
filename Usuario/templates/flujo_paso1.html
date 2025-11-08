@@ -1,0 +1,143 @@
+<!-- flujo_paso1.html -->
+<h2>Paso 1 — Datos Generales del Proyecto</h2>
+
+<label>Nombre del Proyecto:</label>
+<input type="text" name="nombre" placeholder="Ej: Overhaul Chancador Primario" required>
+
+<label>Descripción Funcional:</label>
+<textarea name="descripcion" rows="3" placeholder="Breve descripción del proyecto..."></textarea>
+
+<label>Abreviatura del Proyecto:</label>
+<input type="text" name="abreviatura" placeholder="Se genera automáticamente" readonly>
+
+<!-- Bloque de fechas agrupadas -->
+<div class="fechas-bloque">
+  <h4>Fechas Clave del Proyecto</h4>
+  <p class="subtexto">Indica las fechas principales del ciclo de vida del proyecto.</p>
+
+  <div class="fechas-grid">
+    <div class="fecha-item">
+      <label>Recepción / Evaluación</label>
+      <input type="date" name="fecha_recepcion_evaluacion" required>
+    </div>
+    <div class="fecha-item">
+      <label>Inicio Planificación</label>
+      <input type="date" name="fecha_inicio_planificacion">
+    </div>
+    <div class="fecha-item">
+      <label>Inicio Ejecución</label>
+      <input type="date" name="fecha_inicio_ejecucion">
+    </div>
+    <div class="fecha-item">
+      <label>Cierre del Proyecto</label>
+      <input type="date" name="fecha_cierre_proyecto">
+    </div>
+  </div>
+</div>
+
+<label>Administrador:</label>
+<select name="administrador" required>
+  <option value="">Selecciona un administrador</option>
+  {% for u in usuarios_administrador %}
+    <option value="{{ u.id }}">{{ u.nombre }} ({{ u.email }})</option>
+  {% endfor %}
+</select>
+
+<label>Número de Orden:</label>
+<input type="text" id="numero_orden_input" name="numero_orden" placeholder="Número de orden" readonly>
+<input type="hidden" id="numero_orden_hidden" name="numero_orden_oculto">
+<small id="mensaje-ok" style="display:none; color:green;"></small>
+<small id="mensaje-error-carga" style="display:none; color:red;"></small>
+
+<label>Archivo Excel (para leer número de orden):</label>
+<input type="file" id="archivo" name="archivo" accept=".xlsx,.xls">
+
+<label>Máquinas del Proyecto:</label>
+<select name="maquinas_ids[]" multiple required>
+  {% for maquina in maquinas %}
+    <option value="{{ maquina.id }}">{{ maquina.nombre }} ({{ maquina.abreviatura }})</option>
+  {% endfor %}
+</select>
+<small>Selecciona una o varias máquinas asociadas al proyecto.</small>
+
+<!-- Estilos -->
+<style>
+.fechas-bloque {
+  margin-top: 20px;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 20px;
+}
+.fechas-bloque h4 {
+  color: #2f2f8c;
+  margin-bottom: 5px;
+  font-weight: 700;
+}
+.subtexto {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+}
+.fechas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+.fecha-item label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+.fecha-item input[type="date"] {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #fff;
+}
+</style>
+
+<!-- Script de carga de número de orden -->
+<script>
+const archivoInput = document.getElementById('archivo');
+archivoInput.addEventListener('change', async (event) => {
+  const archivo = event.target.files[0];
+  if (!archivo) return;
+
+  const formData = new FormData();
+  formData.append('archivo', archivo);
+
+  const inputOrden = document.getElementById('numero_orden_input');
+  const hiddenOrden = document.getElementById('numero_orden_hidden');
+  const mensajeOk = document.getElementById('mensaje-ok');
+  const mensajeError = document.getElementById('mensaje-error-carga');
+
+  try {
+    const response = await fetch("{% url 'usuario:leer_excel_numero_orden' %}", {
+      method: 'POST',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+      body: formData
+    });
+    const data = await response.json();
+
+    if (data.numero_orden) {
+      inputOrden.value = data.numero_orden;
+      hiddenOrden.value = data.numero_orden;
+      mensajeOk.style.display = 'block';
+      mensajeOk.textContent = 'Número de orden cargado correctamente.';
+      mensajeError.style.display = 'none';
+    } else {
+      mensajeOk.style.display = 'none';
+      mensajeError.style.display = 'block';
+      mensajeError.textContent = 'No se pudo leer el número de orden.';
+    }
+  } catch (err) {
+    console.error(err);
+    mensajeOk.style.display = 'none';
+    mensajeError.style.display = 'block';
+    mensajeError.textContent = 'Error al leer el archivo.';
+  }
+});
+</script>
