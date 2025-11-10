@@ -23,13 +23,15 @@ urlpatterns = [
     path('leer_excel/', views.leer_excel_numero_orden, name='leer_excel_numero_orden'),
     path('usuarios/<int:user_id>/editar/', views.editar_usuario, name='editar_usuario'),
     path('usuarios/<int:user_id>/estadisticas/', views.ver_estadisticas_usuario, name='ver_estadisticas_usuario'),
-    path('generar_abreviatura_cliente/<int:cliente_id>/', views.generar_abreviatura_cliente, name='generar_abreviatura_cliente'),
+    path('generar_abreviatura_cliente/', views.generar_abreviatura_cliente, name='generar_abreviatura_cliente'),
     path('editar/proyecto/<int:proyecto_id>/', views.editar_proyecto, name='editar_proyecto'),
     path('editar/contrato/<int:contrato_id>/', views.editar_contrato, name='editar_contrato'),
     path('editar/cliente/<int:cliente_id>/', views.editar_cliente, name='editar_cliente'),
     path('editar/maquina/<int:maquina_id>/', views.editar_maquina, name='editar_maquina'),
     path('obtener_abreviatura_cliente/<int:cliente_id>/',views.obtener_abreviatura_cliente,name='obtener_abreviatura_cliente'),
-    path('generar_abreviatura_cliente_ajax/', views.generar_abreviatura_cliente_ajax, name='generar_abreviatura_cliente_ajax'),
+    
+    
+    path("generar_abreviatura_proyecto/", views.generar_abreviatura_proyecto, name="generar_abreviatura_proyecto"),
 
 
 

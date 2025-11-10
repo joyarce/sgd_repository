@@ -209,9 +209,10 @@ function onClienteChange(clienteId) {
   resetContratoUI();
 
   if (!clienteId) {
+    // 🔹 Nuevo cliente → muestra campos y activa generación dinámica de abreviatura
     nuevoClienteFields.style.display = 'block';
     contenedorAbrevExistente.style.display = 'none';
-    generarAbreviaturaCliente();
+    activarGeneracionAbreviaturaEnTiempoReal(); // ✅ ACTIVA LA FUNCIÓN CORRECTA
     actualizarRequiredCampos();
     return;
   }
@@ -272,21 +273,18 @@ function cargarFaenas(clienteId) {
   const nuevoFaena = document.getElementById('nuevo-faena-fields');
   const faenas = JSON.parse(document.getElementById('faenas-data').textContent || '[]');
 
-  const seleccionActual = selectFaena.value; // recuerda la selección actual
+  const seleccionActual = selectFaena.value;
   selectFaena.innerHTML = '<option value="">-- Nueva Faena --</option>';
 
-  let count = 0;
   faenas.forEach(f => {
     if (String(f.cliente_id) === String(clienteId)) {
       const opt = document.createElement('option');
       opt.value = f.id;
       opt.textContent = f.nombre;
       selectFaena.appendChild(opt);
-      count++;
     }
   });
 
-  // 🔹 Mostrar siempre el bloque si se mantiene "-- Nueva Faena --"
   if (seleccionActual === "" || !selectFaena.value) {
     nuevoFaena.classList.add('show');
     nuevoFaena.classList.remove('hide');
@@ -294,7 +292,6 @@ function cargarFaenas(clienteId) {
     nuevoFaena.classList.add('hide');
     nuevoFaena.classList.remove('show');
   }
-
   actualizarRequiredCampos();
 }
 
@@ -307,24 +304,20 @@ function cargarContratos(clienteId) {
   const seleccionActual = selectContrato.value;
   selectContrato.innerHTML = '<option value="">-- Nuevo Contrato --</option>';
 
-  let count = 0;
   contratos.forEach(c => {
     if (String(c.cliente_id) === String(clienteId)) {
       const opt = document.createElement('option');
       opt.value = c.id;
       opt.textContent = c.numero_contrato;
       selectContrato.appendChild(opt);
-      count++;
     }
   });
 
-  // 🔹 Mantener siempre visible el bloque si está en "-- Nuevo Contrato --"
   if (seleccionActual === "" || !selectContrato.value) {
     nuevoContrato.style.display = 'block';
   } else {
     nuevoContrato.style.display = 'none';
   }
-
   actualizarRequiredCampos();
 }
 
@@ -343,17 +336,38 @@ function resetContratoUI() {
   nuevoContrato.style.display = 'block';
 }
 
-/* === Abreviatura automática === */
-function generarAbreviaturaCliente() {
-  const input = document.querySelector('input[name="cliente_nombre"]');
-  const campo = document.getElementById('cliente_abreviatura');
-  if (!input) return;
-  input.addEventListener('input', () => {
-    const nombre = input.value.trim();
-    if (!nombre) return campo.value = "";
-    fetch(`/usuario/generar_abreviatura_cliente_ajax/?nombre=${encodeURIComponent(nombre)}`)
-      .then(r => r.json())
-      .then(data => campo.value = data.abreviatura || "");
+/* === Abreviatura automática (en tiempo real) === */
+function activarGeneracionAbreviaturaEnTiempoReal() {
+  const inputNombre = document.querySelector('input[name="cliente_nombre"]');
+  const campoAbreviatura = document.getElementById('cliente_abreviatura');
+  if (!inputNombre || !campoAbreviatura) return;
+
+  if (inputNombre._listenerActivo) return;
+  inputNombre._listenerActivo = true;
+
+  let delay;
+  inputNombre.addEventListener('input', () => {
+    clearTimeout(delay);
+    const nombre = inputNombre.value.trim();
+    if (!nombre) {
+      campoAbreviatura.value = "";
+      return;
+    }
+
+    delay = setTimeout(() => {
+      fetch(`/usuario/generar_abreviatura_cliente/?nombre=${encodeURIComponent(nombre)}`)
+        .then(r => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        })
+        .then(data => {
+          campoAbreviatura.value = data.abreviatura || "";
+        })
+        .catch(err => {
+          console.error("Error al generar abreviatura:", err);
+          campoAbreviatura.value = "";
+        });
+    }, 300);
   });
 }
 
@@ -366,10 +380,12 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     resetFaenaUI();
     resetContratoUI();
+    activarGeneracionAbreviaturaEnTiempoReal(); // ✅ activamos al cargar
   }
   actualizarRequiredCampos();
 });
 </script>
+
 
 
 <!-- 🔹 JSON seguros -->

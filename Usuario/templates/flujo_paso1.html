@@ -8,7 +8,8 @@
 <textarea name="descripcion" rows="3" placeholder="Breve descripción del proyecto..."></textarea>
 
 <label>Abreviatura del Proyecto:</label>
-<input type="text" name="abreviatura" placeholder="Se genera automáticamente" readonly>
+<input type="text" id="abreviatura-proyecto" name="abreviatura" class="readonly-campo" placeholder="Se genera automáticamente" readonly>
+<small id="msg-abreviatura" class="mensaje-exito" style="display:none;">Abreviatura generada automáticamente.</small>
 
 <!-- Bloque de fechas agrupadas -->
 <div class="fechas-bloque">
@@ -44,10 +45,10 @@
 </select>
 
 <label>Número de Orden:</label>
-<input type="text" id="numero_orden_input" name="numero_orden" placeholder="Número de orden" readonly>
+<input type="text" id="numero_orden_input" name="numero_orden" class="readonly-campo" placeholder="Número de orden" readonly>
 <input type="hidden" id="numero_orden_hidden" name="numero_orden_oculto">
-<small id="mensaje-ok" style="display:none; color:green;"></small>
-<small id="mensaje-error-carga" style="display:none; color:red;"></small>
+<small id="mensaje-ok" class="mensaje-exito" style="display:none;">Número de orden cargado correctamente.</small>
+<small id="mensaje-error-carga" class="mensaje-error" style="display:none;">Error al leer el archivo.</small>
 
 <label>Archivo Excel (para leer número de orden):</label>
 <input type="file" id="archivo" name="archivo" accept=".xlsx,.xls">
@@ -60,8 +61,9 @@
 </select>
 <small>Selecciona una o varias máquinas asociadas al proyecto.</small>
 
-<!-- Estilos -->
+<!-- ==================== ESTILOS ==================== -->
 <style>
+/* === Bloque de fechas === */
 .fechas-bloque {
   margin-top: 20px;
   background: #fafafa;
@@ -97,10 +99,40 @@
   border: 1px solid #ccc;
   background: #fff;
 }
+
+/* === Campos solo lectura unificados === */
+.readonly-campo {
+  background-color: #f0f0f0; /* gris claro uniforme */
+  color: #555;
+  cursor: not-allowed;
+  border: 1px solid #c9c9c9;
+  width: 100%;
+  border-radius: 6px;
+  padding: 8px;
+  transition: background-color 0.3s;
+}
+.readonly-campo:hover {
+  background-color: #e2e2e2;
+}
+
+/* === Mensajes === */
+.mensaje-exito {
+  display: block;
+  color: #2e7d32;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+.mensaje-error {
+  display: block;
+  color: #d32f2f;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
 </style>
 
-<!-- Script de carga de número de orden -->
+<!-- ==================== SCRIPTS ==================== -->
 <script>
+/* === Leer número de orden desde Excel === */
 const archivoInput = document.getElementById('archivo');
 archivoInput.addEventListener('change', async (event) => {
   const archivo = event.target.files[0];
@@ -126,7 +158,6 @@ archivoInput.addEventListener('change', async (event) => {
       inputOrden.value = data.numero_orden;
       hiddenOrden.value = data.numero_orden;
       mensajeOk.style.display = 'block';
-      mensajeOk.textContent = 'Número de orden cargado correctamente.';
       mensajeError.style.display = 'none';
     } else {
       mensajeOk.style.display = 'none';
@@ -139,5 +170,79 @@ archivoInput.addEventListener('change', async (event) => {
     mensajeError.style.display = 'block';
     mensajeError.textContent = 'Error al leer el archivo.';
   }
+});
+
+
+/* === Generar abreviatura de proyecto automáticamente === */
+async function generarAbreviaturaProyecto() {
+  const maquinaSelect = document.querySelector('select[name="maquinas_ids[]"]');
+  const descripcionInput = document.querySelector('textarea[name="descripcion"]');
+  const fechaInput = document.querySelector('input[name="fecha_recepcion_evaluacion"]');
+  const abreviaturaInput = document.querySelector('#abreviatura-proyecto');
+  const msgAbreviatura = document.getElementById("msg-abreviatura");
+
+  const maquinaSeleccionada = maquinaSelect?.selectedOptions[0]?.text?.trim() || "";
+  const descripcion = descripcionInput.value.trim();
+  const fecha = fechaInput.value.trim();
+
+  if (!maquinaSeleccionada || !fecha) {
+    abreviaturaInput.value = "";
+    msgAbreviatura.style.display = "none";
+    return;
+  }
+
+  const payload = {
+    maquina: maquinaSeleccionada,
+    descripcion: descripcion,
+    fecha_recepcion_evaluacion: fecha
+  };
+
+  try {
+    const resp = await fetch("/usuario/generar_abreviatura_proyecto/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token }}"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await resp.json();
+    console.log("📦 Respuesta abreviatura:", data);
+
+    if (data.abreviatura) {
+      abreviaturaInput.value = data.abreviatura;
+      abreviaturaInput.style.backgroundColor = "#f0f0f0";
+      msgAbreviatura.style.display = "block";
+    } else {
+      abreviaturaInput.value = "";
+      abreviaturaInput.style.backgroundColor = "#f0f0f0";
+      msgAbreviatura.style.display = "none";
+    }
+  } catch (err) {
+    console.error("Error al generar abreviatura:", err);
+    msgAbreviatura.style.display = "none";
+  }
+}
+
+
+/* === Eventos dinámicos === */
+document.addEventListener("DOMContentLoaded", () => {
+  const descripcion = document.querySelector('textarea[name="descripcion"]');
+  const fecha = document.querySelector('input[name="fecha_recepcion_evaluacion"]');
+  const maquinaSelect = document.querySelector('select[name="maquinas_ids[]"]');
+  const form = document.querySelector("form");
+
+  [descripcion, fecha, maquinaSelect].forEach(el => {
+    el?.addEventListener("change", generarAbreviaturaProyecto);
+    el?.addEventListener("input", generarAbreviaturaProyecto);
+  });
+
+  form.addEventListener("submit", async (e) => {
+    const abreviaturaInput = document.querySelector('#abreviatura-proyecto');
+    if (!abreviaturaInput.value) {
+      await generarAbreviaturaProyecto();
+    }
+  });
 });
 </script>

@@ -1,104 +1,233 @@
-<h2 style="color:#2f2f8c; font-weight:700; margin-bottom:6px;">Paso 4 — Confirmación de Datos</h2>
-<p style="color:#555; margin-bottom:18px;">Revisa cuidadosamente toda la información antes de confirmar.</p>
+<!-- flujo_paso4.html -->
+<h2 class="titulo-paso">Paso 4 — Confirmación de Datos</h2>
+<p class="subtexto-paso">Verifica que toda la información del proyecto sea correcta antes de confirmar.</p>
 
 {% if resumen %}
-  <div style="background:#fff; border-radius:12px; padding:25px 30px; margin-top:15px; box-shadow:0 1px 5px rgba(0,0,0,0.08); font-size:0.95rem; color:#333;">
+<div class="resumen-container">
 
-    <!-- DATOS GENERALES -->
-    <h3 style="color:#2f2f8c; font-size:1.1rem; margin-bottom:10px;">Datos Generales del Proyecto</h3>
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px 25px;">
-      <p><strong>Nombre:</strong> {{ resumen.nombre|default:"-" }}</p>
-      <p><strong>Abreviatura:</strong> {{ resumen.abreviatura|default:"-" }}</p>
-      <p><strong>Administrador:</strong> {{ resumen.administrador|default:"-" }}</p>
-      <p><strong>Número de Orden:</strong> {{ resumen.numero_orden|default:"-" }}</p>
+  <!-- DATOS GENERALES -->
+  <section class="bloque">
+    <h3>Datos Generales del Proyecto</h3>
+    <dl class="data-list-grid">
+      <dt>Nombre:</dt> <dd>{{ resumen.nombre|default:"-" }}</dd>
+      <dt>Abreviatura:</dt> <dd>{{ resumen.abreviatura|default:"-" }}</dd>
+      <dt>Administrador:</dt> <dd>{{ resumen.administrador|default:"-" }}</dd>
+      <dt>Número de Orden:</dt> <dd>{{ resumen.numero_orden|default:"-" }}</dd>
+    </dl>
+
+    <div class="detalles-largos">
+      <div><strong>Descripción:</strong> <span>{{ resumen.descripcion|default:"-" }}</span></div>
+      <div><strong>Observaciones / Alcance Inicial:</strong> <span>{{ resumen.observaciones|default:"-" }}</span></div>
     </div>
-    <p style="margin-top:6px;"><strong>Descripción:</strong> {{ resumen.descripcion|default:"-" }}</p>
 
-    <!-- Fechas del Proyecto -->
-    <div style="margin-top:15px; font-size:0.93rem; color:#333;">
-      <h4 style="margin:0 0 6px 0; font-size:0.95rem; color:#444; font-weight:600;">Fechas del Proyecto</h4>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:4px 20px;">
-        <p><strong>Recepción / Evaluación:</strong> {{ resumen.fecha_recepcion_evaluacion|default:"-" }}</p>
-        <p><strong>Inicio Planificación:</strong> {{ resumen.fecha_inicio_planificacion|default:"-" }}</p>
-        <p><strong>Inicio Ejecución:</strong> {{ resumen.fecha_inicio_ejecucion|default:"-" }}</p>
-        <p><strong>Cierre del Proyecto:</strong> {{ resumen.fecha_cierre_proyecto|default:"-" }}</p>
+    <div class="sub-bloque">
+      <h4>Fechas del Proyecto</h4>
+      <dl class="data-list-grid small-gap">
+        <dt>Recepción / Evaluación:</dt> <dd>{{ resumen.fecha_recepcion_evaluacion|default:"-" }}</dd>
+        <dt>Inicio Planificación:</dt> <dd>{{ resumen.fecha_inicio_planificacion|default:"-" }}</dd>
+        <dt>Inicio Ejecución:</dt> <dd>{{ resumen.fecha_inicio_ejecucion|default:"-" }}</dd>
+        <dt>Cierre del Proyecto:</dt> <dd>{{ resumen.fecha_cierre_proyecto|default:"-" }}</dd>
+      </dl>
+    </div>
+
+    <p class="maquinas"><strong>Máquinas Asociadas:</strong> {{ resumen.maquinas_ids|default:"-" }}</p>
+  </section>
+
+  <!-- CONTRATO -->
+  <section class="bloque">
+    <h3>Contrato</h3>
+    <dl class="data-list-grid">
+      <dt>Número de Contrato:</dt> <dd>{{ resumen.numero_contrato|default:"-" }}</dd>
+      <dt>Monto Total:</dt> <dd>{{ resumen.monto_total|default:"-" }}</dd>
+      <dt>Fecha de Firma:</dt> <dd>{{ resumen.contrato_fecha_firma|default:"-" }}</dd>
+      <dt>Representante:</dt> <dd>{{ resumen.representante_cliente_nombre|default:"-" }}</dd>
+      <dt>Correo:</dt> <dd>{{ resumen.representante_cliente_correo|default:"-" }}</dd>
+      <dt>Teléfono:</dt> <dd>{{ resumen.representante_cliente_telefono|default:"-" }}</dd>
+      <dt>Cliente Asociado:</dt> <dd>{{ resumen.cliente_nombre|default:"-" }} ({{ resumen.cliente_abreviatura|default:"-" }})</dd>
+    </dl>
+  </section>
+
+  <!-- FAENA -->
+  <section class="bloque">
+    <h3>Faena</h3>
+    <dl class="data-list-grid">
+      <dt>Nombre:</dt> <dd>{{ resumen.faena_nombre|default:"-" }}</dd>
+      <dt>Ubicación:</dt> <dd>{{ resumen.faena_ubicacion|default:"-" }}</dd>
+      <dt>Cliente Asociado:</dt> <dd>{{ resumen.faena_cliente_nombre|default:"-" }}</dd>
+    </dl>
+  </section>
+
+  <!-- DOCUMENTOS Y ROLES -->
+  {% if resumen.documentos_roles %}
+  <section class="bloque">
+    <h3>Documentos Técnicos, Roles y Planificación</h3>
+
+    {% for doc_id, roles in resumen.documentos_roles.items %}
+    <div class="card-doc">
+      <h4>{{ roles.documento_nombre }}</h4>
+
+      <div class="grid-roles">
+        <div><strong>Redactor(es):</strong> <span>{% if roles.redactores %}{% for r in roles.redactores %}{{ r }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}-{% endif %}</span></div>
+        <div><strong>Revisor(es):</strong> <span>{% if roles.revisores %}{% for r in roles.revisores %}{{ r }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}-{% endif %}</span></div>
+        <div><strong>Aprobador(es):</strong> <span>{% if roles.aprobadores %}{% for r in roles.aprobadores %}{{ r }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}-{% endif %}</span></div>
       </div>
+
+      {% if roles.observaciones %}
+      <p class="doc-observaciones"><strong>Observaciones / Alcance:</strong> {{ roles.observaciones }}</p>
+      {% endif %}
+
+      {% if roles.hitos %}
+      <div class="sub-bloque hitos-planificacion">
+        <h5>Planificación de Hitos</h5>
+        <dl class="data-list-grid small-gap">
+          <dt>Inicio de Elaboración:</dt> 
+          <dd>{{ roles.hitos.fecha_inicio_elaboracion|default:"-" }} 
+            <span class="alerta-dias">({{ roles.hitos.alertar_dias_inicio|default:"-" }} día(s) antes)</span>
+          </dd>
+
+          <dt>Primera Revisión Técnica:</dt> 
+          <dd>{{ roles.hitos.fecha_primera_revision|default:"-" }} 
+            <span class="alerta-dias">({{ roles.hitos.alertar_dias_revision|default:"-" }} día(s) antes)</span>
+          </dd>
+
+          <dt>Entrega / Aprobación Final:</dt> 
+          <dd>{{ roles.hitos.fecha_entrega|default:"-" }} 
+            <span class="alerta-dias">({{ roles.hitos.alertar_dias_entrega|default:"-" }} día(s) antes)</span>
+          </dd>
+        </dl>
+      </div>
+      {% endif %}
     </div>
-
-    <p style="margin-top:6px;"><strong>Máquinas Asociadas:</strong> {{ resumen.maquinas_ids|default:"-" }}</p>
-
-    <hr style="margin:24px 0; border:none; border-top:1px solid #e2e2e2;">
-
-    <!-- CONTRATO -->
-    <h3 style="color:#2f2f8c; font-size:1.1rem; margin-bottom:10px;">Contrato</h3>
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px 25px;">
-      <p><strong>Número de Contrato:</strong> {{ resumen.numero_contrato|default:"-" }}</p>
-      <p><strong>Monto Total:</strong> {{ resumen.monto_total|default:"-" }}</p>
-      <p><strong>Fecha de Firma:</strong> {{ resumen.contrato_fecha_firma|default:"-" }}</p>
-      <p><strong>Representante:</strong> {{ resumen.representante_cliente_nombre|default:"-" }}</p>
-      <p><strong>Correo:</strong> {{ resumen.representante_cliente_correo|default:"-" }}</p>
-      <p><strong>Teléfono:</strong> {{ resumen.representante_cliente_telefono|default:"-" }}</p>
-      <p><strong>Cliente Asociado:</strong> {{ resumen.cliente_nombre|default:"-" }} ({{ resumen.cliente_abreviatura|default:"-" }})</p>
-    </div>
-
-    <hr style="margin:24px 0; border:none; border-top:1px solid #e2e2e2;">
-
-    <!-- FAENA -->
-    <h3 style="color:#2f2f8c; font-size:1.1rem; margin-bottom:10px;">Faena</h3>
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px 25px;">
-      <p><strong>Nombre:</strong> {{ resumen.faena_nombre|default:"-" }}</p>
-      <p><strong>Ubicación:</strong> {{ resumen.faena_ubicacion|default:"-" }}</p>
-      <p><strong>Cliente Asociado:</strong> {{ resumen.faena_cliente_nombre|default:"-" }}</p>
-    </div>
-
-    <hr style="margin:24px 0; border:none; border-top:1px solid #e2e2e2;">
-
-    <!-- INFORMACIÓN FINAL -->
-    <h3 style="color:#2f2f8c; font-size:1.1rem; margin-bottom:10px;">Información Final</h3>
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:10px 25px;">
-      <p><strong>Responsable:</strong> {{ resumen.responsable|default:"-" }}</p>
-      <p><strong>Observaciones:</strong> {{ resumen.observaciones|default:"-" }}</p>
-    </div>
-
-    <!-- NUEVA SECCIÓN: DOCUMENTOS Y ROLES -->
-    {% if resumen.documentos_roles %}
-      <hr style="margin:24px 0; border:none; border-top:1px solid #e2e2e2;">
-      <h3 style="color:#2f2f8c; font-size:1.1rem; margin-bottom:10px;">📄 Documentos Técnicos y Asignaciones</h3>
-      <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
-        <thead>
-          <tr style="background:#f0f4fa;">
-            <th style="padding:8px; border:1px solid #ddd;">Documento</th>
-            <th style="padding:8px; border:1px solid #ddd;">Redactor(es)</th>
-            <th style="padding:8px; border:1px solid #ddd;">Revisor(es)</th>
-            <th style="padding:8px; border:1px solid #ddd;">Aprobador(es)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for doc_id, roles in resumen.documentos_roles.items %}
-            <tr>
-              <td style="padding:8px; border:1px solid #eee;">{{ roles.documento_nombre }}</td>
-              <td style="padding:8px; border:1px solid #eee;">
-                {% if roles.redactores %}
-                  {% for r in roles.redactores %} {{ r }}{% if not forloop.last %}, {% endif %}{% endfor %}
-                {% else %}-{% endif %}
-              </td>
-              <td style="padding:8px; border:1px solid #eee;">
-                {% if roles.revisores %}
-                  {% for r in roles.revisores %} {{ r }}{% if not forloop.last %}, {% endif %}{% endfor %}
-                {% else %}-{% endif %}
-              </td>
-              <td style="padding:8px; border:1px solid #eee;">
-                {% if roles.aprobadores %}
-                  {% for r in roles.aprobadores %} {{ r }}{% if not forloop.last %}, {% endif %}{% endfor %}
-                {% else %}-{% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% endif %}
-
-  </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+</div>
 {% else %}
-  <p style="color:#666;">No hay información disponible para mostrar.</p>
+<p class="sin-datos">No hay información disponible para mostrar.</p>
 {% endif %}
+
+<style>
+/* === Estilos generales === */
+.titulo-paso {
+  color: #2f2f8c;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.subtexto-paso {
+  color: #555;
+  margin-bottom: 16px;
+  font-size: 0.94rem;
+}
+.resumen-container {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px 28px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  color: #333;
+  font-size: 0.93rem;
+  line-height: 1.45;
+}
+
+/* === Bloques principales === */
+.bloque {
+  margin-bottom: 25px;
+}
+.bloque h3 {
+  color: #2f2f8c;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e6e6e6;
+  padding-bottom: 4px;
+}
+
+/* === Data Lists compactos === */
+.data-list-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.6fr) minmax(240px, 1fr);
+  gap: 5px 25px;
+  margin-bottom: 10px;
+}
+.data-list-grid dt {
+  font-weight: 600;
+  color: #555;
+  text-align: right;
+}
+.data-list-grid dd {
+  margin: 0;
+  color: #222;
+}
+.data-list-grid.small-gap {
+  grid-template-columns: minmax(180px, 0.7fr) 1fr;
+}
+
+/* === Sub-bloques y detalles === */
+.sub-bloque {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f3f3f3;
+}
+.sub-bloque h4, .sub-bloque h5 {
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+.detalles-largos div {
+  margin-bottom: 6px;
+}
+.maquinas {
+  margin-top: 10px;
+  font-style: italic;
+  color: #666;
+}
+
+/* === Documentos === */
+.card-doc {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-left: 3px solid #2f2f8c;
+  border-radius: 6px;
+  padding: 15px 22px;
+  margin-top: 12px;
+}
+.card-doc h4 {
+  color: #2f2f8c;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.grid-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 25px;
+  margin-bottom: 10px;
+}
+.grid-roles strong {
+  display: block;
+  color: #555;
+}
+.doc-observaciones {
+  font-size: 0.9rem;
+  color: #555;
+  border-top: 1px solid #eee;
+  padding-top: 6px;
+  margin-top: 8px;
+}
+.hitos-planificacion {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 12px 15px;
+  margin-top: 10px;
+}
+.alerta-dias {
+  font-size: 0.83rem;
+  color: #d97b15;
+  margin-left: 5px;
+}
+.sin-datos {
+  color: #777;
+  font-style: italic;
+}
+</style>

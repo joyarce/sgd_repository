@@ -875,6 +875,7 @@ from django.db import connection
 def crear_proyecto(request):
     from django.db import connection
     from django.utils import timezone
+    from google.cloud import storage  # ✅ Import GCS
 
     # === Datos temporales en sesión ===
     if "proyecto_temp" not in request.session:
@@ -1015,15 +1016,24 @@ def crear_proyecto(request):
                 temp["paso3"] = {
                     "responsable": request.POST.get("responsable"),
                     "observaciones": request.POST.get("observaciones"),
-                    "documentos_ids": request.POST.getlist("documento_id[]"),
+                    "documentos_ids": request.POST.getlist("documentos_ids[]"),
                 }
 
                 documentos_roles = {}
-                for doc_id in request.POST.getlist("documento_id[]"):
+                for doc_id in request.POST.getlist("documentos_ids[]"):
                     documentos_roles[doc_id] = {
                         "redactores": request.POST.getlist(f"redactor_id_{doc_id}[]"),
                         "revisores": request.POST.getlist(f"revisor_id_{doc_id}[]"),
                         "aprobadores": request.POST.getlist(f"aprobador_id_{doc_id}[]"),
+                        "observaciones": request.POST.get(f"observaciones_{doc_id}", ""),
+                        "hitos": {
+                            "fecha_inicio_elaboracion": request.POST.get(f"fecha_inicio_elaboracion_{doc_id}"),
+                            "alertar_dias_inicio": request.POST.get(f"alertar_dias_inicio_{doc_id}"),
+                            "fecha_primera_revision": request.POST.get(f"fecha_primera_revision_{doc_id}"),
+                            "alertar_dias_revision": request.POST.get(f"alertar_dias_revision_{doc_id}"),
+                            "fecha_entrega": request.POST.get(f"fecha_entrega_{doc_id}"),
+                            "alertar_dias_entrega": request.POST.get(f"alertar_dias_entrega_{doc_id}"),
+                        }
                     }
                 temp["paso3"]["documentos_roles"] = documentos_roles
 
@@ -1032,7 +1042,6 @@ def crear_proyecto(request):
 
         elif accion == "confirmar":
             resumen = {**temp.get("paso1", {}), **temp.get("paso2", {}), **temp.get("paso3", {})}
-
             for k, v in resumen.items():
                 if isinstance(v, (list, tuple)):
                     resumen[k] = ", ".join(map(str, v))
@@ -1043,8 +1052,67 @@ def crear_proyecto(request):
             print(f"🕒 {timezone.now()} — Proyecto simulado correctamente.")
             print("======================================\n")
 
+            # === Asegurar que cliente_nombre exista antes de crear carpetas ===
+            contrato_id = resumen.get("contrato_id")
+            if contrato_id and not resumen.get("cliente_nombre"):
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT cl.nombre
+                        FROM contratos c
+                        JOIN clientes cl ON cl.id = c.cliente_id
+                        WHERE c.id = %s
+                    """, [contrato_id])
+                    row = cursor.fetchone()
+                    if row:
+                        resumen["cliente_nombre"] = row[0]
+
+            # === Crear estructura en Google Cloud Storage ===
+            try:
+                storage_client = storage.Client()
+                bucket = storage_client.bucket("sgdmtso_jova")
+
+                # 🧹 Limpieza y validación de nombres
+                cliente = resumen.get("cliente_nombre", "").strip()
+                proyecto = resumen.get("nombre", "").strip()
+                if not cliente:
+                    cliente = "Cliente_Desconocido"
+                if not proyecto:
+                    proyecto = "Proyecto_SinNombre"
+
+                for simbolo in [" ", "/", "\\", ":", "*", "?", "\"", "<", ">", "|"]:
+                    cliente = cliente.replace(simbolo, "_")
+                    proyecto = proyecto.replace(simbolo, "_")
+
+                base_path = f"DocumentosProyectos/{cliente}/{proyecto}/"
+                bucket.blob(base_path).upload_from_string("")
+
+                documentos_roles = temp.get("paso3", {}).get("documentos_roles", {})
+                if documentos_roles:
+                    with connection.cursor() as cursor:
+                        for doc_id in documentos_roles.keys():
+                            cursor.execute("""
+                                SELECT c.nombre AS categoria, t.nombre AS tipo
+                                FROM tipo_documentos_tecnicos t
+                                JOIN categoria_documentos_tecnicos c ON c.id = t.categoria_id
+                                WHERE t.id = %s
+                            """, [doc_id])
+                            row = cursor.fetchone()
+                            if row:
+                                categoria = row[0].strip()
+                                tipo = row[1].strip()
+                                for simbolo in [" ", "/", "\\", ":", "*", "?", "\"", "<", ">", "|"]:
+                                    categoria = categoria.replace(simbolo, "_")
+                                    tipo = tipo.replace(simbolo, "_")
+                                folder_path = f"{base_path}{categoria}/{tipo}/"
+                                bucket.blob(folder_path).upload_from_string("")
+
+                print(f"✅ Árbol de carpetas creado correctamente en GCS: {base_path}")
+
+            except Exception as e:
+                print("⚠️ Error al crear estructura de carpetas GCS:", e)
+
             del request.session["proyecto_temp"]
-            return render(request, "flujo_confirmado.html", {"resumen": resumen})
+            return redirect("usuario:lista_proyectos")
 
     # === Paso 4: Confirmación ===
     steps = ["Datos Generales", "Contrato y Cliente", "Responsables y Documentos", "Confirmación"]
@@ -1111,16 +1179,14 @@ def crear_proyecto(request):
                         "faena_cliente_nombre": row[2],
                     })
 
-            # 🔹 Documentos Técnicos: convertir IDs a nombres
+            # 🔹 Documentos Técnicos
             if "documentos_roles" in resumen:
                 doc_roles = resumen["documentos_roles"]
                 for doc_id, roles in doc_roles.items():
-                    # Obtener nombre del documento
                     cursor.execute("SELECT nombre FROM tipo_documentos_tecnicos WHERE id = %s", [doc_id])
                     doc_row = cursor.fetchone()
                     nombre_doc = doc_row[0] if doc_row else f"Documento #{doc_id}"
 
-                    # Reemplazar IDs por nombres de usuarios
                     def ids_a_nombres(ids):
                         if not ids:
                             return []
@@ -1133,16 +1199,11 @@ def crear_proyecto(request):
                         "redactores": ids_a_nombres(roles.get("redactores", [])),
                         "revisores": ids_a_nombres(roles.get("revisores", [])),
                         "aprobadores": ids_a_nombres(roles.get("aprobadores", [])),
+                        "observaciones": roles.get("observaciones", ""),
+                        "hitos": roles.get("hitos", {}),
                     }
 
                 resumen["documentos_roles"] = doc_roles
-
-        # Normalizar listas
-        if isinstance(resumen.get("maquinas_ids"), str):
-            resumen["maquinas_ids"] = [resumen["maquinas_ids"]]
-        for k, v in resumen.items():
-            if isinstance(v, (list, tuple, set, dict)):
-                resumen[k] = v  # mantener objetos complejos intactos
 
     # === Render final ===
     return render(request, "crear_proyecto.html", {
@@ -1159,6 +1220,9 @@ def crear_proyecto(request):
         "grupos_maestros": grupos_maestros,
         "documentos": documentos,
     })
+
+
+
 
 
 
@@ -1255,22 +1319,33 @@ def generar_abreviatura_proyecto(request):
     """
     Genera la abreviatura de un proyecto a partir de:
     - nombre de la máquina
-    - descripcion
-    - fecha_recepcion_evaluacion
+    - descripción
+    - fecha de recepción / evaluación
     """
     if request.method != "POST":
         return JsonResponse({"error": "Método no permitido"}, status=405)
 
     try:
+        import json, datetime, re
         data = json.loads(request.body)
+
         maquina = data.get("maquina", "").strip()
         descripcion = data.get("descripcion", "").strip().upper()
         fecha = data.get("fecha_recepcion_evaluacion", "").strip()
 
-        if not maquina or not descripcion or not fecha:
+        print("📩 Datos recibidos:", data)  # DEBUG
+
+        if not maquina or not fecha:
             return JsonResponse({"abreviatura": ""})
 
-        # Formato MMYY
+        # Limpiar nombre de máquina (sin abreviatura entre paréntesis)
+        maquina = re.sub(r"\(.*?\)", "", maquina).strip().upper().replace(" ", "")
+
+        # Limpiar descripción (usar primeras 2 palabras)
+        palabras = [p for p in descripcion.split() if len(p) > 2]
+        descripcion_limpia = "".join(palabras[:2]).upper()
+
+        # Formato fecha MMYY
         try:
             fecha_obj = datetime.datetime.strptime(fecha, "%Y-%m-%d")
             mes = f"{fecha_obj.month:02}"
@@ -1279,71 +1354,72 @@ def generar_abreviatura_proyecto(request):
         except ValueError:
             fecha_formato = ""
 
-        nombre_limpio = maquina.replace(" ", "").upper()
-        descripcion_limpio = descripcion.replace(" ", "")
-
-        abreviatura = f"{nombre_limpio}.{descripcion_limpio}.{fecha_formato}"
+        abreviatura = f"{maquina}.{descripcion_limpia}.{fecha_formato}"
+        print("✅ Abreviatura generada:", abreviatura)
 
         return JsonResponse({"abreviatura": abreviatura})
 
     except Exception as e:
+        print("❌ Error generar_abreviatura_proyecto:", e)
         return JsonResponse({"error": str(e)}, status=400)
 #paso2 ####################  ####################    ####################    ####################  
 
 
-def generar_abreviatura_cliente(nombre):
-    nombre = unidecode.unidecode(nombre.upper().strip())
-    nombre = re.sub(r'[^A-ZÑ\s]', ' ', nombre)
-    nombre = re.sub(r'\s+', ' ', nombre).strip()
-    palabras = nombre.split()
-
-    stopwords = {
-        "DE", "DEL", "LA", "LOS", "LAS", "Y", "E", "S", "SA", "SAA",
-        "LTDA", "LIMITADA", "COMPANIA", "COMPAÑIA", "CORPORACION",
-        "CORPORACIÓN", "EMPRESA", "GRUPO", "INDUSTRIAL", "SERVICIOS"
-    }
-    palabras = [p for p in palabras if p not in stopwords]
-
-    if not palabras:
-        base = "GEN"
-    elif len(palabras) == 1:
-        base = palabras[0][:6]
-    else:
-        partes = [p[:3] for p in palabras[:3]]
-        base = ''.join(partes).upper()
-        base = base[:6] if len(base) > 6 else base
-
-    abrev_final = base
-    contador = 1
-    with connection.cursor() as cursor:
-        while True:
-            cursor.execute("SELECT COUNT(*) FROM clientes WHERE abreviatura = %s;", [abrev_final])
-            if cursor.fetchone()[0] == 0:
-                break
-            abrev_final = f"{base}{contador}"
-            contador += 1
-    return abrev_final
-
-
-
 @csrf_exempt
 @login_required
-def generar_abreviatura_cliente_ajax(request):
+def generar_abreviatura_cliente(request):
     """
-    Genera la abreviatura desde el backend según el nombre enviado por AJAX.
-    Mantiene las mismas reglas que generar_abreviatura_cliente().
+    Genera la abreviatura de un cliente (vía AJAX) a partir de su nombre.
+    Equivalente al modelo del proyecto: una sola función con request.
     """
+    if request.method != "GET":
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+
     try:
         nombre = request.GET.get("nombre", "").strip()
         if not nombre:
             return JsonResponse({"abreviatura": ""})
-        
-        abreviatura = generar_abreviatura_cliente(nombre)
-        return JsonResponse({"abreviatura": abreviatura})
+
+        # --- Normalización y limpieza ---
+        nombre = unidecode.unidecode(nombre.upper().strip())
+        nombre = re.sub(r'[^A-ZÑ\s]', ' ', nombre)
+        nombre = re.sub(r'\s+', ' ', nombre).strip()
+        palabras = nombre.split()
+
+        stopwords = {
+            "DE", "DEL", "LA", "LOS", "LAS", "Y", "E", "S", "SA", "SAA",
+            "LTDA", "LIMITADA", "COMPANIA", "COMPAÑIA", "CORPORACION",
+            "CORPORACIÓN", "EMPRESA", "GRUPO", "INDUSTRIAL", "SERVICIOS"
+        }
+        palabras = [p for p in palabras if p not in stopwords]
+
+        # --- Generación base ---
+        if not palabras:
+            base = "GEN"
+        elif len(palabras) == 1:
+            base = palabras[0][:6]
+        else:
+            partes = [p[:3] for p in palabras[:3]]
+            base = ''.join(partes).upper()
+            base = base[:6] if len(base) > 6 else base
+
+        abrev_final = base
+        contador = 1
+
+        # --- Validación de unicidad ---
+        with connection.cursor() as cursor:
+            while True:
+                cursor.execute("SELECT COUNT(*) FROM clientes WHERE abreviatura = %s;", [abrev_final])
+                if cursor.fetchone()[0] == 0:
+                    break
+                abrev_final = f"{base}{contador}"
+                contador += 1
+
+        return JsonResponse({"abreviatura": abrev_final})
 
     except Exception as e:
+        print("❌ Error generar_abreviatura_cliente:", e)
         return JsonResponse({"error": str(e)}, status=500)
-
 
 
 @login_required
