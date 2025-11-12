@@ -9,17 +9,17 @@
     <!-- Encabezado -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
         <h2 class="fw-semibold text-dark mb-2">
-            📁 Categorías de Documentos
+            Categorías de Documentos
         </h2>
 
         <div class="d-flex gap-2">
             <a href="{% url 'plantillas:crear_categoria' %}" class="btn btn-primary btn-sm">
-                <i class="bi bi-plus-circle me-1"></i> Nueva Categoría
+                Nueva Categoría
             </a>
 
             {% if categorias %}
             <a href="{% url 'plantillas:crear_tipo_documento' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-file-earmark-plus me-1"></i> Nuevo Tipo
+                Nuevo Tipo
             </a>
             {% endif %}
         </div>
@@ -58,14 +58,14 @@
                             {% if cat.tipos %}
                                 <div class="d-flex flex-wrap gap-1">
                                     {% for tipo in cat.tipos %}
-                                    <a href="{% url 'plantillas:detalle_tipo' tipo.id %}" class="badge rounded-pill bg-body-tertiary text-dark border text-decoration-none">
+                                    <a href="{% url 'plantillas:detalle_tipo' tipo.id %}"
+                                       class="badge rounded-pill bg-body-tertiary text-dark border text-decoration-none">
                                         {{ tipo.nombre }}
                                         {% if tipo.abreviatura %}
                                             <span class="small text-muted">({{ tipo.abreviatura }})</span>
                                         {% endif %}
                                     </a>
                                     {% endfor %}
-
                                 </div>
                             {% else %}
                                 <span class="text-muted fst-italic small">Sin tipos</span>
@@ -80,10 +80,9 @@
 
     {% else %}
     <div class="text-center py-5 text-muted">
-        <i class="bi bi-inbox display-5 mb-3 d-block"></i>
         <p class="fs-5 mb-1">No hay categorías registradas aún.</p>
         <a href="{% url 'plantillas:crear_categoria' %}" class="btn btn-sm btn-outline-primary mt-2">
-            <i class="bi bi-plus-circle"></i> Crear la primera categoría
+            Crear la primera categoría
         </a>
     </div>
     {% endif %}
@@ -91,12 +90,40 @@
 
 <!-- Estilos adicionales minimalistas -->
 <style>
+    :root {
+        --metso-orange: #f36f21;
+        --metso-light-gray: #f7f7f7;
+        --metso-border-radius: 10px;
+    }
+
+    .btn-primary {
+        background-color: var(--metso-orange);
+        border: none;
+        border-radius: var(--metso-border-radius);
+    }
+    .btn-primary:hover {
+        background-color: #d65c1a;
+    }
+
+    .btn-outline-secondary {
+        border-radius: var(--metso-border-radius);
+    }
+
     .hover-row:hover {
         background-color: #f9fafb;
         transition: background-color 0.2s ease;
     }
+
     .badge.bg-body-tertiary {
         background-color: #f1f3f5 !important;
+    }
+
+    .card {
+        border-radius: var(--metso-border-radius);
+    }
+
+    table thead {
+        background-color: #fff4ed;
     }
 </style>
 

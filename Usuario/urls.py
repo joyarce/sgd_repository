@@ -16,7 +16,7 @@ urlpatterns = [
     path("proyectos/<int:proyecto_id>/", views.detalle_proyecto, name="detalle_proyecto"),
     path('proyectos/validar_orden/', views.validar_orden_ajax, name='validar_orden'),
     path('usuario/documento/<int:documento_id>/', views.detalle_documento, name='detalle_documento'),
-    path("usuario/proyecto/<int:proyecto_id>/nuevo-requerimiento/", views.nuevo_requerimiento, name="nuevo_requerimiento"),
+    path("proyecto/<int:proyecto_id>/nuevo-requerimiento/", views.nuevo_requerimiento, name="nuevo_requerimiento"),
     path('requerimiento/<int:requerimiento_id>/editar/', views.editar_requerimiento, name='editar_requerimiento'),
     path('requerimiento/<int:requerimiento_id>/eliminar/', views.eliminar_requerimiento, name='eliminar_requerimiento'),
     path('proyectos/crear/', views.crear_proyecto, name='crear_proyecto'),
@@ -30,7 +30,8 @@ urlpatterns = [
     path('editar/maquina/<int:maquina_id>/', views.editar_maquina, name='editar_maquina'),
     path('obtener_abreviatura_cliente/<int:cliente_id>/',views.obtener_abreviatura_cliente,name='obtener_abreviatura_cliente'),
     
-    
+    path("proyecto/<int:proyecto_id>/eliminar/", views.eliminar_proyecto, name="eliminar_proyecto"),
+
     path("generar_abreviatura_proyecto/", views.generar_abreviatura_proyecto, name="generar_abreviatura_proyecto"),
 
 

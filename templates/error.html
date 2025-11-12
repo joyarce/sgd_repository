@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Error - Sistema de Gestión Documental{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+  --metso-orange: #f36f21;
+  --metso-light-gray: #f7f7f7;
+  --metso-dark-gray: #333;
+}
+body {
+  background: var(--metso-light-gray);
+  font-family: 'Inter', sans-serif;
+}
+.error-container {
+  max-width: 650px;
+  margin: 100px auto;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  padding: 40px;
+  text-align: center;
+}
+.error-icon {
+  font-size: 60px;
+  color: var(--metso-orange);
+}
+h1 {
+  color: var(--metso-dark-gray);
+  margin-top: 15px;
+}
+p {
+  color: #555;
+  margin: 15px 0 30px;
+}
+a.btn-back {
+  display: inline-block;
+  background: var(--metso-orange);
+  color: #fff;
+  text-decoration: none;
+  padding: 10px 25px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+a.btn-back:hover {
+  background: #d65c1a;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+  <div class="error-icon">⚠️</div>
+  <h1>Ocurrió un error</h1>
+  <p>{{ mensaje|default:"Se ha producido un error inesperado." }}</p>
+  <a href="javascript:history.back()" class="btn-back">⬅ Volver atrás</a>
+</div>
+{% endblock %}

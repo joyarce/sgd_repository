@@ -1,31 +1,26 @@
-from django.shortcuts import render, redirect
-from django.http import HttpResponse, JsonResponse # Keep JsonResponse
+# === Django core ===
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse, JsonResponse
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.utils import timezone
-from collections import Counter, defaultdict
-from datetime import timedelta
+from django.db import connection, transaction
+
+# === Utilidades y librerías externas ===
 from google.cloud import storage
 from django.conf import settings
-import openpyxl
-from datetime import datetime
-from django.shortcuts import render
-from django.db import connection
-from .models import FilePreview
-from django.views.decorators.csrf import csrf_exempt
-from django.db import connection 
-from collections import defaultdict
-import json 
-# You need to import the decorator:
-from django.views.decorators.http import require_POST 
-from django.shortcuts import get_object_or_404, render
-from django.contrib import messages
-import re
-import unidecode
-import openpyxl
-import csv
-import json
+from collections import Counter, defaultdict
+from datetime import datetime, timedelta
+import json, re, unidecode, csv, openpyxl, traceback
 
+# === Modelos locales ===
+from .models import FilePreview
+
+# === Librerías especializadas ===
 from openpyxl import load_workbook
+
 
 
 
@@ -171,6 +166,7 @@ def detalle_proyecto(request, proyecto_id):
         P.fecha_inicio_ejecucion,
         P.fecha_cierre_proyecto,
         P.abreviatura AS proyecto_abreviatura,
+        P.path_gcs,
 
         -- Administrador
         U.nombre AS administrador_nombre_completo,
@@ -271,6 +267,56 @@ def detalle_proyecto(request, proyecto_id):
     })
 
 
+@login_required
+def eliminar_proyecto(request, proyecto_id):
+    """
+    Elimina un proyecto y todos sus registros relacionados en cascada:
+    - requerimiento_equipo_rol
+    - requerimiento_documento_tecnico
+    - proyecto_maquina
+    - proyecto
+    """
+    from django.db import connection, transaction
+
+    if request.method == "POST":
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    # 1️⃣ Eliminar roles asociados a requerimientos del proyecto
+                    cursor.execute("""
+                        DELETE FROM requerimiento_equipo_rol
+                        WHERE requerimiento_id IN (
+                            SELECT id FROM requerimiento_documento_tecnico WHERE proyecto_id = %s
+                        );
+                    """, [proyecto_id])
+
+                    # 2️⃣ Eliminar requerimientos técnicos
+                    cursor.execute("""
+                        DELETE FROM requerimiento_documento_tecnico
+                        WHERE proyecto_id = %s;
+                    """, [proyecto_id])
+
+                    # 3️⃣ Eliminar asociaciones con máquinas
+                    cursor.execute("""
+                        DELETE FROM proyecto_maquina
+                        WHERE proyecto_id = %s;
+                    """, [proyecto_id])
+
+                    # 4️⃣ Eliminar el proyecto en sí
+                    cursor.execute("""
+                        DELETE FROM proyectos WHERE id = %s;
+                    """, [proyecto_id])
+
+            messages.success(request, "✅ Proyecto y registros asociados eliminados correctamente.")
+            return redirect("usuario:lista_proyectos")
+
+        except Exception as e:
+            print("⚠️ Error al eliminar proyecto:", e)
+            messages.error(request, f"Error al eliminar el proyecto: {e}")
+            return redirect("usuario:detalle_proyecto", proyecto_id=proyecto_id)
+
+    # Si no es POST, redirigir sin eliminar
+    return redirect("usuario:detalle_proyecto", proyecto_id=proyecto_id)
 
 
 @login_required
@@ -322,14 +368,14 @@ def detalle_documento(request, documento_id):
             logs.insert(0, {
                 'fecha_accion': documento_info.get('created_at') or timezone.now(),
                 'estado_origen': 'Sistema',
-                'estado_destino': 'Borrador',
+                'estado_destino': 'Pendiente de Inicio',
                 'usuario_nombre': 'Sistema',
                 'rol_usuario': '',
                 'observaciones': 'El sistema ha habilitado la plantilla en el repositorio.'
             })
 
         # Reconstruir estado_origen y usuario si es NULL
-        estado_anterior = "Borrador"
+        estado_anterior = "Pendiente de Inicio"
         for log in logs:
             if not log['estado_origen']:
                 log['estado_origen'] = estado_anterior
@@ -533,12 +579,6 @@ def new_folder(request):
     return redirect("list_files")
 
 
-# # Evita solapamiento de Redactor y Revisor
-# redactores = set(proyecto_temp["equipo_roles"]["redactores"])
-# revisores = set(proyecto_temp["equipo_roles"]["revisores"])
-# if redactores & revisores:
-#     raise ValidationError("Un usuario no puede ser Redactor y Revisor simultáneamente.")
-
 
 
 
@@ -546,191 +586,160 @@ def new_folder(request):
 
 @login_required
 def nuevo_requerimiento(request, proyecto_id):
-    from django.utils import timezone
-    from django.db import transaction, connection
-
-    # --- Obtener info del proyecto ---
+    # === Obtener info del proyecto ===
     with connection.cursor() as cursor:
-        cursor.execute("SELECT id, nombre, descripcion FROM proyectos WHERE id=%s;", [proyecto_id])
+        cursor.execute("""
+            SELECT id, nombre, descripcion
+            FROM proyectos
+            WHERE id = %s;
+        """, [proyecto_id])
         row = cursor.fetchone()
+
     if not row:
         return render(request, "error.html", {"mensaje": "Proyecto no encontrado."})
 
     proyecto = {"id": row[0], "nombre": row[1], "descripcion": row[2]}
 
-    # --- Tipos de documento técnico ---
+    # === Datos base ===
     with connection.cursor() as cursor:
-        cursor.execute("SELECT id, nombre FROM tipo_documentos_tecnicos ORDER BY nombre;")
-        tipos_documento = cursor.fetchall()
+        # Categorías
+        cursor.execute("""
+            SELECT id, nombre, descripcion
+            FROM categoria_documentos_tecnicos
+            ORDER BY nombre;
+        """)
+        grupos_maestros = [{"id": r[0], "nombre": r[1], "descripcion": r[2]} for r in cursor.fetchall()]
 
-    # --- Usuarios disponibles ---
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT id, nombre, email FROM usuarios ORDER BY nombre;")
-        usuarios = cursor.fetchall()
+        # Tipos de documentos
+        cursor.execute("""
+            SELECT id, categoria_id, nombre
+            FROM tipo_documentos_tecnicos
+            ORDER BY nombre;
+        """)
+        documentos = [{"id": r[0], "categoria_id": r[1], "nombre": r[2]} for r in cursor.fetchall()]
 
-    # ===========================================================
-    # POST
-    # ===========================================================
+        # Usuarios
+        cursor.execute("""
+            SELECT id, nombre, email
+            FROM usuarios
+            ORDER BY nombre;
+        """)
+        usuarios_todos = [{"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()]
+
+    # Asocia documentos con sus categorías
+    for grupo in grupos_maestros:
+        grupo["documentos"] = [d for d in documentos if d["categoria_id"] == grupo["id"]]
+
+    # === POST: inserción real de requerimientos ===
     if request.method == "POST":
-        paso = request.POST.get("paso_actual", "3")
+        documentos_ids = request.POST.getlist("documentos_ids[]")
+        if not documentos_ids:
+            messages.warning(request, "Debes seleccionar al menos un documento técnico.")
+            return redirect("usuario:nuevo_requerimiento", proyecto_id=proyecto_id)
 
-        # -------------------------------------------------------
-        # 🟠 PASO 4 → Confirmación final (simulación de inserción)
-        # -------------------------------------------------------
-        if paso == "4":
-            tipo_doc_id = request.POST.get("tipo_documento")
-            observaciones = request.POST.get("observaciones", "")
-            fecha_primera_revision = request.POST.get("fecha_primera_revision")
-            alertar_dias_revision = request.POST.get("alertar_dias_revision")
-            fecha_entrega = request.POST.get("fecha_entrega")
-            alertar_dias_entrega = request.POST.get("alertar_dias_entrega")
-            redactores = request.POST.getlist("redactores")
-            revisores = request.POST.getlist("revisores")
-            aprobadores = request.POST.getlist("aprobadores")
-
-            try:
-                with transaction.atomic():
-                    print("\n========== SIMULACIÓN FINAL DE INSERCIÓN ==========")
-                    print(f"📄 Proyecto ID: {proyecto_id}")
-                    print(f"📘 Tipo Documento Técnico ID: {tipo_doc_id}")
-                    print(f"🕒 Fecha de Registro: {timezone.now()}")
-                    print(f"🗒️ Observaciones: {observaciones}")
-                    print(f"📆 Fechas: Revisión={fecha_primera_revision}, Entrega={fecha_entrega}")
-                    print(f"🔔 Alertas: rev={alertar_dias_revision}, entr={alertar_dias_entrega}")
-
-                    # ====================================================
-                    # 🔸 Inserción del requerimiento (comentada)
-                    # ====================================================
-                    # cursor.execute("""
-                    #     INSERT INTO requerimiento_documento_tecnico
-                    #     (proyecto_id, tipo_documento_id, fecha_registro, observaciones)
-                    #     VALUES (%s, %s, %s, %s)
-                    #     RETURNING id;
-                    # """, [proyecto_id, tipo_doc_id, timezone.now(), observaciones])
-                    # req_id = cursor.fetchone()[0]
-
-                    req_id = 9999  # ID simulado para depuración
-                    print(f"✅ Se insertaría un nuevo requerimiento con ID simulado: {req_id}")
-
-                    # ====================================================
-                    # 🔸 Log inicial (comentado)
-                    # ====================================================
-                    print({
-                        "requerimiento_id": req_id,
-                        "usuario_id": request.user.id,
-                        "estado_origen_id": None,
-                        "estado_destino_id": 1,
-                        "created_at": timezone.now(),
-                        "observaciones": "El sistema ha habilitado la plantilla en el repositorio."
-                    })
-
-                    # cursor.execute("""
-                    #     INSERT INTO log_estado_requerimiento_documento
-                    #     (requerimiento_id, usuario_id, estado_origen_id, estado_destino_id, created_at, observaciones)
-                    #     VALUES (%s, %s, %s, %s, %s, %s);
-                    # """, [req_id, request.user.id, None, 1, timezone.now(), "El sistema ha habilitado la plantilla en el repositorio."])
-
-                    # ====================================================
-                    # 🔸 Asignación de roles (comentada)
-                    # ====================================================
-                    def imprimir_roles(lista, rol_id, nombre_rol):
-                        for u in lista:
-                            print(f"\n👤 Rol: {nombre_rol}")
-                            print({
-                                "requerimiento_id": req_id,
-                                "usuario_id": u,
-                                "rol_id": rol_id,
-                                "fecha_asignacion": timezone.now(),
-                                "activo": True
-                            })
-                            # cursor.execute("""
-                            #     INSERT INTO requerimiento_equipo_rol
-                            #     (requerimiento_id, usuario_id, rol_id, fecha_asignacion, activo)
-                            #     VALUES (%s, %s, %s, %s, TRUE);
-                            # """, [req_id, u, rol_id, timezone.now()])
-
-                    imprimir_roles(redactores, 1, "Redactor")
-                    imprimir_roles(revisores, 2, "Revisor")
-                    imprimir_roles(aprobadores, 3, "Aprobador")
-
-                    print("\n✅ SIMULACIÓN COMPLETA — no se ha modificado la base de datos.")
-                    print("====================================================")
-
-                return render(request, "simulacion_requerimiento.html", {
-                    "proyecto": proyecto,
-                    "tipo_doc_id": tipo_doc_id,
-                    "observaciones": observaciones,
-                    "redactores": redactores,
-                    "revisores": revisores,
-                    "aprobadores": aprobadores,
-                    "fecha_primera_revision": fecha_primera_revision,
-                    "fecha_entrega": fecha_entrega,
-                })
-
-            except Exception as e:
-                print(f"❌ Error en simulación: {e}")
-                return render(request, "error.html", {"mensaje": f"Error al simular creación: {str(e)}"})
-
-        # -------------------------------------------------------
-        # 🟠 PASO 3 → Avanza al paso 4 (confirmación)
-        # -------------------------------------------------------
-        tipo_doc_id = request.POST.get("tipo_documento")
-        observaciones = request.POST.get("observaciones", "")
-        fecha_primera_revision = request.POST.get("fecha_primera_revision")
-        alertar_dias_revision = request.POST.get("alertar_dias_revision")
-        fecha_entrega = request.POST.get("fecha_entrega")
-        alertar_dias_entrega = request.POST.get("alertar_dias_entrega")
-        redactores = request.POST.getlist("redactores")
-        revisores = request.POST.getlist("revisores")
-        aprobadores = request.POST.getlist("aprobadores")
-
-        # 🔍 Debug: imprimir todo lo que llega al paso 4
-        print("\n========== DATOS RECIBIDOS PARA EL PASO 4 ==========")
-        print(f"📄 Proyecto ID: {proyecto_id}")
-        print(f"📘 Tipo Documento Técnico ID: {tipo_doc_id}")
-        print(f"🗒️ Observaciones: {observaciones}")
-        print(f"📆 Fecha primera revisión: {fecha_primera_revision}")
-        print(f"🔔 Alertar días antes revisión: {alertar_dias_revision}")
-        print(f"📆 Fecha entrega final: {fecha_entrega}")
-        print(f"🔔 Alertar días antes entrega: {alertar_dias_entrega}")
-        print(f"👤 Redactores: {redactores}")
-        print(f"🔍 Revisores: {revisores}")
-        print(f"✅ Aprobadores: {aprobadores}")
-        print("====================================================\n")
-
-        return render(request, "nuevo_requerimiento_paso4.html", {
-            "proyecto": proyecto,
-            "tipo_doc_id": tipo_doc_id,
-            "observaciones": observaciones,
-            "fecha_primera_revision": fecha_primera_revision,
-            "alertar_dias_revision": alertar_dias_revision,
-            "fecha_entrega": fecha_entrega,
-            "alertar_dias_entrega": alertar_dias_entrega,
-            "redactores": redactores,
-            "revisores": revisores,
-            "aprobadores": aprobadores,
-            # 🔸 datos para debug en navegador
-            "debug_json": {
-                "tipo_doc_id": tipo_doc_id,
-                "observaciones": observaciones,
-                "fecha_primera_revision": fecha_primera_revision,
-                "alertar_dias_revision": alertar_dias_revision,
-                "fecha_entrega": fecha_entrega,
-                "alertar_dias_entrega": alertar_dias_entrega,
-                "redactores": redactores,
-                "revisores": revisores,
-                "aprobadores": aprobadores,
+        documentos_roles = {}
+        for doc_id in documentos_ids:
+            documentos_roles[doc_id] = {
+                "redactores": request.POST.getlist(f"redactor_id_{doc_id}[]"),
+                "revisores": request.POST.getlist(f"revisor_id_{doc_id}[]"),
+                "aprobadores": request.POST.getlist(f"aprobador_id_{doc_id}[]"),
+                "observaciones": request.POST.get(f"observaciones_{doc_id}", ""),
+                "hitos": {
+                    # Estas claves se mantienen para futuro uso
+                    "fecha_inicio_elaboracion": request.POST.get(f"fecha_inicio_elaboracion_{doc_id}") or None,
+                    "alertar_dias_inicio": request.POST.get(f"alertar_dias_inicio_{doc_id}") or None,
+                    "fecha_primera_revision": request.POST.get(f"fecha_primera_revision_{doc_id}") or None,
+                    "alertar_dias_revision": request.POST.get(f"alertar_dias_revision_{doc_id}") or None,
+                    "fecha_entrega": request.POST.get(f"fecha_entrega_{doc_id}") or None,
+                    "alertar_dias_entrega": request.POST.get(f"alertar_dias_entrega_{doc_id}") or None,
+                },
             }
-        })
 
-    # ===========================================================
-    # GET inicial
-    # ===========================================================
-    return render(request, "nuevo_requerimiento.html", {
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    rol_map = {"redactor": 1, "revisor": 2, "aprobador": 3}
+
+                    for doc_id, roles in documentos_roles.items():
+                        # --- Insert principal (actual sin hitos) ---
+                        cursor.execute("""
+                            INSERT INTO requerimiento_documento_tecnico
+                            (proyecto_id, tipo_documento_id, fecha_registro, observaciones)
+                            VALUES (%s, %s, NOW(), %s)
+                            RETURNING id;
+                        """, [
+                            proyecto_id,
+                            doc_id,
+                            roles.get("observaciones"),
+                        ])
+                        req_id = cursor.fetchone()[0]
+
+                        # --- FUTURO: Si agregas campos de hitos, usa este insert ---
+                        # cursor.execute("""
+                        #     INSERT INTO requerimiento_documento_tecnico
+                        #     (proyecto_id, tipo_documento_id, fecha_registro, observaciones,
+                        #      fecha_inicio_elaboracion, alertar_dias_inicio,
+                        #      fecha_primera_revision, alertar_dias_revision,
+                        #      fecha_entrega, alertar_dias_entrega)
+                        #     VALUES (%s, %s, NOW(), %s, %s, %s, %s, %s, %s, %s)
+                        #     RETURNING id;
+                        # """, [
+                        #     proyecto_id,
+                        #     doc_id,
+                        #     roles.get("observaciones"),
+                        #     roles["hitos"]["fecha_inicio_elaboracion"],
+                        #     roles["hitos"]["alertar_dias_inicio"],
+                        #     roles["hitos"]["fecha_primera_revision"],
+                        #     roles["hitos"]["alertar_dias_revision"],
+                        #     roles["hitos"]["fecha_entrega"],
+                        #     roles["hitos"]["alertar_dias_entrega"],
+                        # ])
+
+                        # --- Log inicial ---
+                        cursor.execute("""
+                            INSERT INTO log_estado_requerimiento_documento
+                            (requerimiento_id, usuario_id, estado_origen_id, estado_destino_id,
+                             fecha_cambio, observaciones)
+                            VALUES (
+                                %s, %s, NULL,
+                                (SELECT id FROM estado_documento WHERE nombre ILIKE 'Pendiente de Inicio' LIMIT 1),
+                                NOW(),
+                                %s
+                            );
+                        """, [req_id, request.user.id, "Requerimiento creado."])
+
+                        # --- Asignaciones de roles ---
+                        for rol, usuarios_ids in {
+                            "redactor": roles.get("redactores", []),
+                            "revisor": roles.get("revisores", []),
+                            "aprobador": roles.get("aprobadores", []),
+                        }.items():
+                            rol_id = rol_map[rol]
+                            for uid in usuarios_ids:
+                                cursor.execute("""
+                                    INSERT INTO requerimiento_equipo_rol
+                                    (requerimiento_id, usuario_id, rol_id, fecha_asignacion, activo)
+                                    VALUES (%s, %s, %s, NOW(), TRUE);
+                                """, [req_id, uid, rol_id])
+
+            messages.success(request, "✅ Requerimientos técnicos creados correctamente.")
+            return redirect("usuario:detalle_proyecto", proyecto_id=proyecto_id)
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f"❌ Error al crear requerimientos: {e}")
+            return render(request, "error.html", {"mensaje": str(e)})
+
+    # === Render inicial ===
+    return render(request, "nuevo_requerimiento_unico.html", {
         "proyecto": proyecto,
-        "tipos_documento": tipos_documento,
-        "usuarios": usuarios,
+        "grupos_maestros": grupos_maestros,
+        "usuarios_todos": usuarios_todos,
     })
+
+
+
 
 
 
@@ -829,33 +838,34 @@ def editar_requerimiento(request, requerimiento_id):
 
 @login_required
 def eliminar_requerimiento(request, requerimiento_id):
-    """Elimina un requerimiento de documento técnico y todas sus asociaciones de forma segura."""
+    """
+    Elimina un requerimiento técnico y todos sus registros relacionados (en cascada).
+    """
     if request.method == "POST":
-        # Obtener proyecto_id asociado al requerimiento directamente desde la DB
         with connection.cursor() as cursor:
+            # Obtener proyecto asociado
             cursor.execute("""
                 SELECT proyecto_id
                 FROM requerimiento_documento_tecnico
                 WHERE id = %s
             """, [requerimiento_id])
             row = cursor.fetchone()
-            if row:
-                proyecto_id = row[0]
-            else:
-                messages.error(request, "No se encontró el requerimiento.")
+
+            if not row:
+                messages.error(request, "❌ No se encontró el requerimiento.")
                 return redirect('usuario:lista_proyectos')
 
-            # Eliminar el requerimiento
-            cursor.execute("""
-                DELETE FROM requerimiento_documento_tecnico
-                WHERE id = %s
-            """, [requerimiento_id])
+            proyecto_id = row[0]
 
-        messages.success(request, "El requerimiento y todos sus registros relacionados fueron eliminados correctamente.")
+            # 🔥 Eliminar el requerimiento principal (PostgreSQL elimina el resto automáticamente)
+            cursor.execute("DELETE FROM requerimiento_documento_tecnico WHERE id = %s", [requerimiento_id])
+
+        messages.success(request, "✅ El requerimiento y todos sus registros asociados fueron eliminados correctamente.")
         return redirect('usuario:detalle_proyecto', proyecto_id=proyecto_id)
 
-    # Si se intenta acceder por GET, redirigir a lista de proyectos
-    return redirect('usuario:usuario_proyectos')
+    # Si se intenta acceder por GET, redirigir
+    return redirect('usuario:lista_proyectos')
+
 
 
 from django.http import JsonResponse
@@ -871,13 +881,14 @@ from django.contrib.auth.decorators import login_required
 from django.db import connection
 
 
+
+
 @login_required
 def crear_proyecto(request):
-    from django.db import connection
-    from django.utils import timezone
-    from google.cloud import storage  # ✅ Import GCS
+    from django.db import connection, transaction
+    from google.cloud import storage
 
-    # === Datos temporales en sesión ===
+    # === Datos temporales de sesión ===
     if "proyecto_temp" not in request.session:
         request.session["proyecto_temp"] = {}
     temp = request.session["proyecto_temp"]
@@ -888,34 +899,22 @@ def crear_proyecto(request):
 
     # === Cargar datos base para selects ===
     with connection.cursor() as cursor:
-        # 🔹 Administradores (para Paso 1)
         cursor.execute("""
-            SELECT id, nombre, email
-            FROM usuarios
-            WHERE cargo_id = 4
-            ORDER BY nombre
+            SELECT id, nombre, email FROM usuarios
+            WHERE cargo_id = 4 ORDER BY nombre
         """)
         usuarios_administrador = [
             {"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()
         ]
 
-        # 🔹 Todos los usuarios (para Paso 3)
-        cursor.execute("""
-            SELECT id, nombre, email
-            FROM usuarios
-            ORDER BY nombre
-        """)
+        cursor.execute("SELECT id, nombre, email FROM usuarios ORDER BY nombre")
         usuarios_todos = [
             {"id": r[0], "nombre": r[1], "email": r[2]} for r in cursor.fetchall()
         ]
 
-        # 🔹 Máquinas
         cursor.execute("SELECT id, nombre, abreviatura FROM maquinas ORDER BY nombre")
-        maquinas = [
-            {"id": r[0], "nombre": r[1], "abreviatura": r[2] or ""} for r in cursor.fetchall()
-        ]
+        maquinas = [{"id": r[0], "nombre": r[1], "abreviatura": r[2] or ""} for r in cursor.fetchall()]
 
-        # 🔹 Contratos (con cliente)
         cursor.execute("""
             SELECT c.id, c.numero_contrato, c.monto_total, c.fecha_firma,
                    c.representante_cliente_nombre, c.representante_cliente_correo,
@@ -925,54 +924,31 @@ def crear_proyecto(request):
             ORDER BY c.numero_contrato
         """)
         contratos = [{
-            "id": r[0],
-            "numero_contrato": r[1],
-            "monto_total": r[2],
-            "fecha_firma": r[3],
-            "representante_cliente_nombre": r[4],
-            "representante_cliente_correo": r[5],
-            "representante_cliente_telefono": r[6],
-            "cliente_id": r[7],
-            "cliente_nombre": r[8],
+            "id": r[0], "numero_contrato": r[1], "monto_total": r[2],
+            "fecha_firma": r[3], "representante_cliente_nombre": r[4],
+            "representante_cliente_correo": r[5], "representante_cliente_telefono": r[6],
+            "cliente_id": r[7], "cliente_nombre": r[8]
         } for r in cursor.fetchall()]
 
-        # 🔹 Clientes
         cursor.execute("SELECT id, nombre FROM clientes ORDER BY nombre")
         clientes = [{"id": r[0], "nombre": r[1]} for r in cursor.fetchall()]
 
-        # 🔹 Faenas
         cursor.execute("SELECT id, cliente_id, nombre, ubicacion FROM faenas ORDER BY nombre")
-        faenas = [
-            {"id": r[0], "cliente_id": r[1], "nombre": r[2], "ubicacion": r[3]}
-            for r in cursor.fetchall()
-        ]
+        faenas = [{"id": r[0], "cliente_id": r[1], "nombre": r[2], "ubicacion": r[3]} for r in cursor.fetchall()]
 
-        # 🔹 Grupos y Documentos Técnicos
-        cursor.execute("""
-            SELECT id, nombre, descripcion
-            FROM categoria_documentos_tecnicos
-            ORDER BY nombre
-        """)
-        grupos_maestros = [
-            {"id": r[0], "nombre": r[1], "descripcion": r[2]} for r in cursor.fetchall()
-        ]
+        cursor.execute("SELECT id, nombre, descripcion FROM categoria_documentos_tecnicos ORDER BY nombre")
+        grupos_maestros = [{"id": r[0], "nombre": r[1], "descripcion": r[2]} for r in cursor.fetchall()]
 
-        cursor.execute("""
-            SELECT id, categoria_id, nombre
-            FROM tipo_documentos_tecnicos
-            ORDER BY nombre
-        """)
-        documentos = [
-            {"id": r[0], "categoria_id": r[1], "nombre": r[2]} for r in cursor.fetchall()
-        ]
+        cursor.execute("SELECT id, categoria_id, nombre FROM tipo_documentos_tecnicos ORDER BY nombre")
+        documentos = [{"id": r[0], "categoria_id": r[1], "nombre": r[2]} for r in cursor.fetchall()]
 
-    # === Relacionar documentos con su grupo ===
     for grupo in grupos_maestros:
-        grupo_docs = [d for d in documentos if d["categoria_id"] == grupo["id"]]
-        grupo["documentos"] = grupo_docs
+        grupo["documentos"] = [d for d in documentos if d["categoria_id"] == grupo["id"]]
 
     # === Control de pasos ===
     if request.method == "POST":
+        print("📨 POST recibido:", accion, paso_actual)
+
         if accion == "anterior":
             paso_actual = str(max(1, int(paso_actual) - 1))
 
@@ -1014,7 +990,6 @@ def crear_proyecto(request):
 
             elif paso_actual == "3":
                 temp["paso3"] = {
-                    "responsable": request.POST.get("responsable"),
                     "observaciones": request.POST.get("observaciones"),
                     "documentos_ids": request.POST.getlist("documentos_ids[]"),
                 }
@@ -1033,7 +1008,7 @@ def crear_proyecto(request):
                             "alertar_dias_revision": request.POST.get(f"alertar_dias_revision_{doc_id}"),
                             "fecha_entrega": request.POST.get(f"fecha_entrega_{doc_id}"),
                             "alertar_dias_entrega": request.POST.get(f"alertar_dias_entrega_{doc_id}"),
-                        }
+                        },
                     }
                 temp["paso3"]["documentos_roles"] = documentos_roles
 
@@ -1046,166 +1021,176 @@ def crear_proyecto(request):
                 if isinstance(v, (list, tuple)):
                     resumen[k] = ", ".join(map(str, v))
 
-            print("\n========== SIMULACIÓN FINAL ==========")
-            for k, v in resumen.items():
-                print(f"{k}: {v}")
-            print(f"🕒 {timezone.now()} — Proyecto simulado correctamente.")
-            print("======================================\n")
-
-            # === Asegurar que cliente_nombre exista antes de crear carpetas ===
-            contrato_id = resumen.get("contrato_id")
-            if contrato_id and not resumen.get("cliente_nombre"):
-                with connection.cursor() as cursor:
-                    cursor.execute("""
-                        SELECT cl.nombre
-                        FROM contratos c
-                        JOIN clientes cl ON cl.id = c.cliente_id
-                        WHERE c.id = %s
-                    """, [contrato_id])
-                    row = cursor.fetchone()
-                    if row:
-                        resumen["cliente_nombre"] = row[0]
-
-            # === Crear estructura en Google Cloud Storage ===
             try:
                 storage_client = storage.Client()
                 bucket = storage_client.bucket("sgdmtso_jova")
 
-                # 🧹 Limpieza y validación de nombres
-                cliente = resumen.get("cliente_nombre", "").strip()
-                proyecto = resumen.get("nombre", "").strip()
-                if not cliente:
-                    cliente = "Cliente_Desconocido"
-                if not proyecto:
-                    proyecto = "Proyecto_SinNombre"
-
+                cliente_nom = (resumen.get("cliente_nombre") or "Cliente_Desconocido").strip()
+                proyecto_nom = (resumen.get("nombre") or "Proyecto_SinNombre").strip()
                 for simbolo in [" ", "/", "\\", ":", "*", "?", "\"", "<", ">", "|"]:
-                    cliente = cliente.replace(simbolo, "_")
-                    proyecto = proyecto.replace(simbolo, "_")
+                    cliente_nom = cliente_nom.replace(simbolo, "_")
+                    proyecto_nom = proyecto_nom.replace(simbolo, "_")
 
-                base_path = f"DocumentosProyectos/{cliente}/{proyecto}/"
+                base_path = f"DocumentosProyectos/{cliente_nom}/{proyecto_nom}/"
                 bucket.blob(base_path).upload_from_string("")
 
-                documentos_roles = temp.get("paso3", {}).get("documentos_roles", {})
-                if documentos_roles:
+                # === Transacción ===
+                with transaction.atomic():
                     with connection.cursor() as cursor:
-                        for doc_id in documentos_roles.keys():
-                            cursor.execute("""
-                                SELECT c.nombre AS categoria, t.nombre AS tipo
-                                FROM tipo_documentos_tecnicos t
-                                JOIN categoria_documentos_tecnicos c ON c.id = t.categoria_id
-                                WHERE t.id = %s
-                            """, [doc_id])
-                            row = cursor.fetchone()
-                            if row:
-                                categoria = row[0].strip()
-                                tipo = row[1].strip()
-                                for simbolo in [" ", "/", "\\", ":", "*", "?", "\"", "<", ">", "|"]:
-                                    categoria = categoria.replace(simbolo, "_")
-                                    tipo = tipo.replace(simbolo, "_")
-                                folder_path = f"{base_path}{categoria}/{tipo}/"
-                                bucket.blob(folder_path).upload_from_string("")
 
-                print(f"✅ Árbol de carpetas creado correctamente en GCS: {base_path}")
+                        # --- Crear cliente si no existe ---
+                        cliente_id = resumen.get("cliente_id")
+                        if not cliente_id:
+                            cursor.execute("""
+                                INSERT INTO clientes (nombre, abreviatura, rut, direccion, correo_contacto, telefono_contacto)
+                                VALUES (%s,%s,%s,%s,%s,%s)
+                                RETURNING id;
+                            """, [
+                                resumen.get("cliente_nombre"),
+                                resumen.get("cliente_abreviatura"),
+                                resumen.get("cliente_rut"),
+                                resumen.get("cliente_direccion"),
+                                resumen.get("cliente_correo"),
+                                resumen.get("cliente_telefono"),
+                            ])
+                            cliente_id = cursor.fetchone()[0]
+                            resumen["cliente_id"] = cliente_id
+                            print(f"🆕 Cliente creado ID {cliente_id}")
+
+                        # --- Crear faena si no existe ---
+                        faena_id = resumen.get("faena_id")
+                        if not faena_id:
+                            cursor.execute("""
+                                INSERT INTO faenas (cliente_id, nombre, ubicacion)
+                                VALUES (%s,%s,%s)
+                                RETURNING id;
+                            """, [cliente_id, resumen.get("faena_nombre"), resumen.get("faena_ubicacion")])
+                            faena_id = cursor.fetchone()[0]
+                            resumen["faena_id"] = faena_id
+                            print(f"🆕 Faena creada ID {faena_id}")
+
+                        # --- Crear contrato si no existe ---
+                        contrato_id = resumen.get("contrato_id")
+                        if not contrato_id:
+                            cursor.execute("""
+                                INSERT INTO contratos (
+                                    numero_contrato, monto_total, fecha_firma,
+                                    representante_cliente_nombre, representante_cliente_correo,
+                                    representante_cliente_telefono, cliente_id)
+                                VALUES (%s,%s,%s,%s,%s,%s,%s)
+                                RETURNING id;
+                            """, [
+                                resumen.get("numero_contrato"),
+                                resumen.get("monto_total"),
+                                resumen.get("contrato_fecha_firma"),
+                                resumen.get("representante_cliente_nombre"),
+                                resumen.get("representante_cliente_correo"),
+                                resumen.get("representante_cliente_telefono"),
+                                cliente_id,
+                            ])
+                            contrato_id = cursor.fetchone()[0]
+                            resumen["contrato_id"] = contrato_id
+                            print(f"🆕 Contrato creado ID {contrato_id}")
+
+                        # --- Insertar Proyecto ---
+                        cursor.execute("""
+                            INSERT INTO proyectos (nombre, descripcion, abreviatura, numero_orden,
+                                contrato_id, faena_id, administrador_id,
+                                fecha_recepcion_evaluacion, fecha_inicio_planificacion,
+                                fecha_inicio_ejecucion, fecha_cierre_proyecto, path_gcs)
+                            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                            RETURNING id;
+                        """, [
+                            resumen.get("nombre"), resumen.get("descripcion"), resumen.get("abreviatura"),
+                            resumen.get("numero_orden"), contrato_id, faena_id,
+                            resumen.get("administrador"),
+                            resumen.get("fecha_recepcion_evaluacion"),
+                            resumen.get("fecha_inicio_planificacion"),
+                            resumen.get("fecha_inicio_ejecucion"),
+                            resumen.get("fecha_cierre_proyecto"), base_path,
+                        ])
+                        proyecto_id = cursor.fetchone()[0]
+                        print(f"✅ Proyecto creado ID {proyecto_id}")
+
+                        # --- Asociar máquinas ---
+                        for m_id in temp["paso1"].get("maquinas_ids", []):
+                            cursor.execute("""
+                                INSERT INTO proyecto_maquina (proyecto_id, maquina_id)
+                                VALUES (%s,%s)
+                            """, [proyecto_id, m_id])
+
+                        # --- Crear requerimientos y roles ---
+                        documentos_roles = temp.get("paso3", {}).get("documentos_roles", {})
+                        rol_map = {"redactor": 1, "revisor": 2, "aprobador": 3}
+
+                        for doc_id, roles in documentos_roles.items():
+                            cursor.execute("""
+                                INSERT INTO requerimiento_documento_tecnico
+                                (proyecto_id, tipo_documento_id, fecha_registro, observaciones)
+                                VALUES (%s,%s,NOW(),%s)
+                                RETURNING id;
+                            """, [proyecto_id, doc_id, roles.get("observaciones")])
+                            req_id = cursor.fetchone()[0]
+
+                            for rol, usuarios_ids in {
+                                "redactor": roles.get("redactores", []),
+                                "revisor": roles.get("revisores", []),
+                                "aprobador": roles.get("aprobadores", []),
+                            }.items():
+                                rol_id = rol_map.get(rol)
+                                for uid in usuarios_ids:
+                                    cursor.execute("""
+                                        INSERT INTO requerimiento_equipo_rol (requerimiento_id, usuario_id, rol_id)
+                                        VALUES (%s,%s,%s)
+                                    """, [req_id, uid, rol_id])
+
+                print(f"📁 Proyecto '{resumen.get('nombre')}' y estructura GCS creados correctamente.")
 
             except Exception as e:
-                print("⚠️ Error al crear estructura de carpetas GCS:", e)
+                import traceback
+                print("⚠️ Error al registrar proyecto:", e)
+                traceback.print_exc()
 
             del request.session["proyecto_temp"]
             return redirect("usuario:lista_proyectos")
 
-    # === Paso 4: Confirmación ===
+    # === Confirmación (Paso 4) ===
     steps = ["Datos Generales", "Contrato y Cliente", "Responsables y Documentos", "Confirmación"]
 
     if paso_actual == "4":
         resumen = {**temp.get("paso1", {}), **temp.get("paso2", {}), **temp.get("paso3", {})}
-
         with connection.cursor() as cursor:
-            # 🔹 Administrador
-            admin_id = resumen.get("administrador")
-            if admin_id:
-                cursor.execute("SELECT nombre, email FROM usuarios WHERE id = %s", [admin_id])
+            if resumen.get("administrador"):
+                cursor.execute("SELECT nombre, email FROM usuarios WHERE id = %s", [resumen["administrador"]])
                 row = cursor.fetchone()
                 if row:
                     resumen["administrador"] = f"{row[0]} ({row[1]})"
 
-            # 🔹 Máquinas
-            maquinas_ids = resumen.get("maquinas_ids", [])
-            if isinstance(maquinas_ids, list) and maquinas_ids:
-                ids_lista = list(map(int, maquinas_ids))
-                cursor.execute("SELECT nombre FROM maquinas WHERE id = ANY(%s)", [ids_lista])
-                resumen["maquinas_ids"] = [r[0] for r in cursor.fetchall()]
+            documentos_roles = temp.get("paso3", {}).get("documentos_roles", {})
+            doc_roles_completos = {}
+            for doc_id, roles in documentos_roles.items():
+                cursor.execute("SELECT nombre FROM tipo_documentos_tecnicos WHERE id = %s", [doc_id])
+                doc_row = cursor.fetchone()
+                doc_name = doc_row[0] if doc_row else f"Doc {doc_id}"
 
-            # 🔹 Contrato existente
-            contrato_id = resumen.get("contrato_id")
-            if contrato_id:
-                cursor.execute("""
-                    SELECT c.numero_contrato, c.monto_total, c.fecha_firma,
-                           c.representante_cliente_nombre, c.representante_cliente_correo,
-                           c.representante_cliente_telefono,
-                           cl.nombre, cl.abreviatura
-                    FROM contratos c
-                    JOIN clientes cl ON cl.id = c.cliente_id
-                    WHERE c.id = %s
-                """, [contrato_id])
-                row = cursor.fetchone()
-                if row:
-                    resumen.update({
-                        "contrato_existente": True,
-                        "numero_contrato": row[0],
-                        "monto_total": row[1],
-                        "contrato_fecha_firma": row[2],
-                        "representante_cliente_nombre": row[3],
-                        "representante_cliente_correo": row[4],
-                        "representante_cliente_telefono": row[5],
-                        "cliente_nombre": row[6],
-                        "cliente_abreviatura": row[7],
-                    })
+                def ids_to_names(ids):
+                    if not ids:
+                        return []
+                    placeholders = ','.join(['%s'] * len(ids))
+                    cursor.execute(f"SELECT nombre FROM usuarios WHERE id IN ({placeholders})", ids)
+                    return [r[0] for r in cursor.fetchall()]
 
-            # 🔹 Faena existente
-            if resumen.get("faena_id"):
-                cursor.execute("""
-                    SELECT f.nombre AS faena_nombre, f.ubicacion AS faena_ubicacion, c.nombre AS cliente_nombre
-                    FROM faenas f
-                    LEFT JOIN clientes c ON c.id = f.cliente_id
-                    WHERE f.id = %s
-                """, [resumen["faena_id"]])
-                row = cursor.fetchone()
-                if row:
-                    resumen.update({
-                        "faena_existente": True,
-                        "faena_nombre": row[0],
-                        "faena_ubicacion": row[1],
-                        "faena_cliente_nombre": row[2],
-                    })
+                doc_roles_completos[doc_id] = {
+                    "documento_nombre": doc_name,
+                    "redactores": ids_to_names(roles.get("redactores")),
+                    "revisores": ids_to_names(roles.get("revisores")),
+                    "aprobadores": ids_to_names(roles.get("aprobadores")),
+                    "observaciones": roles.get("observaciones"),
+                    "hitos": roles.get("hitos"),
+                }
 
-            # 🔹 Documentos Técnicos
-            if "documentos_roles" in resumen:
-                doc_roles = resumen["documentos_roles"]
-                for doc_id, roles in doc_roles.items():
-                    cursor.execute("SELECT nombre FROM tipo_documentos_tecnicos WHERE id = %s", [doc_id])
-                    doc_row = cursor.fetchone()
-                    nombre_doc = doc_row[0] if doc_row else f"Documento #{doc_id}"
+            resumen["documentos_roles"] = doc_roles_completos
 
-                    def ids_a_nombres(ids):
-                        if not ids:
-                            return []
-                        placeholders = ','.join(['%s'] * len(ids))
-                        cursor.execute(f"SELECT nombre FROM usuarios WHERE id IN ({placeholders})", ids)
-                        return [r[0] for r in cursor.fetchall()]
-
-                    doc_roles[doc_id] = {
-                        "documento_nombre": nombre_doc,
-                        "redactores": ids_a_nombres(roles.get("redactores", [])),
-                        "revisores": ids_a_nombres(roles.get("revisores", [])),
-                        "aprobadores": ids_a_nombres(roles.get("aprobadores", [])),
-                        "observaciones": roles.get("observaciones", ""),
-                        "hitos": roles.get("hitos", {}),
-                    }
-
-                resumen["documentos_roles"] = doc_roles
-
-    # === Render final ===
     return render(request, "crear_proyecto.html", {
         "paso_actual": paso_actual,
         "proyecto_temp": temp.get("paso1", {}),
@@ -1220,7 +1205,6 @@ def crear_proyecto(request):
         "grupos_maestros": grupos_maestros,
         "documentos": documentos,
     })
-
 
 
 

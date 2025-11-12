@@ -17,7 +17,7 @@
 h1 {
     text-align: center;
     font-weight: 700;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     font-size: 2rem;
     color: #333;
 }
@@ -104,6 +104,25 @@ table tr:hover { background: #fdf2e8; }
 
 /* --- Mensajes vacíos --- */
 .text-muted { text-align:center; color:#777; padding:15px; font-style:italic; }
+
+/* --- Botón eliminar --- */
+.btn-delete {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+.btn-delete:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+}
+.btn-delete:active {
+    transform: translateY(1px);
+}
 </style>
 {% endblock %}
 
@@ -114,6 +133,14 @@ table tr:hover { background: #fdf2e8; }
     </div>
 
     <h1>{{ proyecto.nombre_proyecto }}</h1>
+
+    <!-- 🔴 Botón eliminar -->
+    <div style="text-align: center; margin-bottom: 25px;">
+        <form action="{% url 'usuario:eliminar_proyecto' proyecto.proyecto_id %}" method="POST" onsubmit="return confirmarEliminacion()">
+            {% csrf_token %}
+            <button type="submit" class="btn-delete">🗑️ Eliminar Proyecto</button>
+        </form>
+    </div>
 
     <!-- Información del Proyecto -->
     <div class="card">
@@ -138,17 +165,20 @@ table tr:hover { background: #fdf2e8; }
             <span>{{ proyecto.fecha_cierre_proyecto|date:"d/m/Y"|default:"(Sin fecha)" }}</span>
         </div>
         <div class="indicator"><span>Abreviatura:</span> <span>{{ proyecto.proyecto_abreviatura|default:"(Sin abreviatura)" }}</span></div>
+        <div class="indicator"><span>Ruta GCS:</span> 
+            <span>{{ proyecto.path_gcs|default:"(Sin ruta definida)" }}</span>
+        </div>
     </div>
 
     <!-- Contrato y Cliente lado a lado -->
     <div class="row-horizontal">
         <div class="card">
             <h2>Información del Contrato
-                <a href="" class="edit-icon" title="Editar Contrato">✏️</a>
+                <a href="{% url 'usuario:editar_contrato' proyecto.contrato_id %}" class="edit-icon" title="Editar Contrato">✏️</a>
             </h2>
             <div class="indicator"><span>Número de Contrato:</span> <span>{{ proyecto.numero_contrato }}</span></div>
             <div class="indicator"><span>Monto Total:</span> <span>{{ proyecto.monto_total }}</span></div>
-            <div class="indicator"><span>Fecha Creación:</span> <span>{{ proyecto.contrato_fecha_creacion|date:"d/m/Y" }}</span></div>
+            <div class="indicator"><span>Fecha Firma:</span> <span>{{ proyecto.contrato_fecha_firma|date:"d/m/Y"|default:"(Sin fecha)" }}</span></div>
             <div class="indicator"><span>Representante:</span> <span>{{ proyecto.representante_cliente_nombre }}</span></div>
             <div class="indicator"><span>Email:</span> <span>{{ proyecto.representante_cliente_correo }}</span></div>
             <div class="indicator"><span>Teléfono:</span> <span>{{ proyecto.representante_cliente_telefono }}</span></div>
@@ -157,7 +187,7 @@ table tr:hover { background: #fdf2e8; }
 
         <div class="card">
             <h2>Información del Cliente
-                <a href="" class="edit-icon" title="Editar Cliente">✏️</a>
+                <a href="{% url 'usuario:editar_cliente' proyecto.cliente_id %}" class="edit-icon" title="Editar Cliente">✏️</a>
             </h2>
             <div class="indicator"><span>Nombre:</span> <span>{{ proyecto.cliente_nombre }}</span></div>
             <div class="indicator"><span>Abreviatura:</span> <span>{{ proyecto.cliente_abreviatura|default:"(Sin abreviatura)" }}</span></div>
@@ -242,4 +272,10 @@ table tr:hover { background: #fdf2e8; }
         </a>
     </div>
 </div>
+
+<script>
+function confirmarEliminacion() {
+    return confirm("⚠️ ¿Estás seguro de eliminar este proyecto y todos sus registros asociados?");
+}
+</script>
 {% endblock %}

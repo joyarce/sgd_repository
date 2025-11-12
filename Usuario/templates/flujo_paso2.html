@@ -209,10 +209,9 @@ function onClienteChange(clienteId) {
   resetContratoUI();
 
   if (!clienteId) {
-    // 🔹 Nuevo cliente → muestra campos y activa generación dinámica de abreviatura
     nuevoClienteFields.style.display = 'block';
     contenedorAbrevExistente.style.display = 'none';
-    activarGeneracionAbreviaturaEnTiempoReal(); // ✅ ACTIVA LA FUNCIÓN CORRECTA
+    activarGeneracionAbreviaturaEnTiempoReal();
     actualizarRequiredCampos();
     return;
   }
@@ -341,7 +340,6 @@ function activarGeneracionAbreviaturaEnTiempoReal() {
   const inputNombre = document.querySelector('input[name="cliente_nombre"]');
   const campoAbreviatura = document.getElementById('cliente_abreviatura');
   if (!inputNombre || !campoAbreviatura) return;
-
   if (inputNombre._listenerActivo) return;
   inputNombre._listenerActivo = true;
 
@@ -353,16 +351,10 @@ function activarGeneracionAbreviaturaEnTiempoReal() {
       campoAbreviatura.value = "";
       return;
     }
-
     delay = setTimeout(() => {
       fetch(`/usuario/generar_abreviatura_cliente/?nombre=${encodeURIComponent(nombre)}`)
-        .then(r => {
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          return r.json();
-        })
-        .then(data => {
-          campoAbreviatura.value = data.abreviatura || "";
-        })
+        .then(r => r.json())
+        .then(data => campoAbreviatura.value = data.abreviatura || "")
         .catch(err => {
           console.error("Error al generar abreviatura:", err);
           campoAbreviatura.value = "";
@@ -370,6 +362,28 @@ function activarGeneracionAbreviaturaEnTiempoReal() {
     }, 300);
   });
 }
+
+/* === Guardar sessionStorage → hidden inputs (Opción A) === */
+document.querySelector("form").addEventListener("submit", () => {
+  const clienteResumen = sessionStorage.getItem("cliente_resumen");
+  const faenaResumen = sessionStorage.getItem("faena_resumen");
+  const contratoResumen = sessionStorage.getItem("contrato_resumen");
+
+  function appendHidden(prefix, dataObj) {
+    if (!dataObj) return;
+    Object.entries(dataObj).forEach(([k, v]) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = `${prefix}_${k}`;
+      input.value = v ?? "";
+      document.forms[0].appendChild(input);
+    });
+  }
+
+  if (clienteResumen) appendHidden("cliente", JSON.parse(clienteResumen));
+  if (faenaResumen) appendHidden("faena", JSON.parse(faenaResumen));
+  if (contratoResumen) appendHidden("contrato", JSON.parse(contratoResumen));
+});
 
 /* === Inicialización === */
 document.addEventListener('DOMContentLoaded', () => {
@@ -380,13 +394,11 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     resetFaenaUI();
     resetContratoUI();
-    activarGeneracionAbreviaturaEnTiempoReal(); // ✅ activamos al cargar
+    activarGeneracionAbreviaturaEnTiempoReal();
   }
   actualizarRequiredCampos();
 });
 </script>
-
-
 
 <!-- 🔹 JSON seguros -->
 {{ contratos|json_script:"contratos-data" }}

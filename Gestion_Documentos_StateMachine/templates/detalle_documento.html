@@ -1,140 +1,297 @@
 <!-- detalle_documento.html -->
 {% extends "base.html" %}
-
 {% block title %}Detalle del Documento | Gestión Documental{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2 class="mb-4">Detalle del Documento</h2>
+<div class="container py-4">
 
-    {% if mensaje %}
-        <div class="alert alert-info alert-dismissible fade show" role="alert">
-            {{ mensaje }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    {% endif %}
+  <!-- Encabezado -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <h2 class="fw-semibold text-dark mb-2">Detalle del Documento</h2>
+  </div>
 
-    {% if documento %}
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-primary text-white">
-            <strong>Documento:</strong> {{ documento.tipo_documento }} ({{ documento.categoria_documento }})
-        </div>
-        <div class="card-body">
-            <p><strong>Proyecto:</strong> {{ documento.nombre_proyecto }}</p>
-            <p><strong>Observaciones:</strong> {{ documento.observaciones }}</p>
-            <p>
-                <strong>Estado Actual:</strong>
-                <span class="badge bg-{{ estado_css }}">{{ estado_actual }}</span>
-            </p>
-            <p><strong>Rol Asignado:</strong> {{ documento.rol_asignado }}</p>
-            <p><strong>Fecha de Registro:</strong> {{ documento.fecha_registro }}</p>
-        </div>
+  {% if mensaje %}
+  <div class="alert alert-info alert-dismissible fade show" role="alert">
+    {{ mensaje }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endif %}
+
+  {% if documento %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header fw-semibold text-white" style="background-color: var(--metso-orange);">
+      Documento: {{ documento.tipo_documento }} ({{ documento.categoria_documento }})
     </div>
+    <div class="card-body">
+      <p><strong>Proyecto:</strong> {{ documento.nombre_proyecto }}</p>
+      <p><strong>Observaciones:</strong> {{ documento.observaciones }}</p>
 
-    <form method="post" class="mb-5">
-        {% csrf_token %}
-        <div class="mb-3">
-            <label for="evento" class="form-label">Selecciona Evento:</label>
-            <select name="evento" id="evento" class="form-select">
-                {% for ev, ev_fmt in eventos_tuplas %}
-                    <option value="{{ ev }}">{{ ev_fmt }}</option>
-                {% endfor %}
-            </select>
-        </div>
+      <p><strong>Estado Actual:</strong>
+        <span class="badge 
+          {% if estado_actual == 'Pendiente de Inicio' %}bg-secondary
+          {% elif estado_actual == 'En Elaboración' %}bg-info
+          {% elif estado_actual == 'En Revisión' %}bg-warning
+          {% elif estado_actual == 'En Aprobación' %}bg-primary
+          {% elif estado_actual == 'Aprobado. Listo para Publicación' %}bg-success
+          {% elif estado_actual == 'Publicado' %}bg-primary
+          {% elif estado_actual == 'Re Estructuración' or 'Rechaz' in estado_actual %}bg-danger
+          {% else %}bg-light text-dark{% endif %}">
+          {{ estado_actual }}
+        </span>
+      </p>
 
-        <div class="mb-3" id="comentario-div" style="display:none;">
-            <label for="comentario" class="form-label">Comentario:</label>
-            <textarea name="comentario" id="comentario" class="form-control" rows="3"></textarea>
-        </div>
+      <p><strong>Rol Asignado:</strong> {{ documento.rol_asignado }}</p>
+      <p><strong>Fecha de Registro:</strong> {{ documento.fecha_registro }}</p>
+    </div>
+  </div>
 
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-success">Ejecutar Evento</button>
-            <a href="?reset_historial=1" class="btn btn-warning">Reiniciar Historial</a>
-        </div>
+  <!-- 🟧 Subida de archivo -->
+  <div id="upload-section" class="card border-0 shadow-sm mb-4 p-3"
+       style="display: {% if puede_subir_archivo %}block{% else %}none{% endif %};">
+    <h5 class="fw-semibold mb-3" style="color: var(--metso-orange);">Subir Archivo</h5>
+    <form action="{% url 'documentos:subir_archivo_documento' documento.requerimiento_id %}" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="mb-3">
+        <input type="file" name="archivo" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Subir Archivo</button>
     </form>
+  </div>
 
-    <hr>
-
-    <!-- Historial de Estados -->
-    <h4 class="mb-3">Historial de Estados</h4>
-    <div class="table-responsive mb-5">
-        <table class="table table-striped table-hover align-middle">
-            <thead class="table-dark">
-                <tr>
-                    <th>Fecha</th>
-                    <th>Estado</th>
-                    <th>Usuario</th>
-                    <th>Comentario</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for log in historial_estados %}
-                <tr>
-                    <td>{{ log.fecha_cambio }}</td>
-                    <td>{{ log.estado_destino }}</td>
-                    <td>{{ log.usuario_nombre }}</td>
-                    <td>{{ log.comentario }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+  <!-- Formulario de evento -->
+  {% if eventos_tuplas %}
+  <form method="post" class="mb-5">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label for="evento" class="form-label">Selecciona Evento:</label>
+      <select name="evento" id="evento" class="form-select">
+        {% for ev, ev_fmt in eventos_tuplas %}
+          <option value="{{ ev }}">{{ ev_fmt }}</option>
+        {% endfor %}
+      </select>
     </div>
 
-    <!-- Historial de Versiones -->
-    <h4 class="mb-3">Historial de Versiones</h4>
-    <div class="table-responsive mb-5">
-        <table class="table table-striped table-hover align-middle">
-            <thead class="table-dark">
-                <tr>
-                    <th>Versión</th>
-                    <th>Estado</th>
-                    <th>Fecha</th>
-                    <th>Usuario</th>
-                    <th>Comentario</th>
-                    <th>URL</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for v in historial_versiones %}
-                <tr>
-                    <td>{{ v.version }}</td>
-                    <td>{{ v.estado.nombre }}</td>
-                    <td>{{ v.fecha|date:"d-m-Y H:i" }}</td>
-                    <td>
-                        {% if v.usuario %}
-                            {{ v.usuario.nombre }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td>{{ v.comentario|default:"-" }}</td>
-                    <td>
-                        {% if v.signed_url %}
-                            <a href="{{ v.signed_url }}" target="_blank">Ver</a>
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="mb-3" id="comentario-div" style="display:none;">
+      <label for="comentario" class="form-label">Comentario:</label>
+      <textarea name="comentario" id="comentario" class="form-control" rows="3"></textarea>
     </div>
 
-    {% endif %}
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Ejecutar Evento</button>
+    </div>
+  </form>
+  {% else %}
+  <div class="alert alert-secondary text-center mt-4">
+    ⚙️ No hay eventos disponibles para tu rol en este estado.
+  </div>
+  {% endif %}
+
+  <!-- 🕒 Historial de Estados (horizontal) -->
+  <h4 class="fw-semibold mb-3" style="color: var(--metso-orange);">Historial de Estados</h4>
+  {% if historial_estados %}
+  <div class="horizontal-timeline mb-5">
+    {% for log in historial_estados %}
+    <div class="timeline-step"
+         title="Usuario: {{ log.usuario_nombre|default:'-' }}&#10;Fecha: {{ log.fecha_cambio|date:'d-m-Y H:i' }}&#10;Comentario: {{ log.comentario|default:'Sin comentarios' }}">
+      <div class="timeline-dot 
+        {% if log.estado_destino == 'Pendiente de Inicio' %}bg-secondary
+        {% elif log.estado_destino == 'En Elaboración' %}bg-info
+        {% elif log.estado_destino == 'En Revisión' %}bg-warning
+        {% elif log.estado_destino == 'En Aprobación' %}bg-primary
+        {% elif 'Aprobado' in log.estado_destino %}bg-success
+        {% elif 'Publicado' in log.estado_destino %}bg-success
+        {% elif 'Estructuración' in log.estado_destino or 'Rechaz' in log.estado_destino %}bg-danger
+        {% else %}bg-light{% endif %}">
+      </div>
+      <span class="small text-center d-block mt-1 fw-semibold text-muted">{{ log.estado_destino }}</span>
+      <span class="small text-muted d-block">{{ log.fecha_cambio|date:"d-m H:i" }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-muted text-center mt-3">Sin registros de estado aún.</p>
+  {% endif %}
+
+  <!-- 📄 Historial de Versiones -->
+  <h4 class="fw-semibold mb-3" style="color: var(--metso-orange);">Historial de Versiones</h4>
+  <div class="table-responsive mb-5">
+    <table class="table align-middle table-sm shadow-sm bg-white rounded">
+      <thead class="table-light border-bottom">
+        <tr class="text-muted small">
+          <th>Versión</th>
+          <th>Estado</th>
+          <th>Fecha</th>
+          <th>Usuario</th>
+          <th>Comentario</th>
+          <th>Archivo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in historial_versiones %}
+        <tr>
+          <td>
+            <span class="fw-semibold">{{ v.version }}</span>
+            {% if "REJ" in v.version %}
+              <span class="badge bg-danger ms-2">Rechazada</span>
+            {% elif "REV" in v.version %}
+              <span class="badge bg-warning text-dark ms-2">Revisión</span>
+            {% elif "APR" in v.version %}
+              <span class="badge bg-primary ms-2">Aprobación</span>
+            {% elif "PUB" in v.version %}
+              <span class="badge bg-success ms-2">Publicada</span>
+            {% endif %}
+          </td>
+          <td>{{ v.estado_nombre }}</td>
+          <td>{{ v.fecha|date:"d-m-Y H:i" }}</td>
+          <td>{{ v.usuario_nombre|default:"-" }}</td>
+          <td class="small text-muted">{{ v.comentario|default:"-" }}</td>
+          <td>
+            {% if v.signed_url %}
+              <a href="{{ v.signed_url }}" target="_blank" class="text-decoration-none">
+                📄 Ver
+              </a>
+            {% else %}
+              <span class="text-muted small">-</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center text-muted">Sin versiones registradas.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% endif %}
 </div>
 
+<!-- 🎨 Estilos Metso unificados -->
+<style>
+:root {
+  --metso-orange: #f36f21;
+  --metso-light-gray: #f7f7f7;
+  --metso-border-radius: 10px;
+}
+
+body {
+  background-color: var(--metso-light-gray);
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+}
+
+.btn-primary {
+  background-color: var(--metso-orange);
+  border: none;
+  border-radius: var(--metso-border-radius);
+}
+.btn-primary:hover { background-color: #d65c1a; }
+
+.card { border-radius: var(--metso-border-radius); }
+
+.table td, .table th { vertical-align: middle !important; }
+.table-hover tbody tr:hover { background-color: #fff8f3 !important; }
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.table thead { background-color: #fff4ed; }
+
+.bg-secondary { background-color: #6c757d !important; }
+.bg-info { background-color: #0dcaf0 !important; }
+.bg-warning { background-color: #ffc107 !important; color: #000; }
+.bg-success { background-color: #198754 !important; }
+.bg-primary { background-color: var(--metso-orange) !important; }
+.bg-danger { background-color: #dc3545 !important; }
+
+/* === Timeline horizontal compacto === */
+.horizontal-timeline {
+  display: flex;
+  overflow-x: auto;
+  padding: 15px 10px;
+  gap: 25px;
+  scrollbar-width: thin;
+}
+.horizontal-timeline::-webkit-scrollbar {
+  height: 6px;
+}
+.horizontal-timeline::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.25);
+  border-radius: 3px;
+}
+
+.timeline-step {
+  position: relative;
+  flex: 0 0 auto;
+  text-align: center;
+  min-width: 100px;
+}
+.timeline-step::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: -25px;
+  width: 25px;
+  height: 2px;
+  background-color: #ccc;
+}
+.timeline-step:first-child::before {
+  display: none;
+}
+.timeline-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  margin: 0 auto;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.timeline-dot:hover {
+  transform: scale(1.3);
+}
+</style>
+
 <script>
-    const eventoSelect = document.getElementById('evento');
-    const comentarioDiv = document.getElementById('comentario-div');
-    const eventosConComentario = {{ eventos_con_comentario|safe }};
+document.addEventListener("DOMContentLoaded", function() {
+  const eventoSelect = document.getElementById('evento');
+  const comentarioDiv = document.getElementById('comentario-div');
+  const uploadSection = document.getElementById('upload-section');
+  const eventosConComentario = {{ eventos_con_comentario|safe }};
+  const estadoActual = "{{ estado_actual }}";
 
-    function toggleComentario() {
-        const selected = eventoSelect.value;
-        comentarioDiv.style.display = eventosConComentario.includes(selected) ? 'block' : 'none';
-    }
+  function toggleComentario() {
+    if (!eventoSelect) return;
+    const selected = eventoSelect.value;
+    comentarioDiv.style.display = eventosConComentario.includes(selected) ? 'block' : 'none';
+  }
 
-    eventoSelect.addEventListener('change', toggleComentario);
+  function toggleUpload() {
+    if (!eventoSelect || !uploadSection) return;
+    const selected = eventoSelect.value;
+    let mostrar = false;
+
+    if (estadoActual === "En Elaboración" || estadoActual === "Re Estructuración") mostrar = true;
+    if (estadoActual === "En Revisión" && selected === "rechazar_revision") mostrar = true;
+    if (estadoActual === "En Aprobación" && selected === "rechazar_aprobacion") mostrar = true;
+    if (estadoActual === "En Elaboración" && ["enviar_revision", "reenviar_revision"].includes(selected)) mostrar = true;
+
+    uploadSection.style.display = mostrar ? "block" : "none";
+  }
+
+  if (eventoSelect) {
+    eventoSelect.addEventListener('change', () => {
+      toggleComentario();
+      toggleUpload();
+    });
     toggleComentario();
+    toggleUpload();
+  }
+});
 </script>
 {% endblock %}

@@ -1,5 +1,3 @@
-<!-- editar_requerimiento.html -->
-
 {% extends "base.html" %}
 
 {% block title %}Editar Requerimiento{% endblock %}
@@ -18,13 +16,13 @@
         <input type="hidden" name="proyecto_id" value="{{ requerimiento.proyecto_id }}">
         <input type="hidden" name="requerimiento_id" value="{{ requerimiento.id }}">
 
-        <div>
-            <label>Observaciones:</label>
+        <div style="margin-bottom:15px;">
+            <label><strong>Observaciones:</strong></label>
             <textarea name="observaciones" rows="4" style="width:100%;">{{ requerimiento.observaciones }}</textarea>
         </div>
 
-        <div>
-            <label>Redactores:</label>
+        <div style="margin-bottom:15px;">
+            <label><strong>Redactores:</strong></label>
             <select name="redactores" multiple style="width:100%;">
                 {% for u in usuarios %}
                     <option value="{{ u.0 }}" {% if u.0 in redactores %}selected{% endif %}>{{ u.1 }}</option>
@@ -32,8 +30,8 @@
             </select>
         </div>
 
-        <div>
-            <label>Revisores:</label>
+        <div style="margin-bottom:15px;">
+            <label><strong>Revisores:</strong></label>
             <select name="revisores" multiple style="width:100%;">
                 {% for u in usuarios %}
                     <option value="{{ u.0 }}" {% if u.0 in revisores %}selected{% endif %}>{{ u.1 }}</option>
@@ -41,8 +39,8 @@
             </select>
         </div>
 
-        <div>
-            <label>Aprobadores:</label>
+        <div style="margin-bottom:15px;">
+            <label><strong>Aprobadores:</strong></label>
             <select name="aprobadores" multiple style="width:100%;">
                 {% for u in usuarios %}
                     <option value="{{ u.0 }}" {% if u.0 in aprobadores %}selected{% endif %}>{{ u.1 }}</option>
@@ -51,16 +49,17 @@
         </div>
 
         <div style="margin-top:20px; display:flex; gap:10px;">
-            <button type="submit" class="btn btn-secondary">💾 Guardar Cambios</button>
+            <button type="submit" class="btn btn-secondary">Guardar Cambios</button>
         </div>
     </form>
 
     <!-- FORMULARIO DE ELIMINACIÓN -->
-    <form method="post" action="{% url 'usuario:eliminar_requerimiento' requerimiento.id %}" 
-          onsubmit="return confirm('¿Estás seguro de eliminar este requerimiento? Esta acción no se puede deshacer.');"
-          style="margin-top:20px;">
+    <form method="post"
+          action="{% url 'usuario:eliminar_requerimiento' requerimiento.id %}"
+          onsubmit="return confirm('¿Estás seguro de eliminar este requerimiento y todos sus registros asociados? Esta acción no se puede deshacer.');"
+          style="margin-top:25px;">
         {% csrf_token %}
-        <button type="submit" class="btn btn-danger">🗑️ Eliminar Requerimiento</button>
+        <button type="submit" class="btn btn-danger">Eliminar Requerimiento</button>
     </form>
 </div>
 {% endblock %}

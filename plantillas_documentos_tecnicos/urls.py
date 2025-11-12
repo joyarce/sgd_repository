@@ -15,6 +15,7 @@ urlpatterns = [
     path('obtener-tablas-y-columnas/', views.obtener_tablas_y_columnas, name='obtener_tablas_y_columnas'),
 
 
+
     path('test-tablas/', views.test_tablas, name='test_tablas'),
 
 ]

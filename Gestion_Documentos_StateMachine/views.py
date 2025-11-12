@@ -1,3 +1,5 @@
+#C:\Users\jonat\Documents\gestion_docs\Gestion_Documentos_StateMachine\views.py
+
 from .state_machine import DocumentoTecnicoStateMachine
 from django.http import HttpResponse
 from datetime import datetime, timedelta
@@ -8,111 +10,39 @@ from django.contrib.auth.decorators import login_required
 from django.db import connection
 from django.contrib import messages
 from django.shortcuts import render, redirect
+from django.shortcuts import render
+from django.db import connection
+from django.contrib.auth.decorators import login_required
+from datetime import datetime, timedelta
+from decimal import Decimal
+import json
 
 
 
-
-# ---------------------------
-# Vista: cambiar estado de un requerimiento específico
-# ---------------------------
-def cambiar_estado_requerimiento(request, requerimiento_id, evento):
-    rol_id = int(request.GET.get("rol", 1))
-    estado_actual = request.GET.get("estado", "Borrador")
-    machine = DocumentoTecnicoStateMachine(rol_id=rol_id, estado_inicial=estado_actual)
-
-    try:
-        machine.trigger(evento)
-    except PermissionError as e:
-        return HttpResponse(f"❌ {str(e)}")
-    except Exception as e:
-        return HttpResponse(f"⚠️ Error: {str(e)}")
-
-    return HttpResponse(
-        f"Simulación para requerimiento {requerimiento_id}: "
-        f"Evento '{evento}' ejecutado. Nuevo estado: {machine.current_state.name}"
-    )
-   
-
-
-@login_required
-def simulador_estado(request):
-    estado_inicial = request.GET.get("estado", "Borrador")
-    evento = request.GET.get("evento")
-    rol_id = int(request.GET.get("rol", 1))
-
-    machine = DocumentoTecnicoStateMachine(rol_id=rol_id, estado_inicial=estado_inicial)
-    mensaje = ""
-    
-    if "historial" not in request.session:
-        request.session["historial"] = []
-        # Si se solicita reiniciar historial
-
-    if evento:
-        try:
-            # Llamamos al evento dinámicamente
-            event_method = getattr(machine, evento)
-            event_method()
-            mensaje = f"✅ Transición '{evento}' ejecutada. Nuevo estado: {machine.current_state.name}"
-
-            # Guardamos en historial
-            historial.append({
-                "evento": evento,
-                "nuevo_estado": machine.current_state.name
-            })
-            request.session["historial"] = historial
-
-        except PermissionError as e:
-            mensaje = f"❌ {str(e)}"
-        except Exception as e:
-            mensaje = f"⚠️ Error al ejecutar '{evento}': {str(e)}"
-
-    # Todos los eventos posibles
-    todos_eventos = [
-        "crear_documento",
-        "enviar_revision",
-        "revision_aceptada",
-        "aprobar_documento",
-        "publicar_documento",
-        "rechazar_revision",
-        "rechazar_aprobacion",
-        "reenviar_revision",
-    ]
-    
-    mensajes_estado = {}
-    eventos_disponibles = []
-
-    for ev in todos_eventos:
-        if machine.puede_transicionar(ev):
-            eventos_disponibles.append(ev)
-        else:
-            mensajes_estado[ev] = "No tienes permiso para ejecutar este evento."
-
-
-    # Eventos disponibles según rol y estado
-    eventos_disponibles = [ev for ev in todos_eventos if machine.puede_transicionar(ev)]
-
-    return render(request, "simulador_estado.html", {
-        "estado_actual": machine.current_state.name,
-        "mensaje": mensaje,
-        "eventos": eventos_disponibles,
-        "rol_id": rol_id,
-        "todos_eventos": todos_eventos,
-        "mensajes_estado": mensajes_estado,
-        "historial": historial,
-    })
-
-
+def to_json_safe(data):
+    """Convierte Decimals, fechas y None en tipos seguros para json.dumps"""
+    if isinstance(data, list):
+        return [to_json_safe(x) for x in data]
+    if isinstance(data, dict):
+        return {k: to_json_safe(v) for k, v in data.items()}
+    if isinstance(data, Decimal):
+        return float(data)
+    if isinstance(data, datetime):
+        return data.isoformat()
+    if data is None:
+        return 0
+    return data
 
 
 @login_required
 def lista_documentos_asignados(request):
     """
-    Lista los documentos asignados al usuario logueado mostrando solo
-    aquellos donde su rol tiene transiciones posibles según el estado actual,
-    y agrupa los documentos por proyecto para el template.
+    Dashboard real: muestra estadísticas y gráficos reales 
+    de los documentos asignados al usuario logueado.
     """
     user_id = request.user.id
 
+    # === CONSULTA PRINCIPAL: documentos asignados ===
     sql = """
     WITH UltimoEstado AS (
         SELECT
@@ -128,7 +58,7 @@ def lista_documentos_asignados(request):
         SELECT
             RDT.id AS requerimiento_id,
             COALESCE(E.id, 0) AS estado_id,
-            COALESCE(E.nombre, 'Borrador') AS estado_actual
+            COALESCE(E.nombre, 'Pendiente de Inicio') AS estado_actual
         FROM public.requerimiento_documento_tecnico RDT
         LEFT JOIN UltimoEstado UE
             ON UE.requerimiento_id = RDT.id AND UE.rn = 1
@@ -146,29 +76,14 @@ def lista_documentos_asignados(request):
         RDT.proyecto_id,
         P.nombre AS nombre_proyecto
     FROM public.requerimiento_documento_tecnico RDT
-    INNER JOIN EstadoActual EA
-        ON EA.requerimiento_id = RDT.id
-    INNER JOIN public.tipo_documentos_tecnicos TDT
-        ON RDT.tipo_documento_id = TDT.id
-    INNER JOIN public.categoria_documentos_tecnicos CDT
-        ON TDT.categoria_id = CDT.id
-    INNER JOIN public.proyectos P
-        ON RDT.proyecto_id = P.id
+    INNER JOIN EstadoActual EA ON EA.requerimiento_id = RDT.id
+    INNER JOIN public.tipo_documentos_tecnicos TDT ON RDT.tipo_documento_id = TDT.id
+    INNER JOIN public.categoria_documentos_tecnicos CDT ON TDT.categoria_id = CDT.id
+    INNER JOIN public.proyectos P ON RDT.proyecto_id = P.id
     INNER JOIN public.requerimiento_equipo_rol RER
-        ON RDT.id = RER.requerimiento_id
-        AND RER.activo = TRUE
-    INNER JOIN public.roles_ciclodocumento RR
-        ON RER.rol_id = RR.id
+        ON RDT.id = RER.requerimiento_id AND RER.activo = TRUE
+    INNER JOIN public.roles_ciclodocumento RR ON RER.rol_id = RR.id
     WHERE RER.usuario_id = %s
-      AND (
-            EXISTS (
-                SELECT 1
-                FROM public.transiciones_permitidas TP
-                WHERE TP.estado_origen_id = EA.estado_id
-                  AND TP.rol_id = RR.id
-            )
-            OR (EA.estado_actual = 'Borrador' AND RR.nombre ILIKE 'Redactor')
-      )
     ORDER BY P.nombre, RDT.fecha_registro DESC;
     """
 
@@ -177,67 +92,139 @@ def lista_documentos_asignados(request):
         columns = [col[0] for col in cursor.description]
         resultados = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-    # --- Agrupar documentos por proyecto ---
+    # === 🔒 FILTRO DE VISIBILIDAD SEGÚN ROL Y ESTADO ===
+    def visible_para_rol(rol, estado):
+        reglas = {
+            "Redactor": [
+                "Pendiente de Inicio", "En Elaboración", "Re Estructuración"
+            ],
+            "Revisor": [
+                "En Revisión"
+            ],
+            "Aprobador": [
+                "En Aprobación", "Aprobado. Listo para Publicación", "Publicado"
+            ],
+        }
+        return estado in reglas.get(rol, [])
+
+    resultados = [
+        doc for doc in resultados
+        if visible_para_rol(doc.get("rol_asignado"), doc.get("estado_actual"))
+    ]
+
+    # === Agrupar documentos por proyecto ===
     documentos_por_proyecto = {}
     for doc in resultados:
-        proj_name = doc["nombre_proyecto"]
-        documentos_por_proyecto.setdefault(proj_name, []).append(doc)
+        proyecto = doc.get("nombre_proyecto", "Sin Proyecto")
+        documentos_por_proyecto.setdefault(proyecto, []).append(doc)
 
-    # --- KPIs y gráficos ---
+    # === KPIs ===
     total_docs = len(resultados)
 
-    # Distribución por estado
+    # 📊 Distribución por estado
     por_estado = {}
     for doc in resultados:
-        por_estado[doc["estado_actual"]] = por_estado.get(doc["estado_actual"], 0) + 1
-    chart_estado = json.dumps({"labels": list(por_estado.keys()), "values": list(por_estado.values())})
+        estado = doc.get("estado_actual", "Desconocido")
+        por_estado[estado] = por_estado.get(estado, 0) + 1
+    chart_estado = json.dumps(to_json_safe({"labels": list(por_estado.keys()), "values": list(por_estado.values())}))
 
-    # Distribución por rol
+    # 👤 Distribución por rol
     por_rol = {}
     for doc in resultados:
-        por_rol[doc["rol_asignado"]] = por_rol.get(doc["rol_asignado"], 0) + 1
-    chart_rol = json.dumps({"labels": list(por_rol.keys()), "values": list(por_rol.values())})
+        rol = doc.get("rol_asignado", "Sin Rol")
+        por_rol[rol] = por_rol.get(rol, 0) + 1
+    chart_rol = json.dumps(to_json_safe({"labels": list(por_rol.keys()), "values": list(por_rol.values())}))
 
-    # Actividad últimos 7 días
+    # 📅 Actividad últimos 7 días
     dias = [(datetime.now() - timedelta(days=i)).strftime("%d-%b") for i in reversed(range(7))]
-    actividad = [
-        sum(1 for doc in resultados if doc["fecha_registro"].date() == (datetime.now() - timedelta(days=i)).date())
-        for i in reversed(range(7))
-    ]
-    chart_actividad = json.dumps({"labels": dias, "values": actividad})
+    actividad = []
+    for i in reversed(range(7)):
+        dia = (datetime.now() - timedelta(days=i)).date()
+        count = 0
+        for doc in resultados:
+            fecha_doc = doc.get("fecha_registro")
+            if isinstance(fecha_doc, datetime) and fecha_doc.date() == dia:
+                count += 1
+        actividad.append(count)
+    chart_actividad = json.dumps(to_json_safe({"labels": dias, "values": actividad}))
 
-    # Simulación para tiempos y radar
-    etapas = ["Redacción", "Revisión", "Aprobación", "Publicación"]
-    chart_tiempos = json.dumps({"labels": etapas, "values": [round(random.uniform(4, 18), 1) for _ in etapas]})
-    chart_radar = json.dumps({"labels": etapas, "values": [random.randint(50, 100) for _ in etapas]})
+    # 🕒 Tiempo promedio por etapa (logs reales)
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            WITH duraciones AS (
+                SELECT
+                    l.requerimiento_id,
+                    e.nombre AS estado,
+                    (EXTRACT(EPOCH FROM (l.fecha_cambio - LAG(l.fecha_cambio) OVER (
+                        PARTITION BY l.requerimiento_id ORDER BY l.fecha_cambio
+                    ))) / 3600.0) AS horas_transicion
+                FROM public.log_estado_requerimiento_documento l
+                INNER JOIN public.estado_documento e ON l.estado_destino_id = e.id
+            )
+            SELECT
+                estado,
+                ROUND(AVG(horas_transicion)::numeric, 2) AS horas_promedio
+            FROM duraciones
+            WHERE horas_transicion IS NOT NULL
+            GROUP BY estado
+            ORDER BY estado;
+        """)
+        tiempos_data = cursor.fetchall()
 
-    # Cumplimiento estimado (simulado)
-    cumplimiento = random.randint(60, 95)
+    etapas, tiempos = [], []
+    for estado, horas in tiempos_data:
+        valor = float(horas) if isinstance(horas, Decimal) else (horas or 0)
+        etapas.append(estado)
+        tiempos.append(round(valor, 2))
+    chart_tiempos = json.dumps(to_json_safe({"labels": etapas, "values": tiempos}))
 
-    # --- Mapeo de estado a clase de color Bootstrap ---
+    # 🕸️ Desempeño por etapa
+    if tiempos and max(tiempos) > 0:
+        max_tiempo = max(tiempos)
+        radar_values = [round((1 - (t / max_tiempo)) * 100, 1) for t in tiempos]
+    else:
+        radar_values = [0 for _ in tiempos]
+    chart_radar = json.dumps(to_json_safe({"labels": etapas, "values": radar_values}))
+
+    # ✅ Cumplimiento real
+    publicados = sum(
+        1 for doc in resultados if doc.get("estado_actual") in ["Publicado", "Aprobado. Listo para Publicación"]
+    )
+    cumplimiento = round((publicados / total_docs * 100), 1) if total_docs > 0 else 0
+
+    # 🎨 Colores de estado
     colores_estado = {
-        "Borrador": "secondary",
+        "Pendiente de Inicio": "secondary",
         "En Elaboración": "info",
         "En Revisión": "warning",
         "En Aprobación": "primary",
-        "Aprobado": "success",
+        "Aprobado. Listo para Publicación": "success",
         "Publicado": "success",
         "Re Estructuración": "danger",
     }
 
+    # ⚠️ Bandera si no hay datos
+    sin_datos_radar = not any(t > 0 for t in tiempos)
+
+    # === Contexto final ===
     context = {
         "documentos_por_proyecto": documentos_por_proyecto,
         "total_docs": total_docs,
         "cumplimiento": cumplimiento,
         "chart_estado": chart_estado,
-        "colores_estado": colores_estado,
         "chart_rol": chart_rol,
         "chart_actividad": chart_actividad,
         "chart_tiempos": chart_tiempos,
         "chart_radar": chart_radar,
+        "colores_estado": colores_estado,
+        "sin_datos_radar": sin_datos_radar,
     }
 
     return render(request, "lista_documentos_asignados.html", context)
+
+
+
+
 
 
 def generar_signed_url(documento_id, version):
@@ -245,15 +232,21 @@ def generar_signed_url(documento_id, version):
     # Por ahora podemos simular
     return f"https://storage.simulado.com/doc_{documento_id}_{version}.pdf"
 
-
 class VersionManager:
+    """
+    Controla la numeración y registro de versiones del documento técnico
+    según los eventos del ciclo de vida del documento.
+    """
+
     def __init__(self, requerimiento_id, cursor):
         self.requerimiento_id = requerimiento_id
         self.cursor = cursor
         self.version_actual = self.obtener_ultima_version()
 
+    # ------------------------------------------------------------
+    # 🔹 1. Obtiene la última versión registrada en la base de datos
+    # ------------------------------------------------------------
     def obtener_ultima_version(self):
-        """Obtiene la última versión registrada para este documento"""
         self.cursor.execute("""
             SELECT version
             FROM version_documento_tecnico
@@ -264,38 +257,80 @@ class VersionManager:
         row = self.cursor.fetchone()
         return row[0] if row else "v0.0.0"
 
+    # ------------------------------------------------------------
+    # 🔹 2. Cuenta ocurrencias de un sufijo (REV, REJREV, etc.)
+    # ------------------------------------------------------------
+    def _count_suffix(self, token):
+        self.cursor.execute("""
+            SELECT COUNT(*) FROM version_documento_tecnico
+            WHERE requerimiento_documento_id = %s AND version LIKE %s
+        """, [self.requerimiento_id, f"%-{token}%"])
+        return self.cursor.fetchone()[0]
+
+    # ------------------------------------------------------------
+    # 🔹 3. Calcula la nueva versión según el evento del flujo
+    # ------------------------------------------------------------
     def nueva_version(self, evento):
-        """Calcula la nueva versión según la lógica de FSM y eventos"""
-        base, *sufijo = self.version_actual.split("-")
+        """
+        Calcula la nueva versión aplicando las reglas de semver:
+          vX.Y.Z -SUFIJO
+          X = cambio mayor (aceptación de revisión)
+          Y = iteraciones de revisión/redacción
+          Z = microcambios tras aprobación
+        """
+        base = self.version_actual.split("-")[0]  # Ej: "v1.0.0"
         c1, c2, c3 = map(int, base.strip("v").split("."))
 
-        if evento == "revision_aceptada":
-            c1 += 1
-            c2 = 0
-            c3 = 0
-            sufijo = []
-        elif evento == "rechazar_revision":
-            sufijo = ["RR"]
-        elif evento == "reenviar_revision":
+        # === REDACTOR ===
+        if evento == "iniciar_elaboracion":
+            return "v0.0.0-ELAB"
+
+        elif evento in ["enviar_revision", "reenviar_revision"]:
+            # Se incrementa el número de revisión (Y)
+            n = self._count_suffix("REV")
             c2 += 1
-        elif evento == "aprobar_documento":
-            c3 += 1
-            sufijo = []
+            c3 = 0
+            return f"v{c1}.{c2}.{c3}-REV{n+1}"
+
+        elif evento == "rechazar_revision":
+            # Se mantiene numeración, solo marca rechazo
+            n = self._count_suffix("REJREV")
+            return f"v{c1}.{c2}.{c3}-REJREV{n+1}"
+
+        # === REVISOR ===
+        elif evento == "revision_aceptada":
+            # Se acepta la revisión → nueva versión mayor
+            c1 += 1
+            c2 = c3 = 0
+            return f"v{c1}.{c2}.{c3}-APR1"
+
+        # === APROBADOR ===
         elif evento == "rechazar_aprobacion":
-            sufijo = ["RA"]
+            n = self._count_suffix("REJAPR")
+            return f"v{c1}.{c2}.{c3}-REJAPR{n+1}"
 
-        nueva = f"v{c1}.{c2}.{c3}"
-        if sufijo:
-            nueva += f"-{'-'.join(sufijo)}"
-        self.version_actual = nueva
-        return nueva
+        elif evento == "aprobar_documento":
+            # Se aprueba → incremento de microversión (Z)
+            c3 += 1
+            return f"v{c1}.{c2}.{c3}-APROBADO"
 
+        elif evento == "publicar_documento":
+            # Publicación oficial
+            return f"{base}-PUB"
+
+        # === Por defecto, mantener versión actual ===
+        return self.version_actual
+
+    # ------------------------------------------------------------
+    # 🔹 4. Registra la nueva versión en la base de datos
+    # ------------------------------------------------------------
     def registrar_version(self, evento, estado_nombre, usuario_id, comentario):
         nueva_version = self.nueva_version(evento)
         url = generar_signed_url(self.requerimiento_id, nueva_version)
+
         self.cursor.execute("""
             INSERT INTO version_documento_tecnico
-            (requerimiento_documento_id, version, estado_id, fecha, comentario, usuario_id, signed_url)
+                (requerimiento_documento_id, version, estado_id, fecha, comentario, usuario_id, signed_url)
             VALUES (
                 %s,
                 %s,
@@ -306,8 +341,9 @@ class VersionManager:
                 %s
             )
         """, [self.requerimiento_id, nueva_version, estado_nombre, comentario, usuario_id, url])
-        return nueva_version
 
+        self.version_actual = nueva_version
+        return nueva_version
 
 
 @login_required
@@ -323,9 +359,9 @@ def detalle_documento(request, requerimiento_id):
                 RDT.observaciones,
                 TDT.nombre AS tipo_documento,
                 CDT.nombre AS categoria_documento,
-                RR.id AS rol_id,
-                RR.nombre AS rol_asignado,
-                COALESCE(EA.nombre, 'Borrador') AS estado_actual,
+                COALESCE(RR.id, 0) AS rol_id,
+                COALESCE(RR.nombre, 'Sin Rol Asignado') AS rol_asignado,
+                COALESCE(EA.nombre, 'Pendiente de Inicio') AS estado_actual,
                 P.nombre AS nombre_proyecto
             FROM public.requerimiento_documento_tecnico RDT
             INNER JOIN public.tipo_documentos_tecnicos TDT 
@@ -356,7 +392,7 @@ def detalle_documento(request, requerimiento_id):
 
     if not documento:
         messages.error(request, "❌ Documento no encontrado.")
-        return redirect("lista_documentos_asignados")
+        return redirect("documentos:lista_documentos_asignados")
 
     # --- Historial de estados ---
     with connection.cursor() as cursor:
@@ -399,9 +435,13 @@ def detalle_documento(request, requerimiento_id):
         ]
 
     # --- Máquina de estados ---
-    estado_inicial = documento["estado_actual"] or "Borrador"
-    rol_id = documento.get("rol_id")
+    estado_inicial = documento["estado_actual"] or "Pendiente de Inicio"
+    rol_id = documento.get("rol_id") or 0
     machine = DocumentoTecnicoStateMachine(rol_id=rol_id, estado_inicial=estado_inicial)
+    # Detectar si el usuario puede subir archivo según su rol, estado y evento actual
+    evento_actual = request.POST.get("evento") if request.method == "POST" else None
+    puede_subir_archivo = machine.puede_subir_archivo(evento_actual=evento_actual)
+
     historial_simulador = request.session.get("historial_simulador", [])
 
     # --- Manejo de POST ---
@@ -455,10 +495,16 @@ def detalle_documento(request, requerimiento_id):
 
     # --- Eventos disponibles ---
     todos_eventos = [
-        "crear_documento", "enviar_revision", "revision_aceptada",
-        "aprobar_documento", "publicar_documento",
-        "rechazar_revision", "rechazar_aprobacion", "reenviar_revision"
+        "iniciar_elaboracion",
+        "enviar_revision",
+        "revision_aceptada",
+        "aprobar_documento",
+        "publicar_documento",
+        "rechazar_revision",
+        "rechazar_aprobacion",
+        "reenviar_revision"
     ]
+
     eventos = [ev for ev in todos_eventos if machine.puede_transicionar(ev)]
     eventos_formateados = [ev.replace("_", " ").capitalize() for ev in eventos]
     eventos_tuplas = list(zip(eventos, eventos_formateados))
@@ -466,7 +512,7 @@ def detalle_documento(request, requerimiento_id):
 
     # --- Mapeo de estado a color Bootstrap ---
     colores_estado = {
-        "Borrador": "secondary",
+        "Pendiente de Inicio": "secondary",
         "En Elaboración": "info",
         "En Revisión": "warning",
         "En Aprobación": "primary",
@@ -476,13 +522,9 @@ def detalle_documento(request, requerimiento_id):
     }
     estado_css = colores_estado.get(documento["estado_actual"], "secondary")
 
-    # 🚫 Validación adicional: el usuario no debería ver el documento si su rol no tiene eventos disponibles
+    # ⚙️ Ahora no se redirige si no hay eventos; solo se muestra una alerta en el template
     if not eventos:
-        messages.warning(
-            request,
-            f"No tienes acciones pendientes para el documento en estado '{estado_inicial}'."
-        )
-        return redirect("lista_documentos_asignados")
+        mensaje = f"⚙️ No tienes acciones pendientes para el documento en estado '{estado_inicial}'."
 
     context = {
         "documento": documento,
@@ -494,6 +536,26 @@ def detalle_documento(request, requerimiento_id):
         "historial_versiones": historial_versiones,
         "historial_simulador": historial_simulador,
         "eventos_con_comentario": eventos_con_comentario,
+        "puede_subir_archivo": puede_subir_archivo,
     }
 
     return render(request, "detalle_documento.html", context)
+
+
+
+
+@login_required
+def subir_archivo_documento(request, requerimiento_id):
+    """
+    Versión temporal: no realiza ninguna acción todavía.
+    Se mostrará el formulario pero sin subir realmente archivos.
+    """
+    if request.method == "POST":
+        messages.info(request, "⚙️ Funcionalidad de subida aún no implementada.")
+        return redirect("documentos:detalle_documento", requerimiento_id=requerimiento_id)
+
+
+    return redirect("documentos:detalle_documento", requerimiento_id=requerimiento_id)
+
+
+
