@@ -16,7 +16,18 @@ from django.contrib.auth.decorators import login_required
 from datetime import datetime, timedelta
 from decimal import Decimal
 import json
+import mimetypes
+import re
 
+def clean(x):
+    if not x:
+        return ""
+    x = str(x)
+    x = re.sub(r"[\/\\]+", " ", x)
+    x = re.sub(r"\s+", "_", x)
+    x = re.sub(r"[:*?\"<>|]+", "_", x)
+    x = re.sub(r"_+", "_", x)
+    return x.strip("_")
 
 
 def to_json_safe(data):
@@ -234,8 +245,8 @@ def generar_signed_url(documento_id, version):
 
 class VersionManager:
     """
-    Controla la numeración y registro de versiones del documento técnico
-    según los eventos del ciclo de vida del documento.
+    Control de versionamiento sin crear archivos dummy en GCS.
+    Las carpetas se crean automáticamente cuando se sube un archivo real.
     """
 
     def __init__(self, requerimiento_id, cursor):
@@ -243,9 +254,9 @@ class VersionManager:
         self.cursor = cursor
         self.version_actual = self.obtener_ultima_version()
 
-    # ------------------------------------------------------------
-    # 🔹 1. Obtiene la última versión registrada en la base de datos
-    # ------------------------------------------------------------
+    # ============================================================
+    # Obtener la última versión registrada
+    # ============================================================
     def obtener_ultima_version(self):
         self.cursor.execute("""
             SELECT version
@@ -257,77 +268,61 @@ class VersionManager:
         row = self.cursor.fetchone()
         return row[0] if row else "v0.0.0"
 
-    # ------------------------------------------------------------
-    # 🔹 2. Cuenta ocurrencias de un sufijo (REV, REJREV, etc.)
-    # ------------------------------------------------------------
+    # ============================================================
+    # Contar versiones con cierto sufijo (REV, REJREV, etc)
+    # ============================================================
     def _count_suffix(self, token):
         self.cursor.execute("""
-            SELECT COUNT(*) FROM version_documento_tecnico
-            WHERE requerimiento_documento_id = %s AND version LIKE %s
+            SELECT COUNT(*) 
+            FROM version_documento_tecnico
+            WHERE requerimiento_documento_id = %s 
+            AND version LIKE %s
         """, [self.requerimiento_id, f"%-{token}%"])
         return self.cursor.fetchone()[0]
 
-    # ------------------------------------------------------------
-    # 🔹 3. Calcula la nueva versión según el evento del flujo
-    # ------------------------------------------------------------
+    # ============================================================
+    # Generación de versiones según evento
+    # ============================================================
     def nueva_version(self, evento):
-        """
-        Calcula la nueva versión aplicando las reglas de semver:
-          vX.Y.Z -SUFIJO
-          X = cambio mayor (aceptación de revisión)
-          Y = iteraciones de revisión/redacción
-          Z = microcambios tras aprobación
-        """
-        base = self.version_actual.split("-")[0]  # Ej: "v1.0.0"
-        c1, c2, c3 = map(int, base.strip("v").split("."))
+        base = self.version_actual.split("-")[0]     # Ej: v1.0.0
+        c1, c2, c3 = map(int, base.replace("v", "").split("."))
 
-        # === REDACTOR ===
         if evento == "iniciar_elaboracion":
             return "v0.0.0-ELAB"
 
-        elif evento in ["enviar_revision", "reenviar_revision"]:
-            # Se incrementa el número de revisión (Y)
+        if evento in ["enviar_revision", "reenviar_revision"]:
             n = self._count_suffix("REV")
             c2 += 1
             c3 = 0
             return f"v{c1}.{c2}.{c3}-REV{n+1}"
 
-        elif evento == "rechazar_revision":
-            # Se mantiene numeración, solo marca rechazo
+        if evento == "rechazar_revision":
             n = self._count_suffix("REJREV")
             return f"v{c1}.{c2}.{c3}-REJREV{n+1}"
 
-        # === REVISOR ===
-        elif evento == "revision_aceptada":
-            # Se acepta la revisión → nueva versión mayor
-            c1 += 1
-            c2 = c3 = 0
-            return f"v{c1}.{c2}.{c3}-APR1"
+        if evento == "revision_aceptada":
+            return f"v{c1+1}.0.0-APR1"
 
-        # === APROBADOR ===
-        elif evento == "rechazar_aprobacion":
+        if evento == "rechazar_aprobacion":
             n = self._count_suffix("REJAPR")
             return f"v{c1}.{c2}.{c3}-REJAPR{n+1}"
 
-        elif evento == "aprobar_documento":
-            # Se aprueba → incremento de microversión (Z)
-            c3 += 1
-            return f"v{c1}.{c2}.{c3}-APROBADO"
+        if evento == "aprobar_documento":
+            return f"v{c1}.{c2}.{c3+1}-APROBADO"
 
-        elif evento == "publicar_documento":
-            # Publicación oficial
+        if evento == "publicar_documento":
             return f"{base}-PUB"
 
-        # === Por defecto, mantener versión actual ===
         return self.version_actual
 
-    # ------------------------------------------------------------
-    # 🔹 4. Registra la nueva versión en la base de datos
-    # ------------------------------------------------------------
+    # ============================================================
+    # Registrar versión sin crear carpetas físicas
+    # ============================================================
     def registrar_version(self, evento, estado_nombre, usuario_id, comentario):
-        nueva_version = self.nueva_version(evento)
-        url = generar_signed_url(self.requerimiento_id, nueva_version)
 
+        nueva_version = self.nueva_version(evento)
+
+        # Registrar versión en la BD
         self.cursor.execute("""
             INSERT INTO version_documento_tecnico
                 (requerimiento_documento_id, version, estado_id, fecha, comentario, usuario_id, signed_url)
@@ -338,19 +333,28 @@ class VersionManager:
                 NOW(),
                 %s,
                 %s,
-                %s
+                NULL
             )
-        """, [self.requerimiento_id, nueva_version, estado_nombre, comentario, usuario_id, url])
+        """, [
+            self.requerimiento_id,
+            nueva_version,
+            estado_nombre,
+            comentario,
+            usuario_id
+        ])
 
         self.version_actual = nueva_version
         return nueva_version
 
 
+
 @login_required
 def detalle_documento(request, requerimiento_id):
     mensaje = ""
-    
-    # --- Obtener datos del documento ---
+
+    # ============================================================
+    #                OBTENER DATOS PRINCIPALES DEL DOC
+    # ============================================================
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT
@@ -364,29 +368,23 @@ def detalle_documento(request, requerimiento_id):
                 COALESCE(EA.nombre, 'Pendiente de Inicio') AS estado_actual,
                 P.nombre AS nombre_proyecto
             FROM public.requerimiento_documento_tecnico RDT
-            INNER JOIN public.tipo_documentos_tecnicos TDT 
-                ON RDT.tipo_documento_id = TDT.id
-            INNER JOIN public.categoria_documentos_tecnicos CDT 
-                ON TDT.categoria_id = CDT.id
-            LEFT JOIN public.requerimiento_equipo_rol RER 
-                ON RDT.id = RER.requerimiento_id 
-                AND RER.usuario_id = %s
-                AND RER.activo = TRUE
-            LEFT JOIN public.roles_ciclodocumento RR 
-                ON RER.rol_id = RR.id
-            INNER JOIN public.proyectos P 
-                ON RDT.proyecto_id = P.id
-            LEFT JOIN public.estado_documento EA 
-                ON EA.id = (
-                    SELECT estado_destino_id
-                    FROM public.log_estado_requerimiento_documento
-                    WHERE requerimiento_id = RDT.id
-                    ORDER BY fecha_cambio DESC
-                    LIMIT 1
-                )
+            INNER JOIN public.tipo_documentos_tecnicos TDT ON RDT.tipo_documento_id = TDT.id
+            INNER JOIN public.categoria_documentos_tecnicos CDT ON TDT.categoria_id = CDT.id
+            LEFT JOIN public.requerimiento_equipo_rol RER
+                ON RDT.id = RER.requerimiento_id AND RER.usuario_id = %s AND RER.activo = TRUE
+            LEFT JOIN public.roles_ciclodocumento RR ON RER.rol_id = RR.id
+            INNER JOIN public.proyectos P ON RDT.proyecto_id = P.id
+            LEFT JOIN public.estado_documento EA ON EA.id = (
+                SELECT estado_destino_id
+                FROM public.log_estado_requerimiento_documento
+                WHERE requerimiento_id = RDT.id
+                ORDER BY fecha_cambio DESC
+                LIMIT 1
+            )
             WHERE RDT.id = %s
             LIMIT 1
         """, [request.user.id, requerimiento_id])
+
         row = cursor.fetchone()
         documento = dict(zip([col[0] for col in cursor.description], row)) if row else None
 
@@ -394,7 +392,9 @@ def detalle_documento(request, requerimiento_id):
         messages.error(request, "❌ Documento no encontrado.")
         return redirect("documentos:lista_documentos_asignados")
 
-    # --- Historial de estados ---
+    # ============================================================
+    #                       HISTORIAL ESTADOS
+    # ============================================================
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT 
@@ -408,12 +408,15 @@ def detalle_documento(request, requerimiento_id):
             WHERE LER.requerimiento_id = %s
             ORDER BY LER.fecha_cambio ASC
         """, [requerimiento_id])
+
         historial_estados = [
             dict(zip([col[0] for col in cursor.description], row))
             for row in cursor.fetchall()
         ]
 
-    # --- Historial de versiones ---
+    # ============================================================
+    #                      HISTORIAL VERSIONES
+    # ============================================================
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT 
@@ -429,71 +432,172 @@ def detalle_documento(request, requerimiento_id):
             WHERE VDT.requerimiento_documento_id = %s
             ORDER BY VDT.fecha ASC
         """, [requerimiento_id])
+
         historial_versiones = [
             dict(zip([col[0] for col in cursor.description], row))
             for row in cursor.fetchall()
         ]
 
-    # --- Máquina de estados ---
+    # ============================================================
+    #                      MÁQUINA DE ESTADOS
+    # ============================================================
     estado_inicial = documento["estado_actual"] or "Pendiente de Inicio"
     rol_id = documento.get("rol_id") or 0
-    machine = DocumentoTecnicoStateMachine(rol_id=rol_id, estado_inicial=estado_inicial)
-    # Detectar si el usuario puede subir archivo según su rol, estado y evento actual
-    evento_actual = request.POST.get("evento") if request.method == "POST" else None
-    puede_subir_archivo = machine.puede_subir_archivo(evento_actual=evento_actual)
+
+    machine = DocumentoTecnicoStateMachine(
+        rol_id=rol_id,
+        estado_inicial=estado_inicial
+    )
 
     historial_simulador = request.session.get("historial_simulador", [])
 
-    # --- Manejo de POST ---
+    # ============================================================
+    #                              POST
+    # ============================================================
     if request.method == "POST":
         evento = request.POST.get("evento")
         comentario = request.POST.get("comentario", "").strip()
+        archivo = request.FILES.get("archivo")
 
-        if evento:
-            if evento in ["rechazar_revision", "rechazar_aprobacion"] and not comentario:
-                mensaje = f"❌ Debes ingresar un comentario para ejecutar '{evento}'."
-            elif not machine.puede_transicionar(evento):
-                mensaje = f"❌ No tienes permiso para ejecutar '{evento}' desde el estado '{estado_inicial}'."
-            else:
-                try:
-                    getattr(machine, evento)()
-                    nuevo_estado = machine.current_state.name
-                    documento["estado_actual"] = nuevo_estado
+        eventos_con_comentario = ["rechazar_revision", "rechazar_aprobacion"]
 
-                    with connection.cursor() as cursor:
-                        # Registrar log de estado
-                        cursor.execute("""
-                            INSERT INTO public.log_estado_requerimiento_documento
-                                (requerimiento_id, estado_destino_id, usuario_id, fecha_cambio, observaciones)
-                            SELECT %s, id, %s, NOW(), %s
-                            FROM public.estado_documento
-                            WHERE nombre = %s
-                        """, [requerimiento_id, request.user.id, comentario or f"Evento: {evento}", nuevo_estado])
+        eventos_con_archivo = [
+            "enviar_revision",
+            "reenviar_revision",
+            "rechazar_revision",
+            "rechazar_aprobacion"
+        ]
 
-                        # Registrar versión si aplica
-                        if machine.evento_genera_version(evento):
-                            vm = VersionManager(requerimiento_id=requerimiento_id, cursor=cursor)
-                            vm.registrar_version(evento, nuevo_estado, request.user.id, comentario or f"Evento: {evento}")
+        # VALIDACIONES
+        if evento in eventos_con_comentario and not comentario:
+            mensaje = f"❌ Debes ingresar un comentario para ejecutar '{evento}'."
 
-                    historial_simulador.append({
-                        "evento": evento,
-                        "nuevo_estado": nuevo_estado,
-                        "comentario": comentario,
-                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    })
-                    request.session["historial_simulador"] = historial_simulador
-                    mensaje = f"✅ Evento '{evento}' ejecutado. Nuevo estado: {nuevo_estado}"
+        elif evento in eventos_con_archivo and not archivo:
+            mensaje = f"❌ Debes adjuntar un archivo para '{evento}'."
 
-                except Exception as e:
-                    mensaje = f"❌ Error al ejecutar '{evento}': {str(e)}"
+        elif not machine.puede_transicionar(evento):
+            mensaje = f"❌ No tienes permiso para ejecutar '{evento}' desde el estado '{estado_inicial}'."
 
-    # --- Reset historial ---
-    if request.GET.get("reset_historial"):
-        request.session["historial_simulador"] = []
-        historial_simulador = []
-        mensaje = "🗑 Historial de simulación reiniciado."
+        else:
+            try:
+                # Ejecutar transición
+                getattr(machine, evento)()
+                nuevo_estado = machine.current_state.name
+                documento["estado_actual"] = nuevo_estado
 
-    # --- Eventos disponibles ---
+                with connection.cursor() as cursor:
+                    # Registrar log de estado
+                    cursor.execute("""
+                        INSERT INTO public.log_estado_requerimiento_documento
+                            (requerimiento_id, estado_destino_id, usuario_id, fecha_cambio, observaciones)
+                        SELECT %s, id, %s, NOW(), %s
+                        FROM public.estado_documento
+                        WHERE nombre = %s
+                    """, [
+                        requerimiento_id,
+                        request.user.id,
+                        comentario or f"Evento: {evento}",
+                        nuevo_estado
+                    ])
+
+                    # ============================================
+                    #   REGISTRAR NUEVA VERSIÓN (si corresponde)
+                    # ============================================
+                    if machine.evento_genera_version(evento):
+                        vm = VersionManager(
+                            requerimiento_id=requerimiento_id,
+                            cursor=cursor
+                        )
+
+                        nueva_version = vm.registrar_version(
+                            evento,
+                            nuevo_estado,
+                            request.user.id,
+                            comentario or f"Evento: {evento}"
+                        )
+
+                        # =============================================
+                        #         SUBIR ARCHIVO SI CORRESPONDE
+                        # =============================================
+                        if evento in eventos_con_archivo and archivo:
+
+                            cursor.execute("""
+                                SELECT 
+                                    P.nombre AS proyecto,
+                                    CL.nombre AS cliente,
+                                    CDT.nombre AS categoria,
+                                    TDT.nombre AS tipo
+                                FROM requerimiento_documento_tecnico R
+                                JOIN proyectos P ON R.proyecto_id = P.id
+                                JOIN contratos C ON P.contrato_id = C.id
+                                JOIN clientes CL ON C.cliente_id = CL.id
+                                JOIN tipo_documentos_tecnicos TDT ON R.tipo_documento_id = TDT.id
+                                JOIN categoria_documentos_tecnicos CDT ON TDT.categoria_id = CDT.id
+                                WHERE R.id = %s
+                            """, [requerimiento_id])
+
+                            proyecto, cliente, categoria, tipo = cursor.fetchone()
+
+
+
+                            cliente = clean(cliente)
+                            proyecto = clean(proyecto)
+                            categoria = clean(categoria)
+                            tipo = clean(tipo)
+                            nombre_archivo = clean(archivo.name)
+
+                            ruta_final = (
+                                f"DocumentosProyectos/{cliente}/{proyecto}/"
+                                f"Documentos_Tecnicos/{categoria}/{tipo}/RQ-{requerimiento_id}/"
+                                f"{nueva_version}/{nombre_archivo}"
+                            )
+
+
+                            from google.cloud import storage
+                            import mimetypes
+
+                            storage_client = storage.Client()
+                            bucket = storage_client.bucket("sgdmtso_jova")
+
+                            mime_type, _ = mimetypes.guess_type(nombre_archivo)
+
+                            blob = bucket.blob(ruta_final)
+                            blob.upload_from_file(
+                                archivo.file,
+                                content_type=mime_type or "application/octet-stream"
+                            )
+
+                            signed_url = blob.generate_signed_url(
+                                version="v4",
+                                expiration=timedelta(days=7)
+                            )
+
+                            cursor.execute("""
+                                UPDATE version_documento_tecnico
+                                SET signed_url = %s
+                                WHERE requerimiento_documento_id = %s
+                                AND version = %s
+                            """, [signed_url, requerimiento_id, nueva_version])
+
+                # Añadir al historial local
+                historial_simulador.append({
+                    "evento": evento,
+                    "nuevo_estado": nuevo_estado,
+                    "comentario": comentario,
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
+                request.session["historial_simulador"] = historial_simulador
+
+                mensaje = f"✅ Evento '{evento}' ejecutado. Nuevo estado: {nuevo_estado}"
+
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                mensaje = f"❌ Error al ejecutar '{evento}': {str(e)}"
+
+    # ============================================================
+    #           GENERAR LISTA DE EVENTOS DISPONIBLES
+    # ============================================================
     todos_eventos = [
         "iniciar_elaboracion",
         "enviar_revision",
@@ -505,12 +609,13 @@ def detalle_documento(request, requerimiento_id):
         "reenviar_revision"
     ]
 
-    eventos = [ev for ev in todos_eventos if machine.puede_transicionar(ev)]
-    eventos_formateados = [ev.replace("_", " ").capitalize() for ev in eventos]
-    eventos_tuplas = list(zip(eventos, eventos_formateados))
-    eventos_con_comentario = ["rechazar_revision", "rechazar_aprobacion"]
+    eventos_disponibles = [
+        ev for ev in todos_eventos if machine.puede_transicionar(ev)
+    ]
 
-    # --- Mapeo de estado a color Bootstrap ---
+    eventos_formateados = [ev.replace("_", " ").capitalize() for ev in eventos_disponibles]
+    eventos_tuplas = list(zip(eventos_disponibles, eventos_formateados))
+
     colores_estado = {
         "Pendiente de Inicio": "secondary",
         "En Elaboración": "info",
@@ -520,10 +625,10 @@ def detalle_documento(request, requerimiento_id):
         "Publicado": "success",
         "Re Estructuración": "danger",
     }
+
     estado_css = colores_estado.get(documento["estado_actual"], "secondary")
 
-    # ⚙️ Ahora no se redirige si no hay eventos; solo se muestra una alerta en el template
-    if not eventos:
+    if not eventos_disponibles:
         mensaje = f"⚙️ No tienes acciones pendientes para el documento en estado '{estado_inicial}'."
 
     context = {
@@ -535,8 +640,7 @@ def detalle_documento(request, requerimiento_id):
         "historial_estados": historial_estados,
         "historial_versiones": historial_versiones,
         "historial_simulador": historial_simulador,
-        "eventos_con_comentario": eventos_con_comentario,
-        "puede_subir_archivo": puede_subir_archivo,
+        "eventos_con_comentario": ["rechazar_revision", "rechazar_aprobacion"],
     }
 
     return render(request, "detalle_documento.html", context)
@@ -544,18 +648,104 @@ def detalle_documento(request, requerimiento_id):
 
 
 
+
+
+
 @login_required
 def subir_archivo_documento(request, requerimiento_id):
     """
-    Versión temporal: no realiza ninguna acción todavía.
-    Se mostrará el formulario pero sin subir realmente archivos.
+    Sube archivo a:
+    DocumentosProyectos/Cliente/Proyecto/Documentos_Tecnicos/Categoria/Tipo/VERSION/Archivo.pdf
     """
-    if request.method == "POST":
-        messages.info(request, "⚙️ Funcionalidad de subida aún no implementada.")
+
+    if request.method != "POST":
         return redirect("documentos:detalle_documento", requerimiento_id=requerimiento_id)
 
+    archivo = request.FILES.get("archivo")
+    if not archivo:
+        messages.error(request, "❌ Debes seleccionar un archivo.")
+        return redirect("documentos:detalle_documento", requerimiento_id=requerimiento_id)
+
+    try:
+        with connection.cursor() as cursor:
+
+            # === Obtener ruta base del documento ===
+            cursor.execute("""
+                SELECT 
+                    RDT.id,
+                    P.nombre AS proyecto,
+                    CL.nombre AS cliente,
+                    CDT.nombre AS categoria,
+                    TDT.nombre AS tipo
+                FROM requerimiento_documento_tecnico RDT
+                JOIN proyectos P ON RDT.proyecto_id = P.id
+                JOIN contratos C ON P.contrato_id = C.id
+                JOIN clientes CL ON C.cliente_id = CL.id
+                JOIN tipo_documentos_tecnicos TDT ON RDT.tipo_documento_id = TDT.id
+                JOIN categoria_documentos_tecnicos CDT ON TDT.categoria_id = CDT.id
+                WHERE RDT.id = %s
+            """, [requerimiento_id])
+
+            row = cursor.fetchone()
+            if not row:
+                messages.error(request, "❌ Documento no encontrado.")
+                return redirect("documentos:detalle_documento", requerimiento_id=requerimiento_id)
+
+            doc_id, proyecto, cliente, categoria, tipo = row
+
+            # === Obtener versión actual ===
+            vm = VersionManager(requerimiento_id=doc_id, cursor=cursor)
+            version_actual = vm.version_actual or "Plantilla"
+
+
+        cliente = clean(cliente)
+        proyecto = clean(proyecto)
+        categoria = clean(categoria)
+        tipo = clean(tipo)
+        nombre_archivo = clean(archivo.name)
+
+        # === Ruta final ===
+        ruta_final = (
+            f"DocumentosProyectos/{cliente}/{proyecto}/"
+            f"Documentos_Tecnicos/{categoria}/{tipo}/"
+            f"{version_actual}/{nombre_archivo}"
+        )
+
+        # === Subir archivo a Google Cloud Storage ===
+        from google.cloud import storage
+        storage_client = storage.Client()
+        bucket = storage_client.bucket("sgdmtso_jova")
+
+        mime_type, _ = mimetypes.guess_type(archivo.name)
+        blob.upload_from_file(
+            archivo.file,
+            content_type=mime_type or "application/octet-stream"
+        )
+
+        # === Generar URL firmada (v4 obligatorio) ===
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(days=7)
+        )
+
+        # === Guardar URL firmada en la última versión ===
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE version_documento_tecnico
+                SET signed_url = %s
+                WHERE requerimiento_documento_id = %s
+                AND version = %s
+            """, [
+                signed_url,
+                requerimiento_id,
+                version_actual
+            ])
+
+        messages.success(request, f"📁 Archivo subido correctamente a la versión {version_actual}")
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        messages.error(request, f"⚠ Error al subir archivo: {e}")
 
     return redirect("documentos:detalle_documento", requerimiento_id=requerimiento_id)
-
-
-

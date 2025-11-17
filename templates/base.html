@@ -1,4 +1,4 @@
- <!-- base.html C:\Users\jonat\Documents\gestion_docs\templates\base.html  -->
+<!-- C:\Users\jonat\Documents\gestion_docs\templates\base.html  -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,11 +8,16 @@
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 
+    <!-- =========================== -->
+    <!-- 🎨 ESTILOS UNIFICADOS METSO -->
+    <!-- =========================== -->
     <style>
         :root {
             --metso-black: #000000;
@@ -30,6 +35,7 @@
             padding-top: 50px;
         }
 
+        /* NAVBAR */
         .navbar {
             background-color: var(--metso-black);
             box-shadow: 0 1px 3px rgba(0,0,0,0.12);
@@ -48,10 +54,8 @@
             font-size: 1.3rem;
             font-family: 'Poppins', sans-serif;
         }
-        .navbar-text {
-            color: var(--metso-light-gray) !important;
-        }
 
+        /* CONTENIDO */
         .content-wrapper {
             background-color: var(--metso-light-gray);
             padding: 20px 10px;
@@ -71,74 +75,99 @@
             transform: translateY(-2px);
         }
 
-        a, a:hover {
-            text-decoration: none;
+        /* =========================== */
+        /* 💠 ESTILOS UNIFICADOS        */
+        /* =========================== */
+        .card { border-radius: 12px; }
+        ul { padding-left: 18px; }
+        li { margin-bottom: 4px; }
+        hr { opacity: .15; }
+
+        /* Botón verde Metso */
+        .btn-metso-view {
+            background: #2b6f5c;
+            color: white !important;
+            border: none;
         }
+        .btn-metso-view:hover { background: #245a4b; }
+
+        /* Botón descarga */
+        .btn-metso-download {
+            border-color: #ced4da !important;
+            color: #343a40 !important;
+        }
+
+        /* Botón reemplazar (Metso Orange) */
+        .btn-metso-replace {
+            background: #f36f21;
+            color: white !important;
+            border: none;
+        }
+        .btn-metso-replace:hover { background: #d95f1e; }
 
         {% block extra_css %}{% endblock %}
     </style>
+
 </head>
 <body>
+
+    <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'usuario:inicio' %}">Gestión Documental Metso</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+
+            <a class="navbar-brand" href="{% url 'usuario:inicio' %}">
+                Gestión Documental Metso
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
+
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'usuario:inicio' %}">Inicio</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link"  href="{% url 'usuario:lista_usuarios' %}" >Usuarios</a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'usuario:lista_proyectos' %}">Proyectos</a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'usuario:list_files' %}">Repositorio</a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'plantillas:lista_plantillas' %}">Plantillas</a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'documentos:lista_documentos_asignados' %}">Gestión Documental</a>
-                    </li>                                       
+                    <li class="nav-item"><a class="nav-link" href="{% url 'usuario:inicio' %}">Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'usuario:lista_usuarios' %}">Usuarios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'usuario:lista_proyectos' %}">Proyectos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'usuario:list_files' %}">Repositorio</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'plantillas:lista_plantillas' %}">Plantillas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'documentos:lista_documentos_asignados' %}">Gestión Documental</a></li>
                 </ul>
 
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                             Hola, {{ user.get_full_name|default:user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{% url 'microsoft_auth:logout' %}">Cerrar Sesión</a></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'microsoft_auth:logout' %}">
+                                    Cerrar Sesión
+                                </a>
+                            </li>
                         </ul>
                     </li>
                     {% endif %}
                 </ul>
+
             </div>
         </div>
     </nav>
 
+    <!-- CONTENIDO -->
     <div class="content-wrapper">
         <main class="content-section">
             {% block content %}
             <h2>Sección Principal</h2>
-            <p>Este contenido se puede reemplazar desde las plantillas hijas.</p>
+            <p>Este contenido se reemplaza desde las plantillas hijas.</p>
             {% endblock %}
         </main>
     </div>
 
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     {% block extra_js %}{% endblock %}
+
 </body>
 </html>

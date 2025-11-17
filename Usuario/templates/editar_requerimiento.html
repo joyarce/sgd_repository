@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-
 {% block title %}Editar Requerimiento{% endblock %}
 
 {% block content %}
@@ -10,17 +9,44 @@
     <p><strong>Proyecto ID:</strong> {{ requerimiento.proyecto_id }}</p>
     <p><strong>Requerimiento ID:</strong> {{ requerimiento.id }}</p>
 
-    <!-- FORMULARIO DE EDICIÓN -->
     <form method="post">
         {% csrf_token %}
         <input type="hidden" name="proyecto_id" value="{{ requerimiento.proyecto_id }}">
         <input type="hidden" name="requerimiento_id" value="{{ requerimiento.id }}">
 
+        <!-- Observaciones -->
         <div style="margin-bottom:15px;">
             <label><strong>Observaciones:</strong></label>
             <textarea name="observaciones" rows="4" style="width:100%;">{{ requerimiento.observaciones }}</textarea>
         </div>
 
+        <!-- 🔥 Nuevo: Tipo de restricción -->
+        <div style="margin-bottom:15px;">
+            <label><strong>Tipo de restricción:</strong></label>
+            <div style="display:flex; gap:20px; margin-top:6px;">
+
+                <label>
+                    <input type="radio" name="confidencialidad" value="confidencial"
+                    {% if requerimiento.confidencialidad == 'confidencial' %}checked{% endif %}>
+                    Confidencial
+                </label>
+
+                <label>
+                    <input type="radio" name="confidencialidad" value="restringido"
+                    {% if requerimiento.confidencialidad == 'restringido' %}checked{% endif %}>
+                    Restringido
+                </label>
+
+                <label>
+                    <input type="radio" name="confidencialidad" value="no_restringido"
+                    {% if requerimiento.confidencialidad == 'no_restringido' %}checked{% endif %}>
+                    No restringido
+                </label>
+
+            </div>
+        </div>
+
+        <!-- Roles -->
         <div style="margin-bottom:15px;">
             <label><strong>Redactores:</strong></label>
             <select name="redactores" multiple style="width:100%;">
@@ -48,18 +74,17 @@
             </select>
         </div>
 
-        <div style="margin-top:20px; display:flex; gap:10px;">
-            <button type="submit" class="btn btn-secondary">Guardar Cambios</button>
-        </div>
+        <button type="submit" class="btn btn-secondary">Guardar Cambios</button>
     </form>
 
-    <!-- FORMULARIO DE ELIMINACIÓN -->
+    <!-- ELIMINAR -->
     <form method="post"
           action="{% url 'usuario:eliminar_requerimiento' requerimiento.id %}"
-          onsubmit="return confirm('¿Estás seguro de eliminar este requerimiento y todos sus registros asociados? Esta acción no se puede deshacer.');"
-          style="margin-top:25px;">
+          style="margin-top:25px;"
+          onsubmit="return confirm('¿Estás seguro de eliminar este requerimiento?');">
         {% csrf_token %}
         <button type="submit" class="btn btn-danger">Eliminar Requerimiento</button>
     </form>
+
 </div>
 {% endblock %}

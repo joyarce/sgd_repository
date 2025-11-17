@@ -1,0 +1,71 @@
+<!-- C:\Users\jonat\Documents\gestion_docs\plantillas_documentos_tecnicos\templates\portada_word_detalle.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 780px;">
+
+    <h3 class="mb-3 fw-semibold text-dark">Portada Word</h3>
+
+    {% if plantilla %}
+    <div class="card shadow-sm border-0 p-3 rounded-3">
+
+        <!-- INFORMACIÓN -->
+        <div class="mb-3 small text-muted">
+            <div><strong>Ruta:</strong> <code>{{ plantilla.gcs_path }}</code></div>
+            <div><strong>Versión:</strong> {{ plantilla.version }}</div>
+            <div><strong>Fecha:</strong> {{ plantilla.creado_en }}</div>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="d-flex flex-wrap gap-2 mb-3">
+
+            <!-- VER ONLINE -->
+            <a href="{{ office_url }}" target="_blank"
+               class="btn btn-sm btn-metso-view">
+                Ver archivo
+            </a>
+
+            <!-- DESCARGAR -->
+            <a href="{% url 'plantillas:descargar_gcs' plantilla.gcs_path %}"
+               class="btn btn-sm btn-metso-download">
+                Descargar archivo
+            </a>
+
+            <!-- REEMPLAZAR -->
+            <a href="{% url 'plantillas:subir_portada_word' %}"
+               class="btn btn-sm btn-metso-replace">
+                Reemplazar
+            </a>
+        </div>
+
+        <hr class="my-3">
+
+        <h5 class="fw-semibold text-dark mb-3">Controles de contenido detectados</h5>
+
+        {% if controles %}
+        <ul class="small ps-3">
+            {% for c in controles %}
+            <li class="mb-1">{{ c }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted small">No se detectaron controles.</p>
+        {% endif %}
+
+    </div>
+
+    {% else %}
+
+    <div class="alert alert-warning shadow-sm border-0">
+        No existe portada Word cargada.
+    </div>
+
+    <a href="{% url 'plantillas:subir_portada_word' %}"
+       class="btn btn-sm btn-metso-replace">
+        Subir plantilla
+    </a>
+
+    {% endif %}
+
+</div>
+{% endblock %}

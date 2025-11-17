@@ -310,10 +310,37 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </div>
 
-      <div class="observaciones-block">
-        <label>Observaciones / Alcance Inicial</label>
-        <textarea name="observaciones_${id}" rows="2" placeholder="Describa consideraciones para este documento..."></textarea>
+
+      <div class="restriccion-block" style="margin:18px 0;">
+          <label style="font-weight:600;color:#444;">Tipo de restricción</label>
+      
+          <div style="display:flex;gap:25px;font-size:.9rem;margin-top:6px;">
+
+              <label style="display:flex;align-items:center;gap:4px;">
+                  <input type="radio" name="restriccion_tipo_${id}" value="confidencial">
+                  Confidencial
+              </label>
+            
+              <label style="display:flex;align-items:center;gap:4px;">
+                  <input type="radio" name="restriccion_tipo_${id}" value="restringido">
+                  Restringido
+              </label>
+            
+              <label style="display:flex;align-items:center;gap:4px;">
+                  <input type="radio" name="restriccion_tipo_${id}" value="no_restringido" checked>
+                  No restringido
+              </label>
+            
+          </div>
       </div>
+
+      <div class="observaciones-block">
+          <label>Observaciones / Alcance Inicial</label>
+          <textarea name="observaciones_${id}" rows="2"
+                    placeholder="Describa consideraciones para este documento..."></textarea>
+      </div>
+
+
 
       <div class="hitos-card">
         <h6>📅 Planificación de Hitos</h6>

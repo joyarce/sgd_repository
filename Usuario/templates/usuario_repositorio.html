@@ -4,355 +4,212 @@
 
 {% block extra_css %}
 <style>
-/* --- VARIABLES y ESTILOS GENERALES (Alineados al estilo Metso) --- */
 :root {
-    /* Asumiendo variables de color de Metso */
     --metso-dark-gray: #333;
-    --metso-white: #ffffff;
+    --metso-white: #fff;
     --metso-orange: #f36f21;
-    --metso-blue: #007bff; /* Usando un azul estándar para botones no primarios */
-    --metso-light-gray: #f7f9fb;
+    --metso-blue: #007bff;
 }
 
+/* CONTENEDOR */
 .container {
-    max-width: 1100px; /* Aumentado ligeramente para mejor vista de tabla */
+    max-width: 1100px;
     margin: 30px auto;
     padding: 0 15px;
+    font-family: "Inter", sans-serif;
 }
 
+/* TÍTULO */
 h1 {
     text-align: center;
     color: var(--metso-dark-gray);
+    font-size: 1.7rem;
     font-weight: 600;
-    margin-bottom: 25px;
-    font-family: 'Poppins', sans-serif;
-    font-size: 1.8rem;
 }
 
-/* --- OVERLAY y MODALES (Consistente con el formulario) --- */
+/* BREADCRUMB estilo SharePoint */
+.breadcrumb-box {
+    display: flex;
+    gap: 6px;
+    margin: 15px 0;
+    font-size: 0.9rem;
+}
+
+.crumb {
+    color: var(--metso-blue);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.crumb:hover {
+    text-decoration: underline;
+}
+
+.crumb.active {
+    color: var(--metso-dark-gray);
+}
+
+.separator {
+    color: #666;
+}
+
+/* PANEL SUPERIOR */
+.tools-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--metso-white);
+    padding: 12px 18px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    margin-bottom: 15px;
+}
+
+.tools-panel button {
+    background: var(--metso-orange);
+    color: #fff;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* LINK SUBIR NIVEL */
+.back-link {
+    color: var(--metso-dark-gray);
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+/* GRID DE ARCHIVOS + CARPETAS (estilo SharePoint liviano) */
+.tiles-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+/* TARJETAS */
+.tile {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #eee;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.12s;
+}
+
+.tile:hover {
+    transform: translateY(-2px);
+}
+
+.tile-icon {
+    font-size: 32px;
+    margin-bottom: 6px;
+}
+
+.folder-tile .tile-icon {
+    color: #f7c843;
+}
+
+.file-tile .tile-icon {
+    color: #4e8ae8;
+}
+
+.tile-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--metso-dark-gray);
+    word-break: break-word;
+}
+
+/* OVERLAY GLOBAL */
 #overlay {
     display: none;
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); /* Fondo más oscuro para enfoque */
+    background: rgba(0,0,0,0.35);
     z-index: 9000;
 }
-
-#folderForm, #uploadForm {
-    display: none;
-    position: fixed;
-    top: 150px; left: 50%;
-    transform: translate(-50%, 0); /* Centrado horizontal sin moverlo verticalmente */
-    width: 380px; /* Ligeramente más grande */
-    background: var(--metso-white);
-    padding: 25px; /* Padding ajustado como en .form-card */
-    border-radius: 10px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.25);
-    z-index: 10001;
-    flex-direction: column;
-    gap: 12px;
-}
-#folderForm h3, #uploadForm h3 {
-    font-size: 1.2rem;
-    color: var(--metso-dark-gray);
-    margin-bottom: 10px;
-    border-bottom: 2px solid #eee;
-    padding-bottom: 5px;
-}
-#folderForm input[type="text"], #uploadForm input[type="file"] {
-    padding: 10px 12px; /* Padding de input consistente */
-    border-radius: 6px;
-    border: 1px solid #bbb;
-    width: 100%;
-    box-sizing: border-box;
-    transition: border-color 0.2s;
-}
-#folderForm input[type="text"]:focus, #uploadForm input[type="file"]:focus {
-    border-color: var(--metso-orange);
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(243, 111, 33, 0.2);
-}
-.btn-confirm { 
-    background: #38b000; 
-    color: #fff; 
-    border: none;
-    border-radius: 6px; 
-    padding: 8px 15px; 
-    font-size: 0.95rem; 
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-.btn-confirm:hover { background: #2d9000; }
-.btn-cancel { 
-    background: #777; /* Cambiado a gris más neutro */
-    color: #fff; 
-    border: none;
-    border-radius: 6px; 
-    padding: 8px 15px; 
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-.btn-cancel:hover { background: #555; }
-
-
-/* --- PANEL DE HERRAMIENTAS (tools-panel) --- */
-.tools-panel {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    margin-bottom: 15px;
-    background: var(--metso-white);
-    padding: 15px 20px; /* Padding aumentado para que se sienta como una tarjeta */
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-.tools-panel .left, .tools-panel .right { display: flex; align-items: center; gap: 15px; }
-.tools-panel button {
-    /* Usando el naranja de Metso para botones de acción principal */
-    background-color: var(--metso-orange); 
-    color: var(--metso-white);
-    border: none;
-    padding: 8px 15px;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    transition: all 0.2s ease;
-}
-.tools-panel button:hover { 
-    background-color: #e65b00; 
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    transform: none; /* Quitamos el scale para consistencia */
-}
-
-.back-link { 
-    display:inline-flex; 
-    align-items:center; 
-    gap:6px; 
-    color: var(--metso-dark-gray); 
-    text-decoration:none; 
-    font-size:0.95rem;
-    font-weight: 500;
-    padding: 5px 10px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-}
-.back-link:hover { 
-    text-decoration:none;
-    background-color: #f0f0f0;
-    color: var(--metso-orange);
-}
-
-
-/* --- TABLA (Visualización de archivos) --- */
-.table-wrapper {
-    background: var(--metso-white);
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* Consistente con .tools-panel */
-    overflow-x:auto;
-}
-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 800px; /* Aumentado min-width */
-}
-th, td { 
-    padding: 12px 15px; 
-    text-align: left; 
-    font-size: 0.9rem; 
-    border-bottom: 1px solid #eee;
-}
-th { 
-    background: var(--metso-light-gray); 
-    color: var(--metso-dark-gray); 
-    font-weight: 700;
-    text-transform: uppercase;
-    font-size: 0.85rem;
-    letter-spacing: 0.5px;
-}
-tr:hover { 
-    background: #fdf2e8; /* Tono muy ligero del naranja en hover */
-    transition: background 0.2s ease; 
-}
-
-/* Íconos y Tipos */
-.folder-icon { color: #f3b145; margin-right: 6px; } /* Color de carpeta vibrante */
-.file-icon { color: #666; margin-right: 6px; }
-.file-type { font-weight: 500; color: #555; font-size:0.85rem; }
-
-/* Botones de Acción de Fila */
-.action-buttons { display: flex; gap: 6px; justify-content: center; }
-.action-buttons a { 
-    width: 32px; 
-    height: 32px; 
-    display: flex; 
-    justify-content:center; 
-    align-items:center; 
-    border-radius: 50%; /* Botones circulares para las acciones */
-    color: #fff; 
-    transition: all 0.2s ease; 
-    font-size:0.9rem; 
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-.view-btn { background: var(--metso-blue); } 
-.view-btn:hover { background: #0056b3; transform: scale(1.1); }
-.download-btn { background: var(--metso-orange); color: #fff; } 
-.download-btn:hover { background: #e65b00; transform: scale(1.1); }
-.delete-btn { background: #e63946; } 
-.delete-btn:hover { background: #b02a37; transform: scale(1.1); }
-
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-    <h1>Repositorio de Documentos</h1>
-    <div id="overlay"></div>
 
+    <h1>Repositorio de Documentos</h1>
+
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb-box">
+        {% for name, path in breadcrumb %}
+            {% if not forloop.last %}
+                <a class="crumb" href="?folder={{ path }}">{{ name }}</a>
+                <span class="separator">›</span>
+            {% else %}
+                <span class="crumb active">{{ name }}</span>
+            {% endif %}
+        {% endfor %}
+    </nav>
+
+    <!-- Panel superior -->
     <div class="tools-panel">
-        <div class="left">
+        <div>
             <button id="toggleFolderBtn"><i class="fas fa-folder-plus"></i> Nueva Carpeta</button>
             <button id="toggleUploadBtn"><i class="fas fa-upload"></i> Subir Archivo</button>
         </div>
-        <div class="right">
-            {% if current_folder %}
-            <a href="?folder={{ parent_folder|default:'' }}" class="back-link"><i class="fas fa-level-up-alt"></i> Volver a la Carpeta Superior</a>
-            {% endif %}
+
+        {% if current_folder and parent_folder %}
+        <a href="?folder={{ parent_folder }}" class="back-link">
+            ◀ Subir un nivel
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Vista estilo SharePoint -->
+    <div class="tiles-grid">
+
+        {% for folder in folders %}
+        <div class="tile folder-tile" onclick="location='?folder={{ folder.id }}'">
+            <div class="tile-icon"><i class="fas fa-folder"></i></div>
+            <div class="tile-name">{{ folder.name }}</div>
         </div>
+        {% endfor %}
+
+        {% for file in files %}
+        <div class="tile file-tile" onclick="window.open('{{ file.preview_url }}','_blank')">
+            <div class="tile-icon"><i class="fas fa-file"></i></div>
+            <div class="tile-name">{{ file.name }}</div>
+        </div>
+        {% endfor %}
+
     </div>
 
-    <div id="folderForm">
-        <h3>Crear Nueva Carpeta</h3>
-        <form method="post" action="{% url 'usuario:new_folder' %}">
-            {% csrf_token %}
-            <input type="hidden" name="current_folder" value="{{ current_folder }}">
-            <input type="text" name="folder_name" placeholder="Escribe el nombre de la carpeta aquí" required>
-            <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
-                <button type="button" class="btn-cancel">Cancelar</button>
-                <button type="submit" class="btn-confirm">Crear Carpeta</button>
-            </div>
-        </form>
-    </div>
+    <div id="overlay"></div>
 
-    <div id="uploadForm">
-        <h3>Subir Archivo</h3>
-        <form method="post" action="{% url 'usuario:upload_file' %}" enctype="multipart/form-data">
-            {% csrf_token %}
-            <input type="hidden" name="current_folder" value="{{ current_folder }}">
-            <input type="file" name="file" required>
-            <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
-                <button type="button" class="btn-cancel">Cancelar</button>
-                <button type="submit" class="btn-confirm">Subir Archivo</button>
-            </div>
-        </form>
-    </div>
-
-    <div class="table-wrapper mt-2">
-        <table>
-            <thead>
-                <tr>
-                    <th>Nombre</th><th>Tipo</th><th>Tamaño</th><th>Fecha de subida</th><th style="text-align:center;">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if folders or files %}
-                    {% for folder in folders %}
-                    <tr class="folder-row" data-folder-id="{{ folder.id }}">
-                        <td>
-                            <i class="fas fa-folder folder-icon"></i>
-                            <a href="?folder={{ folder.id }}" style="color:var(--metso-dark-gray); text-decoration:none;">{{ folder.name }}</a>
-                        </td>
-                        <td>Carpeta</td><td>-</td><td>-</td><td style="text-align:center;">-</td>
-                    </tr>
-                    {% endfor %}
-                    {% for file in files %}
-                    <tr>
-                        <td><i class="file-icon" data-filename="{{ file.name }}"></i>{{ file.name }}</td>
-                        <td class="file-type" data-filename="{{ file.name }}">Archivo</td>
-                        <td>{% if file.size %}{{ file.size|filesizeformat }}{% else %}-{% endif %}</td>
-                        <td>{% if file.created_at %}{{ file.created_at|date:"d-m-Y H:i" }}{% else %}-{% endif %}</td>
-                        <td style="text-align:center;">
-                            <div class="action-buttons">
-                                <a class="view-btn" href="{{ file.preview_url }}" target="_blank" title="Ver"><i class="fas fa-eye"></i></a>
-                                <a class="download-btn" href="{% url 'usuario:download_file' file.id %}" title="Descargar"><i class="fas fa-download"></i></a>
-                                <a class="delete-btn" href="{% url 'usuario:delete_file' file.id %}" onclick="return confirm('¿Está seguro de eliminar {{ file.name }}? Esta acción es permanente.')" title="Eliminar"><i class="fas fa-trash"></i></a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr><td colspan="5" style="text-align:center;color:#777; padding: 20px;">📂 Esta carpeta está vacía.</td></tr>
-                {% endif %}
-            </tbody>
-        </table>
-    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function(){
-    const fileIcons = document.querySelectorAll('.file-icon');
-    const fileTypes = document.querySelectorAll('.file-type');
+document.addEventListener("DOMContentLoaded", () => {
+    const overlay = document.getElementById("overlay");
 
-    // Lógica para asignar íconos según la extensión del archivo
-    fileIcons.forEach(iconElement=>{
-        const filename = iconElement.dataset.filename;
-        const ext = filename?.split('.').pop().toLowerCase();
-        let iconClass='fas fa-file', typeLabel='Archivo';
-
-        switch(ext){
-            case 'pdf': iconClass='fas fa-file-pdf'; typeLabel='PDF'; break;
-            case 'doc': case 'docx': iconClass='fas fa-file-word'; typeLabel='Word'; break;
-            case 'xls': case 'xlsx': iconClass='fas fa-file-excel'; typeLabel='Excel'; break;
-            case 'ppt': case 'pptx': iconClass='fas fa-file-powerpoint'; typeLabel='PowerPoint'; break;
-            case 'jpg': case 'jpeg': case 'png': case 'gif': iconClass='fas fa-file-image'; typeLabel='Imagen'; break;
-            case 'zip': case 'rar': case '7z': iconClass='fas fa-file-archive'; typeLabel='Comprimido'; break;
-            case 'txt': iconClass='fas fa-file-alt'; typeLabel='Texto'; break;
-            case 'csv': iconClass='fas fa-file-csv'; typeLabel='CSV'; break;
-            case 'mp3': case 'wav': iconClass='fas fa-file-audio'; typeLabel='Audio'; break;
-            case 'mp4': case 'avi': case 'mov': iconClass='fas fa-file-video'; typeLabel='Video'; break;
-            // Añadir otros tipos comunes de Metso si es necesario (ej: dwg, step, etc.)
-        }
-
-        iconElement.classList.add(...iconClass.split(' '));
-        const typeElement = Array.from(fileTypes).find(e=>e.dataset.filename===filename);
-        if(typeElement) typeElement.textContent=typeLabel;
-    });
-
-    // Lógica para mostrar/ocultar modales (Carpeta y Subir archivo)
-    const overlay = document.getElementById('overlay');
-    const folderForm = document.getElementById('folderForm');
-    const uploadForm = document.getElementById('uploadForm');
-    const toggleFolderBtn = document.getElementById('toggleFolderBtn');
-    const toggleUploadBtn = document.getElementById('toggleUploadBtn');
-
-    const hideModals = () => {
-        folderForm.style.display = 'none';
-        uploadForm.style.display = 'none';
-        overlay.style.display = 'none';
+    document.getElementById("toggleFolderBtn").onclick = () => {
+        overlay.style.display = "block";
+        alert("Modal carpeta pendiente");
     };
 
-    toggleFolderBtn.addEventListener('click', () => { 
-        folderForm.style.display = 'flex'; 
-        overlay.style.display = 'block'; 
-    });
-    toggleUploadBtn.addEventListener('click', () => { 
-        uploadForm.style.display = 'flex'; 
-        overlay.style.display = 'block'; 
-    });
-    
-    // Ocultar al hacer clic en el overlay o en Cancelar
-    overlay.addEventListener('click', hideModals);
-    folderForm.querySelector('.btn-cancel').addEventListener('click', hideModals);
-    uploadForm.querySelector('.btn-cancel').addEventListener('click', hideModals);
+    document.getElementById("toggleUploadBtn").onclick = () => {
+        overlay.style.display = "block";
+        alert("Modal subir archivo pendiente");
+    };
+
+    overlay.onclick = () => {
+        overlay.style.display = "none";
+    };
 });
 </script>
 {% endblock %}

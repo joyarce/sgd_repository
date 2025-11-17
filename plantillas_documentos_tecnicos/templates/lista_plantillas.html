@@ -1,3 +1,4 @@
+<!-- C:\Users\jonat\Documents\gestion_docs\plantillas_documentos_tecnicos\templates\lista_plantillas.html -->
 {% extends "base.html" %}
 {% load static %}
 
@@ -6,125 +7,216 @@
 {% block content %}
 <div class="container py-4">
 
+    <!-- ======================================== -->
     <!-- Encabezado -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
-        <h2 class="fw-semibold text-dark mb-2">
-            Categorías de Documentos
-        </h2>
+    <!-- ======================================== -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+        <h2 class="fw-semibold text-dark mb-2">Categorías de Documentos</h2>
 
         <div class="d-flex gap-2">
-            <a href="{% url 'plantillas:crear_categoria' %}" class="btn btn-primary btn-sm">
-                Nueva Categoría
-            </a>
+            <a href="{% url 'plantillas:crear_categoria' %}" class="btn btn-primary btn-sm">Nueva Categoría</a>
 
             {% if categorias %}
-            <a href="{% url 'plantillas:crear_tipo_documento' %}" class="btn btn-outline-secondary btn-sm">
-                Nuevo Tipo
-            </a>
+            <a href="{% url 'plantillas:crear_tipo_documento' %}" class="btn btn-outline-secondary btn-sm">Nuevo Tipo</a>
             {% endif %}
         </div>
     </div>
 
-    <!-- Lista de categorías -->
-    {% if categorias %}
-    <div class="card border-0 shadow-sm">
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead class="table-light border-bottom">
-                    <tr class="text-muted small">
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Descripción</th>
-                        <th>Tipos de Documentos</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cat in categorias %}
-                    <tr class="hover-row">
-                        <td class="fw-semibold text-secondary">{{ cat.id }}</td>
-                        <td>
-                            <a href="{% url 'plantillas:detalle_categoria' cat.id %}"
-                               class="fw-semibold text-decoration-none text-dark">
-                                {{ cat.nombre }}
-                                {% if cat.abreviatura %}
-                                    <span class="badge bg-light text-muted border ms-1">
-                                        {{ cat.abreviatura }}
-                                    </span>
-                                {% endif %}
-                            </a>
-                        </td>
-                        <td class="text-muted">{{ cat.descripcion|default:"—" }}</td>
-                        <td>
-                            {% if cat.tipos %}
-                                <div class="d-flex flex-wrap gap-1">
-                                    {% for tipo in cat.tipos %}
-                                    <a href="{% url 'plantillas:detalle_tipo' tipo.id %}"
-                                       class="badge rounded-pill bg-body-tertiary text-dark border text-decoration-none">
-                                        {{ tipo.nombre }}
-                                        {% if tipo.abreviatura %}
-                                            <span class="small text-muted">({{ tipo.abreviatura }})</span>
-                                        {% endif %}
-                                    </a>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                <span class="text-muted fst-italic small">Sin tipos</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+
+    <!-- ======================================== -->
+    <!-- SECCIÓN DE PORTADAS (Word + Excel) -->
+    <!-- ======================================== -->
+    <div class="border rounded p-3 mb-4 bg-white">
+
+        <div class="fw-semibold mb-2">Plantilla de Portada</div>
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+
+            <div class="fw-semibold d-flex align-items-center gap-2">
+                <i class="bi bi-file-earmark-text text-secondary"></i>
+                Portada general del sistema
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+
+                <!-- ========================= -->
+                <!-- PORTADA EXCEL -->
+                <!-- ========================= -->
+                <a href="{% url 'plantillas:portada_excel_detalle' %}" 
+                   class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i> Excel
+                </a>
+
+
+                <!-- ========================= -->
+                <!-- PORTADA WORD -->
+                <!-- ========================= -->
+                <a href="{% url 'plantillas:portada_word_detalle' %}" 
+                   class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i> Word
+                </a>
+
+
+            </div>
+
         </div>
     </div>
 
-    {% else %}
-    <div class="text-center py-5 text-muted">
-        <p class="fs-5 mb-1">No hay categorías registradas aún.</p>
-        <a href="{% url 'plantillas:crear_categoria' %}" class="btn btn-sm btn-outline-primary mt-2">
-            Crear la primera categoría
-        </a>
+
+
+    <!-- ======================================== -->
+    <!-- Categorías (Acordeón Liviano) -->
+    <!-- ======================================== -->
+    <div class="border rounded bg-white">
+        <div class="p-3 fw-semibold border-bottom bg-light">Por tipo de documento técnico</div>
+
+        {% if categorias %}
+        <div class="accordion accordion-flush" id="accordionCategorias">
+
+            {% for cat in categorias %}
+            <div class="accordion-item">
+
+                <!-- ==== HEADER ==== -->
+                <h2 class="accordion-header d-flex align-items-center" id="h{{ cat.id }}">
+
+                    <!-- Nombre clickeable -->
+                    <a href="{% url 'plantillas:detalle_categoria' cat.id %}"
+                       class="categoria-link me-auto fw-semibold text-dark text-decoration-none px-3">
+                        {{ cat.nombre }}
+                        {% if cat.abreviatura %}
+                        <span class="badge bg-light border text-muted ms-1">{{ cat.abreviatura }}</span>
+                        {% endif %}
+                    </a>
+
+                    <!-- Botón del acordeón -->
+                    <button class="accordion-button collapsed flex-shrink-0 small toggle-btn"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#c{{ cat.id }}">
+                    </button>
+
+                </h2>
+
+                <!-- ==== CONTENIDO ==== -->
+                <div id="c{{ cat.id }}" class="accordion-collapse collapse">
+                    <div class="accordion-body small text-muted">
+
+                        <div class="mb-3">
+                            {{ cat.descripcion|default:"Sin descripción." }}
+                        </div>
+
+                        <!-- LISTADO DE TIPOS -->
+                        {% if cat.tipos %}
+                        <ul class="tipo-list">
+                            {% for tipo in cat.tipos %}
+                            <li class="tipo-item">
+                                <a href="{% url 'plantillas:detalle_tipo' tipo.id %}" class="tipo-card-link">
+
+                                    <div class="fw-semibold text-dark">
+                                        {{ tipo.nombre }}
+                                        {% if tipo.abreviatura %}
+                                        <span class="badge bg-light border text-muted ms-1">
+                                            {{ tipo.abreviatura }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+
+                                    {% if tipo.descripcion %}
+                                    <div class="small text-muted mt-1">
+                                        {{ tipo.descripcion }}
+                                    </div>
+                                    {% endif %}
+
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <em>No hay tipos asociados.</em>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <p class="fs-5 mb-1">No hay categorías registradas aún.</p>
+            <a href="{% url 'plantillas:crear_categoria' %}" class="btn btn-primary btn-sm mt-2">
+                Crear la primera categoría
+            </a>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
+
 </div>
 
-<!-- Estilos adicionales minimalistas -->
+
+
+<!-- ======================================== -->
+<!-- CSS ULTRA-LIGERO Y OPTIMIZADO -->
+<!-- ======================================== -->
 <style>
-    :root {
-        --metso-orange: #f36f21;
-        --metso-light-gray: #f7f7f7;
-        --metso-border-radius: 10px;
-    }
+:root {
+    --metso-orange: #f36f21;
+}
 
-    .btn-primary {
-        background-color: var(--metso-orange);
-        border: none;
-        border-radius: var(--metso-border-radius);
-    }
-    .btn-primary:hover {
-        background-color: #d65c1a;
-    }
+/* Botón primario */
+.btn-primary {
+    background-color: var(--metso-orange);
+    border: none;
+}
+.btn-primary:hover { background-color: #d65c1a; }
 
-    .btn-outline-secondary {
-        border-radius: var(--metso-border-radius);
-    }
+/* Nombre clickeable - tamaño reducido */
+.categoria-link {
+    padding-top: .55rem;
+    padding-bottom: .55rem;
+    font-size: 0.92rem;
+}
 
-    .hover-row:hover {
-        background-color: #f9fafb;
-        transition: background-color 0.2s ease;
-    }
+/* Botón flecha */
+.toggle-btn {
+    width: 42px;
+    justify-content: center;
+}
 
-    .badge.bg-body-tertiary {
-        background-color: #f1f3f5 !important;
-    }
+/* TIPOS */
+.tipo-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
 
-    .card {
-        border-radius: var(--metso-border-radius);
-    }
+.tipo-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
 
-    table thead {
-        background-color: #fff4ed;
-    }
+.tipo-item:last-child {
+    border-bottom: none;
+}
+
+.tipo-card-link {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+}
+
+.tipo-card-link:hover {
+    background-color: #f8f9fa;
+    text-decoration: none;
+}
+
+.accordion-button { 
+    font-size: .90rem; 
+}
+
 </style>
 
 {% endblock %}

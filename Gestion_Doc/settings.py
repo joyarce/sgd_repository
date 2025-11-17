@@ -54,6 +54,9 @@ LOGIN_REDIRECT_URL = '/usuario/inicio'
 
 STATIC_URL = 'static/'
 
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 # ------------------------------
 # Configuración de Google Cloud Storage
 # ------------------------------

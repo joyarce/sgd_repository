@@ -1,84 +1,173 @@
-<!-- tipo_detalle.html -->
 {% extends "base.html" %}
-
-{% block title %}Detalle del Tipo de Documento{% endblock %}
+{% load static %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container py-4" style="max-width: 820px;">
 
-    <a href="{% url 'plantillas:lista_plantillas' %}" class="btn btn-sm btn-outline-secondary mb-3">
+    <a href="{% url 'plantillas:lista_plantillas' %}"
+       class="btn btn-sm btn-outline-secondary mb-3">
         <i class="bi bi-arrow-left"></i> Volver a Categorías
     </a>
 
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
-            <h3 class="fw-semibold text-dark mb-2">
-                {{ tipo.nombre }}
-                {% if tipo.abreviatura %}
-                    <span class="badge bg-light text-muted border ms-1">{{ tipo.abreviatura }}</span>
-                {% endif %}
-            </h3>
-            <p class="text-muted mb-4">
-                <i class="bi bi-folder"></i> Categoría: <strong>{{ tipo.categoria_nombre }}</strong>
-            </p>
+    <div class="d-flex justify-content-between align-items-start mb-2">
+        <h3 class="mb-3 fw-semibold text-dark mb-0">{{ tipo.nombre }}</h3>
 
-            <div>
-                <h6 class="fw-bold text-secondary mb-2">Descripción</h6>
-                <p class="text-muted">{{ tipo.descripcion|default:"Sin descripción disponible." }}</p>
-            </div>
+        <div class="ms-2">
+            <a href="{% url 'plantillas:editar_tipo_documento' tipo.id %}"
+               class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil"></i> Editar tipo
+            </a>
         </div>
     </div>
 
-    <!-- Metadatos -->
-    <div class="card shadow-sm border-0">
-        <div class="card-body">
-            <h5 class="fw-semibold text-dark mb-3">Metadatos Asociados</h5>
+    <div class="card shadow-sm border-0 p-3 rounded-3">
 
-            {% if etiquetas %}
-            <div class="mb-3">
-                <h6 class="fw-bold text-secondary mb-1">Etiquetas</h6>
-                <ul>
-                    {% for etiqueta in etiquetas %}
-                    <li>{{ etiqueta }}</li>
-                    {% endfor %}
-                </ul>
+        <!-- ========================== -->
+        <!--     INFO DEL TIPO         -->
+        <!-- ========================== -->
+        <div class="mb-3 small text-muted">
+            <div><strong>Categoría:</strong> {{ tipo.categoria_nombre }}</div>
+
+            {% if tipo.descripcion %}
+            <div class="mt-2">
+                <strong>Descripción:</strong>
+                <span class="d-block text-muted">{{ tipo.descripcion }}</span>
             </div>
             {% endif %}
 
-            {% if tablas %}
-            <div>
-                <h6 class="fw-bold text-secondary mb-2">Tablas y Columnas</h6>
-                {% for tabla in tablas %}
-                <div class="mb-2">
-                    <strong>{{ tabla.nombre }}</strong>
-                    {% if tabla.columnas %}
-                    <ul>
-                        {% for columna in tabla.columnas %}
-                        <li>{{ columna }}</li>
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    <p class="text-muted"><em>Sin columnas definidas</em></p>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
+            {% if plantilla %}
+            <div class="mt-2"><strong>Ruta actual:</strong> <code>{{ plantilla.gcs_path }}</code></div>
+            <div><strong>Versión actual:</strong> {{ plantilla.version }}</div>
+            <div><strong>Fecha:</strong> {{ plantilla.creado_en }}</div>
             {% endif %}
         </div>
+
+        <!-- ========================== -->
+        <!--  CASOS SIN PLANTILLA       -->
+        <!-- ========================== -->
+        {% if not plantilla %}
+            <div class="alert alert-warning shadow-sm border-0">
+                No existe plantilla cargada para este tipo de documento.
+            </div>
+
+            <a href="{% url 'plantillas:subir_plantilla_tipo_doc' tipo.id %}"
+               class="btn btn-sm btn-metso-replace">
+               Subir plantilla
+            </a>
+
+        {% else %}
+
+            {% if not archivo_existe %}
+                <!-- ARCHIVO NO EXISTE -->
+                <div class="alert alert-danger shadow-sm border-0 mb-3">
+                    ⚠ <strong>El archivo no existe en Google Cloud Storage.</strong><br>
+                    Ruta esperada: <code>{{ plantilla.gcs_path }}</code>
+                </div>
+
+                <a href="{% url 'plantillas:subir_plantilla_tipo_doc' tipo.id %}"
+                   class="btn btn-sm btn-metso-replace">
+                    Subir nuevamente la plantilla
+                </a>
+
+            {% else %}
+                <!-- ========================== -->
+                <!--   ACCIONES DE LA PLANTILLA -->
+                <!-- ========================== -->
+                <div class="d-flex flex-wrap gap-2 mb-3">
+
+                    <!-- VER ONLINE -->
+                    <a href="{{ office_url }}" target="_blank"
+                       class="btn btn-sm btn-metso-view">
+                        Ver archivo
+                    </a>
+
+                    <!-- DESCARGAR -->
+                    <a href="{% url 'plantillas:descargar_gcs' plantilla.gcs_path %}"
+                       class="btn btn-sm btn-metso-download">
+                        Descargar archivo
+                    </a>
+
+                    <!-- REEMPLAZAR -->
+                    <a href="{% url 'plantillas:subir_plantilla_tipo_doc' tipo.id %}"
+                       class="btn btn-sm btn-metso-replace">
+                        Reemplazar plantilla
+                    </a>
+
+                    <!-- ELIMINAR TODAS LAS VERSIONES -->
+                    <a href="{% url 'plantillas:eliminar_plantilla' tipo.id %}"
+                       class="btn btn-sm btn-danger"
+                       onclick="return confirm('¿Eliminar TODAS las versiones de esta plantilla?');">
+                        <i class="bi bi-trash"></i> Eliminar plantilla
+                    </a>
+
+                </div>
+            {% endif %}
+        {% endif %}
+
+        <hr class="my-4">
+
+        <!-- ======================================================== -->
+        <!--    LISTA COMPLETA DE VERSIONES DEL TIPO DE DOCUMENTO    -->
+        <!-- ======================================================== -->
+
+        <h5 class="fw-semibold mt-2">Historial de versiones</h5>
+
+        {% if versiones %}
+        <table class="table table-sm align-middle small mt-3">
+            <thead>
+                <tr>
+                    <th>Versión</th>
+                    <th>Fecha</th>
+                    <th class="text-end"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in versiones %}
+                <tr>
+                    <td>{{ v.version }}</td>
+                    <td>{{ v.creado_en|date:"Y-m-d H:i" }}</td>
+                    <td class="text-end">
+
+                        {% if v.office_url %}
+                        <a href="{{ v.office_url }}" target="_blank"
+                           class="btn btn-sm btn-metso-view">Ver</a>
+                        {% endif %}
+
+                        <a href="{% url 'plantillas:descargar_gcs' v.gcs_path %}"
+                           class="btn btn-sm btn-metso-download">Descargar</a>
+
+                        <a href="{% url 'plantillas:eliminar_version' v.id %}"
+                           onclick="return confirm('¿Eliminar esta versión?');"
+                           class="btn btn-sm btn-danger">Eliminar</a>
+
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p class="text-muted small">No hay versiones registradas.</p>
+        {% endif %}
+
+        <hr class="my-4">
+
+        <!-- =============================================== -->
+        <!--         CONTROLES DE CONTENIDO ACTUALES         -->
+        <!-- =============================================== -->
+
+        <h5 class="fw-semibold text-dark mb-3">Controles de contenido detectados</h5>
+
+        {% if controles %}
+        <ul class="small ps-3 mb-0">
+            {% for c in controles %}
+            <li class="mb-1">{{ c }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted small mb-0">No se detectaron controles.</p>
+        {% endif %}
+
     </div>
 
 </div>
-
-<style>
-.card {
-    border-radius: 12px;
-}
-.card ul {
-    padding-left: 20px;
-    margin-bottom: 0;
-}
-.card li {
-    margin-bottom: 4px;
-}
-</style>
 {% endblock %}

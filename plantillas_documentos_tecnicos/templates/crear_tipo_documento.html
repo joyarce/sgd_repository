@@ -1,4 +1,4 @@
-<!-- crear_tipo_documento.html -->
+<!-- C:\Users\jonat\Documents\gestion_docs\plantillas_documentos_tecnicos\templates\crear_tipo_documento.html -->
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
@@ -23,7 +23,7 @@
                 </div>
             {% endif %}
 
-            <form method="POST" enctype="multipart/form-data" novalidate>
+            <form method="POST" novalidate>
                 {% csrf_token %}
 
                 <!-- Categoría -->
@@ -61,40 +61,17 @@
                     </small>
                 </div>
 
-                <!-- Subir archivo -->
-                <div class="mb-3">
-                    <label for="archivo" class="form-label fw-bold">Archivo</label>
-                    <input type="file" class="form-control" id="archivo" name="archivo" required>
-                    <small class="form-text text-muted">Sube el archivo asociado al tipo de documento.</small>
-                </div>
-
-                <!-- Etiquetas detectadas -->
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Etiquetas</label>
-                    <div id="tags-container"></div>
-                    <small class="form-text text-muted">
-                        Las etiquetas se generan automáticamente a partir del archivo subido.
-                    </small>
-                </div>
-
-                <!-- Tablas y columnas detectadas -->
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Tablas Detectadas y sus columnas</label>
-                    <div id="tables-container"></div>
-                    <small class="form-text text-muted">
-                        Se muestran las tablas y sus columnas detectadas en el archivo Excel.
-                    </small>
-                </div>
-
                 <!-- Botones -->
                 <div class="text-end">
                     <button type="submit" class="btn btn-success">
-                        <i class="bi bi-save"></i> Validar y Crear
+                        <i class="bi bi-save"></i> Crear
                     </button>
+                    
                     <a href="{% url 'plantillas:lista_plantillas' %}" class="btn btn-secondary">
                         <i class="bi bi-arrow-left"></i> Volver
                     </a>
                 </div>
+
             </form>
         </div>
     </div>
@@ -107,7 +84,7 @@
         </p>
         <ul>
             <li>El nombre debe contener solo texto alfabético (sin números, símbolos ni caracteres especiales).</li>
-            <li>Usa palabras significativas, evita artículos y conectores innecesarios (y, de, del, la, los, etc.).</li>
+            <li>Usa palabras significativas; evita artículos y conectores innecesarios (y, de, del, la, los, etc.).</li>
             <li>No inventes abreviaturas arbitrarias; el sistema genera la sigla representativa.</li>
         </ul>
 
@@ -138,59 +115,11 @@
     cursor: not-allowed;
     border: 1px solid #ccc;
 }
-
-/* ==== Sección de Etiquetas ==== */
-.tag-badge {
-    display: inline-block;
-    background-color: #e9f5ff;
-    color: #0d6efd;
-    border: 1px solid #bcdffd;
-    border-radius: 20px;
-    padding: 5px 12px;
-    margin: 3px;
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-/* ==== Sección de Tablas ==== */
-.table-card {
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 1rem;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-
-.table-card .card-header {
-    background-color: #f8f9fa;
-    font-weight: bold;
-    color: #333;
-    padding: 8px 15px;
-    border-bottom: 1px solid #ddd;
-}
-
-.table-card .list-group-item {
-    border: none;
-    border-bottom: 1px solid #eee;
-    padding: 6px 12px;
-}
-
-.table-card .list-group-item:last-child {
-    border-bottom: none;
-}
-
-/* ==== Sección general ==== */
-#tags-container, #tables-container {
-    margin-top: 0.5rem;
-}
 </style>
 
 <script>
 const nombreInput = document.getElementById('nombre');
 const abreviaturaInput = document.getElementById('abreviatura');
-const tagsContainer = document.getElementById('tags-container');
-const tablesContainer = document.getElementById('tables-container');
-const archivoInput = document.getElementById('archivo');
 
 // Generación automática de abreviatura
 nombreInput.addEventListener('input', function() {
@@ -206,99 +135,6 @@ nombreInput.addEventListener('input', function() {
     }
 
     abreviaturaInput.value = abreviatura;
-});
-
-// Mostrar etiquetas como "badges"
-function mostrarEtiquetas(etiquetas){
-    tagsContainer.innerHTML = '';
-    if (!etiquetas.length) {
-        tagsContainer.innerHTML = '<p class="text-muted fst-italic">No se detectaron etiquetas.</p>';
-        return;
-    }
-
-    const wrapper = document.createElement('div');
-    etiquetas.forEach(tag => {
-        const span = document.createElement('span');
-        span.classList.add('tag-badge');
-        span.textContent = tag;
-        wrapper.appendChild(span);
-    });
-    tagsContainer.appendChild(wrapper);
-}
-
-// Mostrar tablas con columnas dentro de "cards"
-function mostrarTablas(tablas){
-    tablesContainer.innerHTML = '';
-    if (!tablas.length) {
-        tablesContainer.innerHTML = '<p class="text-muted fst-italic">No se detectaron tablas en el archivo.</p>';
-        return;
-    }
-
-    tablas.forEach(t => {
-        const card = document.createElement('div');
-        card.classList.add('table-card');
-
-        let html = `
-            <div class="card-header">
-                <i class="bi bi-table"></i> ${t.tabla}
-            </div>
-            <div class="card-body p-0">
-        `;
-
-        if (t.columnas && t.columnas.length > 0) {
-            html += `<ul class="list-group list-group-flush">`;
-            t.columnas.forEach(col => {
-                html += `<li class="list-group-item"><i class="bi bi-dot"></i> ${col}</li>`;
-            });
-            html += `</ul>`;
-        } else {
-            html += `<p class="text-muted m-2">Sin columnas detectadas.</p>`;
-        }
-
-        html += `</div>`;
-        card.innerHTML = html;
-        tablesContainer.appendChild(card);
-    });
-}
-
-// Detectar archivo y obtener columnas y tablas
-archivoInput.addEventListener('change', () => {
-    if(!archivoInput.files.length) return;
-
-    const formData = new FormData();
-    formData.append('archivo', archivoInput.files[0]);
-
-    // Columnas / etiquetas
-    fetch("{% url 'plantillas:obtener_columnas_archivo' %}", {
-        method: 'POST',
-        headers: {'X-CSRFToken': '{{ csrf_token }}'},
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if(data.columnas){
-            mostrarEtiquetas(data.columnas);
-        } else if(data.error){
-            alert(data.error);
-        }
-    })
-    .catch(err => console.error(err));
-
-    // Tablas y columnas
-    fetch("{% url 'plantillas:obtener_tablas_y_columnas' %}", {
-        method: 'POST',
-        headers: {'X-CSRFToken': '{{ csrf_token }}'},
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if(data.tablas){
-            mostrarTablas(data.tablas);
-        } else if(data.error){
-            alert(data.error);
-        }
-    })
-    .catch(err => console.error(err));
 });
 </script>
 

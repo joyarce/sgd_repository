@@ -9,7 +9,7 @@
 
   <!-- 🔎 Buscador + Filtros -->
   <div class="filtros">
-    <input type="text" id="filtroBusqueda" placeholder="Buscar documento..." />
+    <input type="text" id="filtroBusqueda" placeholder="Buscar documento...">
     <select id="filtroGrupo">
       <option value="">Todos los grupos</option>
       {% for grupo in grupos_maestros %}
@@ -48,32 +48,63 @@
   padding:25px;
   box-shadow:0 3px 12px rgba(0,0,0,.06);
 }
-h2 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
-.subtexto-paso { color:#555; margin-bottom:15px; }
+h2 {
+  color:#2F2F8C;
+  font-weight:600;
+  margin-bottom:8px;
+}
+.subtexto-paso {
+  color:#555;
+  margin-bottom:15px;
+}
 
-.filtros { display:flex; gap:10px; margin-bottom:15px; }
+.filtros {
+  display:flex;
+  gap:10px;
+  margin-bottom:15px;
+}
 .filtros input, .filtros select {
-  padding:8px 12px; border:1px solid #ddd; border-radius:6px;
-  font-size:.9rem; flex:1;
+  padding:8px 12px;
+  border:1px solid #ddd;
+  border-radius:6px;
+  font-size:.9rem;
+  flex:1;
 }
 
 .lista-documentos {
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-  gap:8px; margin-bottom:25px;
-  max-height:260px; overflow-y:auto;
-  background:#fafafa; border:1px solid #eee;
-  padding:10px; border-radius:8px;
+  gap:8px;
+  margin-bottom:25px;
+  max-height:260px;
+  overflow-y:auto;
+  background:#fafafa;
+  border:1px solid #eee;
+  padding:10px;
+  border-radius:8px;
 }
 .doc-item {
-  display:flex; flex-direction:column;
-  background:#fff; border:1px solid #e0e0e0;
-  border-radius:6px; padding:10px;
-  font-size:.9rem; cursor:pointer; transition:all .15s ease;
+  display:flex;
+  flex-direction:column;
+  background:#fff;
+  border:1px solid #e0e0e0;
+  border-radius:6px;
+  padding:10px;
+  font-size:.9rem;
+  cursor:pointer;
+  transition:all .15s ease;
 }
-.doc-item:hover { background:#fdf7f3; border-color:#f36f21; }
-.doc-item input { margin-bottom:4px; }
-.doc-grupo { color:#777; font-size:.8rem; }
+.doc-item:hover {
+  background:#fdf7f3;
+  border-color:#f36f21;
+}
+.doc-item input {
+  margin-bottom:4px;
+}
+.doc-grupo {
+  color:#777;
+  font-size:.8rem;
+}
 
 .contenedor-asignaciones h4 {
   color:#2F2F8C;
@@ -90,7 +121,9 @@ h2 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
   box-shadow:0 2px 5px rgba(0,0,0,0.05);
   transition:transform 0.2s;
 }
-.card-doc:hover { transform:scale(1.01); }
+.card-doc:hover {
+  transform:scale(1.01);
+}
 
 .card-header {
   display:flex;
@@ -112,9 +145,10 @@ h2 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
   cursor:pointer;
   font-size:.8rem;
 }
-.btn-remove:hover { background:#f5c6cb; }
+.btn-remove:hover {
+  background:#f5c6cb;
+}
 
-/* Roles */
 .roles-grid {
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
@@ -129,7 +163,6 @@ h2 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
   display:block;
 }
 
-/* Observaciones */
 .observaciones-block {
   margin-bottom:15px;
 }
@@ -143,7 +176,6 @@ h2 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
   background:#fff;
 }
 
-/* Hitos */
 .hitos-card {
   background:#fff;
   border:1px solid #ddd;
@@ -174,18 +206,29 @@ h2 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
 }
 
 /* Tom Select */
-.ts-control { border-radius:6px !important; border-color:#ccc !important; }
-.ts-control .item { background:#f36f21 !important; color:#fff !important; border-radius:12px; }
-.ts-dropdown { border-radius:8px !important; z-index:9999 !important; }
+.ts-control {
+  border-radius:6px !important;
+  border-color:#ccc !important;
+}
+.ts-control .item {
+  background:#f36f21 !important;
+  color:#fff !important;
+  border-radius:12px;
+}
+.ts-dropdown {
+  border-radius:8px !important;
+  z-index:9999 !important;
+}
 </style>
 
 <!-- === LIBRERÍAS === -->
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
 
 <!-- === SCRIPT === -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+
   const lista = document.getElementById("listaDocumentos");
   const contenedor = document.getElementById("contenedorAsignaciones");
   const cardsContainer = document.getElementById("cardsContainer");
@@ -200,8 +243,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const seleccionados = {};
 
+  // -------------------------------
+  // CLICK DOCUMENTO
+  // -------------------------------
   lista.addEventListener("change", e => {
     if (!e.target.classList.contains("doc-checkbox")) return;
+
     const chk = e.target;
     const id = chk.value;
     const nombre = chk.dataset.nombre;
@@ -212,13 +259,18 @@ document.addEventListener("DOMContentLoaded", () => {
     contenedor.style.display = Object.keys(seleccionados).length ? "block" : "none";
   });
 
+  // -------------------------------
+  // CREAR TARJETA
+  // -------------------------------
   function addCard(id, nombre) {
     if (seleccionados[id]) return;
+
     seleccionados[id] = { redactores:[], revisores:[], aprobadores:[] };
 
     const card = document.createElement("div");
     card.className = "card-doc";
     card.id = "card-" + id;
+
     card.innerHTML = `
       <div class="card-header">
         <h5>${nombre}</h5>
@@ -231,15 +283,39 @@ document.addEventListener("DOMContentLoaded", () => {
           <div id="hidden-redactor-${id}"></div>
           <select id="selRed-${id}" multiple></select>
         </div>
+
         <div>
           <label>Revisor(es)</label>
           <div id="hidden-revisor-${id}"></div>
           <select id="selRev-${id}" multiple></select>
         </div>
+
         <div>
           <label>Aprobador(es)</label>
           <div id="hidden-aprobador-${id}"></div>
           <select id="selApr-${id}" multiple></select>
+        </div>
+      </div>
+
+      <!-- Restricción -->
+      <div class="restriccion-block" style="margin:18px 0;">
+        <label style="font-weight:600;color:#444;">Tipo de restricción</label>
+
+        <div style="display:flex;gap:25px;font-size:.9rem;margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:4px;">
+            <input type="radio" name="restriccion_tipo_${id}" value="confidencial">
+            Confidencial
+          </label>
+
+          <label style="display:flex;align-items:center;gap:4px;">
+            <input type="radio" name="restriccion_tipo_${id}" value="restringido">
+            Restringido
+          </label>
+
+          <label style="display:flex;align-items:center;gap:4px;">
+            <input type="radio" name="restriccion_tipo_${id}" value="no_restringido" checked>
+            No restringido
+          </label>
         </div>
       </div>
 
@@ -285,12 +361,15 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </div>
     `;
+
     cardsContainer.appendChild(card);
 
+    // Tom Selects
     crearSelector(`#selRed-${id}`, "redactores", `hidden-redactor-${id}`, id);
     crearSelector(`#selRev-${id}`, "revisores", `hidden-revisor-${id}`, id);
     crearSelector(`#selApr-${id}`, "aprobadores", `hidden-aprobador-${id}`, id);
 
+    // Acción quitar
     card.querySelector(".btn-remove").addEventListener("click", () => {
       document.querySelector(`.doc-checkbox[value="${id}"]`).checked = false;
       removeCard(id);
@@ -298,13 +377,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // -------------------------------
+  // CREAR SELECTOR
+  // -------------------------------
   function crearSelector(selectId, role, hiddenDivId, docId) {
     const ts = new TomSelect(selectId, {
       plugins: ["remove_button"],
       options: usuarios,
       hideSelected: true,
-      placeholder: "Seleccionar...",
+      placeholder: "Seleccionar..."
     });
+
     ts.on("change", function() {
       const valores = ts.getValue();
       seleccionados[docId][role] = valores;
@@ -312,10 +395,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // -------------------------------
+  // SINCRONIZAR INPUTS HIDDEN
+  // -------------------------------
   function syncHidden(hiddenDivId, role, docId, valores) {
     const host = document.getElementById(hiddenDivId);
     host.innerHTML = "";
-    const roleMap = { redactores:"redactor", revisores:"revisor", aprobadores:"aprobador" };
+
+    const roleMap = {
+      redactores: "redactor",
+      revisores: "revisor",
+      aprobadores: "aprobador"
+    };
+
     valores.forEach(v => {
       const input = document.createElement("input");
       input.type = "hidden";
@@ -325,22 +417,34 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // -------------------------------
+  // QUITAR TARJETA
+  // -------------------------------
   function removeCard(id) {
     delete seleccionados[id];
     const card = document.getElementById("card-" + id);
     if (card) card.remove();
   }
 
+  // -------------------------------
+  // FILTROS
+  // -------------------------------
   function filtrar() {
     const texto = filtroTxt.value.toLowerCase();
     const grupoSel = filtroGrupo.value;
+
     lista.querySelectorAll(".doc-item").forEach(item => {
-      const matchTexto = item.querySelector(".doc-nombre").textContent.toLowerCase().includes(texto);
-      const matchGrupo = !grupoSel || item.dataset.grupo === grupoSel;
+      const nombre = item.querySelector(".doc-nombre").textContent.toLowerCase();
+      const grupo = item.dataset.grupo;
+      const matchTexto = nombre.includes(texto);
+      const matchGrupo = !grupoSel || grupo === grupoSel;
+
       item.style.display = (matchTexto && matchGrupo) ? "flex" : "none";
     });
   }
+
   filtroTxt.addEventListener("input", filtrar);
   filtroGrupo.addEventListener("change", filtrar);
+
 });
 </script>

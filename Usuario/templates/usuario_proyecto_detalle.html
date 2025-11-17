@@ -123,6 +123,31 @@ table tr:hover { background: #fdf2e8; }
 .btn-delete:active {
     transform: translateY(1px);
 }
+
+/* --- Badge de confidencialidad tipo botón (sin íconos) --- */
+.badge-confid {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+.badge-confid--confidencial {
+    background-color: #fdecea;
+    color: #a31515;
+    border-color: #f5c6cb;
+}
+.badge-confid--restringido {
+    background-color: #fff4e5;
+    color: #8a5a00;
+    border-color: #ffdd99;
+}
+.badge-confid--libre {
+    background-color: #e6f4ea;
+    color: #1f6f3d;
+    border-color: #b7dfc1;
+}
 </style>
 {% endblock %}
 
@@ -243,6 +268,7 @@ table tr:hover { background: #fdf2e8; }
                 <tr>
                     <th>Documento Técnico</th>
                     <th>Abrev.</th>
+                    <th>Confidencialidad</th>
                     <th>Estado Actual</th>
                     <th>Fecha Registro</th>
                     <th>Acciones</th>
@@ -253,6 +279,17 @@ table tr:hover { background: #fdf2e8; }
                 <tr style="cursor:pointer;" onclick="window.location.href='{% url 'usuario:detalle_documento' req.id %}'">
                     <td>{{ req.nombre_documento_tecnico }}</td>
                     <td>{{ req.abreviatura|default:"-" }}</td>
+
+                    <td>
+                        {% if req.confidencialidad == "confidencial" %}
+                            <span class="badge-confid badge-confid--confidencial">Confidencial</span>
+                        {% elif req.confidencialidad == "restringido" %}
+                            <span class="badge-confid badge-confid--restringido">Restringido</span>
+                        {% else %}
+                            <span class="badge-confid badge-confid--libre">No restringido</span>
+                        {% endif %}
+                    </td>
+
                     <td>{{ req.estado_actual }}</td>
                     <td>{{ req.fecha_registro|date:"d/m/Y H:i" }}</td>
                     <td>
@@ -261,7 +298,7 @@ table tr:hover { background: #fdf2e8; }
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-muted">No hay documentos requeridos.</td>
+                    <td colspan="6" class="text-muted">No hay documentos requeridos.</td>
                 </tr>
                 {% endfor %}
             </tbody>

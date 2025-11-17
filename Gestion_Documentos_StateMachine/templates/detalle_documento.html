@@ -1,4 +1,5 @@
-<!-- detalle_documento.html -->
+<!-- Encabezado -->
+
 {% extends "base.html" %}
 {% block title %}Detalle del Documento | Gestión Documental{% endblock %}
 
@@ -13,7 +14,7 @@
   {% if mensaje %}
   <div class="alert alert-info alert-dismissible fade show" role="alert">
     {{ mensaje }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
   {% endif %}
 
@@ -42,38 +43,38 @@
 
       <p><strong>Rol Asignado:</strong> {{ documento.rol_asignado }}</p>
       <p><strong>Fecha de Registro:</strong> {{ documento.fecha_registro }}</p>
+
+
+
     </div>
   </div>
 
-  <!-- 🟧 Subida de archivo -->
-  <div id="upload-section" class="card border-0 shadow-sm mb-4 p-3"
-       style="display: {% if puede_subir_archivo %}block{% else %}none{% endif %};">
-    <h5 class="fw-semibold mb-3" style="color: var(--metso-orange);">Subir Archivo</h5>
-    <form action="{% url 'documentos:subir_archivo_documento' documento.requerimiento_id %}" method="post" enctype="multipart/form-data">
-      {% csrf_token %}
-      <div class="mb-3">
-        <input type="file" name="archivo" class="form-control" required>
-      </div>
-      <button type="submit" class="btn btn-primary">Subir Archivo</button>
-    </form>
-  </div>
 
-  <!-- Formulario de evento -->
+  <!-- 🟧 FORMULARIO ÚNICO: Evento + Comentario + Archivo -->
   {% if eventos_tuplas %}
-  <form method="post" class="mb-5">
+  <form method="post" enctype="multipart/form-data" class="mb-5">
     {% csrf_token %}
+
+    <!-- Selección de evento -->
     <div class="mb-3">
       <label for="evento" class="form-label">Selecciona Evento:</label>
-      <select name="evento" id="evento" class="form-select">
+      <select name="evento" id="evento" class="form-select" required>
         {% for ev, ev_fmt in eventos_tuplas %}
           <option value="{{ ev }}">{{ ev_fmt }}</option>
         {% endfor %}
       </select>
     </div>
 
+    <!-- Comentario si corresponde -->
     <div class="mb-3" id="comentario-div" style="display:none;">
       <label for="comentario" class="form-label">Comentario:</label>
       <textarea name="comentario" id="comentario" class="form-control" rows="3"></textarea>
+    </div>
+
+    <!-- Archivo obligatorio si corresponde -->
+    <div class="mb-3" id="archivo-div" style="display:none;">
+      <label for="archivo" class="form-label">Archivo del Documento:</label>
+      <input type="file" name="archivo" id="archivo" class="form-control">
     </div>
 
     <div class="d-flex gap-2">
@@ -86,13 +87,13 @@
   </div>
   {% endif %}
 
-  <!-- 🕒 Historial de Estados (horizontal) -->
+  <!-- 🕒 Historial de Estados -->
   <h4 class="fw-semibold mb-3" style="color: var(--metso-orange);">Historial de Estados</h4>
   {% if historial_estados %}
   <div class="horizontal-timeline mb-5">
     {% for log in historial_estados %}
     <div class="timeline-step"
-         title="Usuario: {{ log.usuario_nombre|default:'-' }}&#10;Fecha: {{ log.fecha_cambio|date:'d-m-Y H:i' }}&#10;Comentario: {{ log.comentario|default:'Sin comentarios' }}">
+      title="Usuario: {{ log.usuario_nombre|default:'-' }}&#10;Fecha: {{ log.fecha_cambio|date:'d-m-Y H:i' }}&#10;Comentario: {{ log.comentario|default:'Sin comentarios' }}">
       <div class="timeline-dot 
         {% if log.estado_destino == 'Pendiente de Inicio' %}bg-secondary
         {% elif log.estado_destino == 'En Elaboración' %}bg-info
@@ -131,6 +132,7 @@
         <tr>
           <td>
             <span class="fw-semibold">{{ v.version }}</span>
+
             {% if "REJ" in v.version %}
               <span class="badge bg-danger ms-2">Rechazada</span>
             {% elif "REV" in v.version %}
@@ -141,15 +143,15 @@
               <span class="badge bg-success ms-2">Publicada</span>
             {% endif %}
           </td>
+
           <td>{{ v.estado_nombre }}</td>
           <td>{{ v.fecha|date:"d-m-Y H:i" }}</td>
           <td>{{ v.usuario_nombre|default:"-" }}</td>
           <td class="small text-muted">{{ v.comentario|default:"-" }}</td>
+
           <td>
             {% if v.signed_url %}
-              <a href="{{ v.signed_url }}" target="_blank" class="text-decoration-none">
-                📄 Ver
-              </a>
+              <a href="{{ v.signed_url }}" target="_blank" class="text-decoration-none">📄 Ver</a>
             {% else %}
               <span class="text-muted small">-</span>
             {% endif %}
@@ -157,7 +159,9 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6" class="text-center text-muted">Sin versiones registradas.</td>
+          <td colspan="6" class="text-center text-muted">
+            Sin versiones registradas.
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -167,7 +171,7 @@
   {% endif %}
 </div>
 
-<!-- 🎨 Estilos Metso unificados -->
+<!-- 🎨 Estilos -->
 <style>
 :root {
   --metso-orange: #f36f21;
@@ -178,7 +182,6 @@
 body {
   background-color: var(--metso-light-gray);
   font-family: 'Inter', sans-serif;
-  margin: 0;
 }
 
 .btn-primary {
@@ -186,112 +189,65 @@ body {
   border: none;
   border-radius: var(--metso-border-radius);
 }
-.btn-primary:hover { background-color: #d65c1a; }
+.btn-primary:hover {
+  background-color: #d65c1a;
+}
 
 .card { border-radius: var(--metso-border-radius); }
 
-.table td, .table th { vertical-align: middle !important; }
-.table-hover tbody tr:hover { background-color: #fff8f3 !important; }
-
-.badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.table thead { background-color: #fff4ed; }
-
-.bg-secondary { background-color: #6c757d !important; }
-.bg-info { background-color: #0dcaf0 !important; }
-.bg-warning { background-color: #ffc107 !important; color: #000; }
-.bg-success { background-color: #198754 !important; }
-.bg-primary { background-color: var(--metso-orange) !important; }
-.bg-danger { background-color: #dc3545 !important; }
-
-/* === Timeline horizontal compacto === */
+/* Timeline */
 .horizontal-timeline {
   display: flex;
   overflow-x: auto;
   padding: 15px 10px;
   gap: 25px;
-  scrollbar-width: thin;
 }
-.horizontal-timeline::-webkit-scrollbar {
-  height: 6px;
-}
-.horizontal-timeline::-webkit-scrollbar-thumb {
-  background-color: rgba(0,0,0,0.25);
-  border-radius: 3px;
-}
-
-.timeline-step {
-  position: relative;
-  flex: 0 0 auto;
-  text-align: center;
-  min-width: 100px;
-}
-.timeline-step::before {
-  content: "";
-  position: absolute;
-  top: 10px;
-  left: -25px;
-  width: 25px;
-  height: 2px;
-  background-color: #ccc;
-}
-.timeline-step:first-child::before {
-  display: none;
-}
+.timeline-step { min-width: 100px; text-align: center; }
 .timeline-dot {
   width: 18px;
   height: 18px;
   border-radius: 50%;
   margin: 0 auto;
   border: 2px solid #fff;
-  box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
   cursor: pointer;
-  transition: transform 0.2s ease;
 }
-.timeline-dot:hover {
-  transform: scale(1.3);
-}
+.timeline-dot:hover { transform: scale(1.3); }
 </style>
 
+<!-- 🧠 Script comportamiento -->
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-  const eventoSelect = document.getElementById('evento');
-  const comentarioDiv = document.getElementById('comentario-div');
-  const uploadSection = document.getElementById('upload-section');
+
+  const eventoSelect = document.getElementById("evento");
+  const comentarioDiv = document.getElementById("comentario-div");
+  const archivoDiv = document.getElementById("archivo-div");
+  const archivoInput = document.getElementById("archivo");
+
   const eventosConComentario = {{ eventos_con_comentario|safe }};
-  const estadoActual = "{{ estado_actual }}";
+  const eventosConArchivo = [
+    "enviar_revision",
+    "reenviar_revision",
+    "rechazar_revision",
+    "rechazar_aprobacion"
+  ];
 
-  function toggleComentario() {
-    if (!eventoSelect) return;
-    const selected = eventoSelect.value;
-    comentarioDiv.style.display = eventosConComentario.includes(selected) ? 'block' : 'none';
+  function actualizar() {
+    const ev = eventoSelect.value;
+
+    comentarioDiv.style.display = eventosConComentario.includes(ev) ? "block" : "none";
+
+    if (eventosConArchivo.includes(ev)) {
+      archivoDiv.style.display = "block";
+      archivoInput.required = true;
+    } else {
+      archivoDiv.style.display = "none";
+      archivoInput.required = false;
+    }
   }
 
-  function toggleUpload() {
-    if (!eventoSelect || !uploadSection) return;
-    const selected = eventoSelect.value;
-    let mostrar = false;
-
-    if (estadoActual === "En Elaboración" || estadoActual === "Re Estructuración") mostrar = true;
-    if (estadoActual === "En Revisión" && selected === "rechazar_revision") mostrar = true;
-    if (estadoActual === "En Aprobación" && selected === "rechazar_aprobacion") mostrar = true;
-    if (estadoActual === "En Elaboración" && ["enviar_revision", "reenviar_revision"].includes(selected)) mostrar = true;
-
-    uploadSection.style.display = mostrar ? "block" : "none";
-  }
-
-  if (eventoSelect) {
-    eventoSelect.addEventListener('change', () => {
-      toggleComentario();
-      toggleUpload();
-    });
-    toggleComentario();
-    toggleUpload();
-  }
+  eventoSelect.addEventListener("change", actualizar);
+  actualizar();
 });
 </script>
+
 {% endblock %}

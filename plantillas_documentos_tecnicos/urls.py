@@ -4,18 +4,37 @@ from . import views
 app_name = "plantillas"
 
 urlpatterns = [
+
+    # LISTADO
     path("", views.lista_plantillas, name="lista_plantillas"),
-    path("categorias/<int:categoria_id>/", views.categoria_detalle, name="detalle_categoria"),
-    path("crear-categoria/", views.crear_categoria, name="crear_categoria"),
-    path("crear-tipo/", views.crear_tipo_documento, name="crear_tipo_documento"),
+
+    # CATEGORÍAS / TIPOS
+    path("categoria/<int:categoria_id>/", views.categoria_detalle, name="detalle_categoria"),
+    path("categoria/<int:categoria_id>/editar/", views.editar_categoria, name="editar_categoria"),
+
     path("tipos/<int:tipo_id>/", views.tipo_detalle, name="detalle_tipo"),
-    path('validar-etiquetas/', views.validar_etiquetas_archivo, name='validar_etiquetas_archivo'),
-        # Obtener automáticamente todas las columnas / etiquetas del archivo
-    path('obtener-columnas/', views.obtener_columnas_archivo, name='obtener_columnas_archivo'),
-    path('obtener-tablas-y-columnas/', views.obtener_tablas_y_columnas, name='obtener_tablas_y_columnas'),
+    path("tipos/<int:tipo_id>/editar/", views.editar_tipo_documento, name="editar_tipo_documento"),
 
+    # TIPOS - SUBIR PLANTILLA
+    path("tipo/<int:tipo_id>/subir/", views.subir_plantilla, name="subir_plantilla"),
+    path("subir-plantilla-tipo/<int:tipo_id>/",
+         views.subir_plantilla_tipo_doc,
+         name="subir_plantilla_tipo_doc"),
 
+    # CREAR
+    path("crear/categoria/", views.crear_categoria, name="crear_categoria"),
+    path("crear/tipo/", views.crear_tipo_documento, name="crear_tipo_documento"),
 
-    path('test-tablas/', views.test_tablas, name='test_tablas'),
+    # PORTADA WORD
+    path("portada/word/", views.portada_word_detalle, name="portada_word_detalle"),
+    path("portada/word/subir/", views.subir_portada_word, name="subir_portada_word"),
 
+    # PORTADA EXCEL
+    path("portada/excel/", views.portada_excel_detalle, name="portada_excel_detalle"),
+    path("portada/excel/subir/", views.subir_portada_excel, name="subir_portada_excel"),
+
+    # DESCARGA / ELIMINACIÓN
+    path("descargar/<path:path>/", views.descargar_gcs, name="descargar_gcs"),
+    path("eliminar-plantilla/<int:tipo_id>/", views.eliminar_plantilla, name="eliminar_plantilla"),
+    path("version/<int:version_id>/eliminar/", views.eliminar_version, name="eliminar_version"),
 ]

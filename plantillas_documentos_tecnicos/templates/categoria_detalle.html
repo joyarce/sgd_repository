@@ -1,4 +1,3 @@
-<!-- categoria_detalle.html -->
 {% extends "base.html" %}
 
 {% block title %}Detalle de Categoría: {{ categoria.nombre }}{% endblock %}
@@ -13,15 +12,29 @@
     <!-- Información de la categoría -->
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
-            <h3 class="fw-semibold text-dark mb-2">
-                {{ categoria.nombre }}
-                {% if categoria.abreviatura %}
-                    <span class="badge bg-light text-muted border ms-1">{{ categoria.abreviatura }}</span>
-                {% endif %}
-            </h3>
+
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <h3 class="fw-semibold text-dark mb-1">
+                        {{ categoria.nombre }}
+                        {% if categoria.abreviatura %}
+                            <span class="badge bg-light text-muted border ms-1">{{ categoria.abreviatura }}</span>
+                        {% endif %}
+                    </h3>
+                </div>
+                <div>
+                    <a href="{% url 'plantillas:editar_categoria' categoria.id %}"
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Editar categoría
+                    </a>
+                </div>
+            </div>
+
             <div>
                 <h6 class="fw-bold text-secondary mb-2">Descripción</h6>
-                <p class="text-muted">{{ categoria.descripcion|default:"Sin descripción disponible." }}</p>
+                <p class="text-muted mb-0">
+                    {{ categoria.descripcion|default:"Sin descripción disponible." }}
+                </p>
             </div>
         </div>
     </div>
@@ -33,17 +46,25 @@
 
             {% if tipos %}
                 {% for tipo in tipos %}
-                <div class="mb-3">
-                    <h6 class="fw-bold">{{ tipo.nombre }}
+                <div class="mb-3 pb-2 border-bottom last:border-0">
+                    <h6 class="fw-bold mb-1">
+                        <a href="{% url 'plantillas:detalle_tipo' tipo.id %}"
+                           class="link-dark text-decoration-none">
+                            {{ tipo.nombre }}
+                        </a>
                         {% if tipo.abreviatura %}
                             <span class="badge bg-light text-muted border ms-1">{{ tipo.abreviatura }}</span>
                         {% endif %}
                     </h6>
-                    <p class="text-muted">{{ tipo.descripcion|default:"Sin descripción disponible." }}</p>
+                    <p class="text-muted mb-0">
+                        {{ tipo.descripcion|default:"Sin descripción disponible." }}
+                    </p>
                 </div>
                 {% endfor %}
             {% else %}
-                <p class="text-muted fst-italic">No hay tipos de documentos registrados para esta categoría.</p>
+                <p class="text-muted fst-italic mb-0">
+                    No hay tipos de documentos registrados para esta categoría.
+                </p>
             {% endif %}
         </div>
     </div>
