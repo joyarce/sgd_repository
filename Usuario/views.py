@@ -1705,7 +1705,6 @@ def obtener_abreviatura_cliente(request, cliente_id):
         return JsonResponse({"error": str(e)}, status=500)
     
 
- ####################  ####################    ####################    ####################     
 
 
 def obtener_numordenservicio(path_archivo):
@@ -1948,63 +1947,3 @@ def editar_maquina(request, maquina_id):
     return render(request, 'editar_maquina.html', {'maquina': maquina})
 
 
-
-#def crear_arbol_global_plantillas():
-#    """
-#    Crea la estructura global en el bucket:
-#    
-#    Plantillas/
-#        Documentos_Tecnicos/<CATEGORIA>/<TIPO>/
-#        Portada/
-#    """
-#    from django.db import connection
-#    from google.cloud import storage
-#    from django.conf import settings
-#
-#    storage_client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
-#    bucket = storage_client.bucket(settings.GCP_BUCKET_NAME)
-#
-#    # Carpetas raíz
-#    root = "Plantillas/"
-#    doc_root = f"{root}Documentos_Tecnicos/"
-#    portada_root = f"{root}Portada/"
-#
-#    # Crear carpetas raíz vacías
-#    bucket.blob(root).upload_from_string("")
-#    bucket.blob(doc_root).upload_from_string("")
-#    bucket.blob(portada_root).upload_from_string("")
-#
-#    # === 1. Obtener TODAS las categorías y tipos de la BD ===
-#    with connection.cursor() as cursor:
-#        cursor.execute("SELECT id, nombre FROM categoria_documentos_tecnicos ORDER BY nombre")
-#        categorias = cursor.fetchall()
-#
-#        cursor.execute("SELECT id, nombre, categoria_id FROM tipo_documentos_tecnicos ORDER BY nombre")
-#        tipos = cursor.fetchall()
-#
-#    # === 2. Crear carpetas por categoría y tipo ===
-#    for cat_id, cat_nombre in categorias:
-#        cat_nom = clean(cat_nombre)
-#        categoria_path = f"{doc_root}{cat_nom}/"
-#        bucket.blob(categoria_path).upload_from_string("")
-#
-#        for tipo_id, tipo_nombre, tipo_cat in tipos:
-#            if tipo_cat == cat_id:
-#                tipo_nom = clean(tipo_nombre)
-#                tipo_path = f"{categoria_path}{tipo_nom}/"
-#                bucket.blob(tipo_path).upload_from_string("")
-#
-#    print("✔ Árbol global PLANTILLAS creado correctamente.")
-#
-
-# http://localhost:8000/usuario/inicializar-ruta-plantillas/ 
-
-# @login_required
-# def inicializar_ruta_plantillas(request):
-#     try:
-#         crear_arbol_global_plantillas()
-#         messages.success(request, "✔ Árbol de PLANTILLAS creado correctamente en Google Cloud Storage.")
-#     except Exception as e:
-#         messages.error(request, f"❌ Error creando árbol de plantillas: {e}")
-#     return redirect("usuario:lista_proyectos")
-# 
