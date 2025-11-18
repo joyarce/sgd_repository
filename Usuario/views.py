@@ -830,30 +830,6 @@ def nuevo_requerimiento(request, proyecto_id):
                             );
                         """, [req_id, request.user.id, "Requerimiento creado."])
 
-                        # =====================================================
-                        # 3) CREACIÓN DE CARPETAS EN GCS
-                        # =====================================================
-                        cursor.execute("""
-                            SELECT 
-                                CDT.nombre AS categoria, 
-                                TDT.nombre AS tipo
-                            FROM tipo_documentos_tecnicos TDT
-                            JOIN categoria_documentos_tecnicos CDT ON CDT.id = TDT.categoria_id
-                            WHERE TDT.id = %s
-                        """, [doc_id])
-
-                        row = cursor.fetchone()
-                        categoria_nom = clean(row[0])
-                        tipo_nom = clean(row[1])
-
-                        # RUTA BASE
-                        base_path = (
-                            f"DocumentosProyectos/{cliente_nom}/{proyecto_nom}/"
-                            f"Documentos_Tecnicos/{categoria_nom}/{tipo_nom}/RQ-{req_id}/"
-                        )
-
-                        bucket.blob(base_path).upload_from_string("")
-                        bucket.blob(f"{base_path}Plantilla/").upload_from_string("")
 
                         # =====================================================
                         # 4) ASIGNACIONES DE ROLES
@@ -1009,29 +985,31 @@ def editar_requerimiento(request, requerimiento_id):
     })
 
 
-
 @login_required
 def eliminar_requerimiento(request, requerimiento_id):
     """
     Elimina un requerimiento técnico completo:
     - Archivos individuales según signed_url
-    - Carpeta completa del requerimiento
-    - Registros en BD
+    - Carpeta completa del requerimiento RQ-XX
+    - Si no quedan más requerimientos del mismo tipo → borrar carpeta TIPO
+    - Registros en BD, incluyendo documentos_generados
     """
     if request.method != "POST":
         return redirect("usuario:lista_proyectos")
 
     try:
+        # ============================================================
+        # 1️⃣ OBTENER DATOS PRINCIPALES DEL RQ (cliente, proyecto, tipo)
+        # ============================================================
         with connection.cursor() as cursor:
-
-            # 1️⃣ Obtener proyecto + datos de ruta
             cursor.execute("""
                 SELECT 
                     P.id AS proyecto_id,
                     P.nombre AS proyecto,
                     CL.nombre AS cliente,
                     CDT.nombre AS categoria,
-                    TDT.nombre AS tipo
+                    TDT.nombre AS tipo,
+                    R.tipo_documento_id
                 FROM requerimiento_documento_tecnico R
                 JOIN proyectos P ON R.proyecto_id = P.id
                 JOIN contratos C ON P.contrato_id = C.id
@@ -1042,23 +1020,36 @@ def eliminar_requerimiento(request, requerimiento_id):
             """, [requerimiento_id])
 
             row = cursor.fetchone()
-            if not row:
-                messages.error(request, "❌ Requerimiento no encontrado.")
-                return redirect("usuario:lista_proyectos")
 
-            proyecto_id, proyecto, cliente, categoria, tipo = row
+        if not row:
+            messages.error(request, "❌ Requerimiento no encontrado.")
+            return redirect("usuario:lista_proyectos")
 
-            cliente = clean(cliente)
-            proyecto = clean(proyecto)
-            categoria = clean(categoria)
-            tipo = clean(tipo)
+        proyecto_id, proyecto, cliente, categoria, tipo, tipo_documento_id = row
 
-            carpeta_base = (
-                f"DocumentosProyectos/{cliente}/{proyecto}/"
-                f"Documentos_Tecnicos/{categoria}/{tipo}/RQ-{requerimiento_id}/"
-            )
+        # Limpieza estética
+        cliente = clean(cliente)
+        proyecto = clean(proyecto)
+        categoria = clean(categoria)
+        tipo = clean(tipo)
 
-            # 2️⃣ Obtener TODOS los signed_url asociados
+        # ================================
+        # Carpetas involucradas
+        # ================================
+        carpeta_rq = (
+            f"DocumentosProyectos/{cliente}/{proyecto}/"
+            f"Documentos_Tecnicos/{categoria}/{tipo}/RQ-{requerimiento_id}/"
+        )
+
+        carpeta_tipo = (
+            f"DocumentosProyectos/{cliente}/{proyecto}/"
+            f"Documentos_Tecnicos/{categoria}/{tipo}/"
+        )
+
+        # ============================================================
+        # 2️⃣ OBTENER TODOS LOS SIGNED_URL ASOCIADOS AL RQ
+        # ============================================================
+        with connection.cursor() as cursor:
             cursor.execute("""
                 SELECT signed_url
                 FROM version_documento_tecnico
@@ -1067,7 +1058,9 @@ def eliminar_requerimiento(request, requerimiento_id):
 
             signed_urls = [r[0] for r in cursor.fetchall() if r[0]]
 
-        # 3️⃣ Eliminar blobs específicos
+        # ============================================================
+        # 3️⃣ ELIMINAR ARCHIVOS INDIVIDUALES EN GCS
+        # ============================================================
         storage_client = storage.Client()
         bucket = storage_client.bucket(settings.GCP_BUCKET_NAME)
 
@@ -1078,24 +1071,64 @@ def eliminar_requerimiento(request, requerimiento_id):
                 if blob.exists():
                     blob.delete()
 
-        # 4️⃣ Eliminar carpeta completa
-        blobs = list(bucket.list_blobs(prefix=carpeta_base))
-        for blob in blobs:
+        # ============================================================
+        # 4️⃣ ELIMINAR CARPETA COMPLETA RQ-XX/
+        # ============================================================
+        for blob in bucket.list_blobs(prefix=carpeta_rq):
             blob.delete()
 
-        # 5️⃣ Eliminar BD (cascada)
+        # ============================================================
+        # 5️⃣ VERIFICAR SI QUEDAN OTROS RQ DEL MISMO TIPO
+        # ============================================================
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM requerimiento_documento_tecnico
+                WHERE proyecto_id = %s
+                  AND tipo_documento_id = %s
+                  AND id <> %s
+            """, [proyecto_id, tipo_documento_id, requerimiento_id])
+
+            otros_reqs = cursor.fetchone()[0]
+
+        if otros_reqs == 0:
+            # No quedan más → eliminar carpeta del tipo completo
+            for blob in bucket.list_blobs(prefix=carpeta_tipo):
+                blob.delete()
+        else:
+            print(f"📁 Carpeta {carpeta_tipo} NO se elimina — existen otros requerimientos del mismo tipo.")
+
+        # ============================================================
+        # 🆕 5.2 ELIMINAR DOCUMENTOS GENERADOS ASOCIADOS A ESTE RQ
+        # ============================================================
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                DELETE FROM documentos_generados
+                WHERE tipo_documento_id = %s
+                  AND proyecto_id = %s
+                  AND ruta_gcs LIKE %s
+            """, [
+                tipo_documento_id,
+                proyecto_id,
+                f"%/RQ-{requerimiento_id}/%"
+            ])
+
+        # ============================================================
+        # 6️⃣ ELIMINAR REGISTRO DEL RQ (cascada para otras tablas)
+        # ============================================================
         with connection.cursor() as cursor:
             cursor.execute("""
                 DELETE FROM requerimiento_documento_tecnico WHERE id = %s
             """, [requerimiento_id])
 
-        messages.success(request, "🗑️ Requerimiento eliminado completamente (BD + GCS).")
+        messages.success(request, "🗑️ Requerimiento eliminado correctamente (BD + GCS).")
         return redirect("usuario:detalle_proyecto", proyecto_id=proyecto_id)
 
     except Exception as e:
-        print("⚠️ Error:", e)
+        print("⚠️ ERROR:", e)
         messages.error(request, f"Error al eliminar requerimiento: {e}")
         return redirect("usuario:lista_proyectos")
+
 
 
 
@@ -1395,21 +1428,7 @@ def crear_proyecto(request):
                                         VALUES (%s,%s,%s)
                                     """, [req_id, uid, rol_id])
 
-                            # === Crear carpetas RQ-ID ===
-                            cursor.execute("""
-                                SELECT cdt.nombre AS categoria, tdt.nombre AS tipo
-                                FROM tipo_documentos_tecnicos tdt
-                                JOIN categoria_documentos_tecnicos cdt ON cdt.id = tdt.categoria_id
-                                WHERE tdt.id = %s
-                            """, [doc_id])
-                            row_tipo = cursor.fetchone()
 
-                            categoria_nom = clean(row_tipo[0])
-                            tipo_nom = clean(row_tipo[1])
-
-                            rq_path = f"{doc_base}{categoria_nom}/{tipo_nom}/RQ-{req_id}/"
-                            bucket.blob(rq_path).upload_from_string("")
-                            bucket.blob(f"{rq_path}Plantilla/").upload_from_string("")
 
             except Exception:
                 import traceback

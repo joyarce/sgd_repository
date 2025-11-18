@@ -532,41 +532,59 @@ def extraer_etiquetas_word(blob):
 
 @login_required
 def portada_word_detalle(request):
-
+    # 1. Obtener TODAS las versiones
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT 
-                pu.id, 
-                pu.nombre, 
-                pu.gcs_path, 
-                pu.version, 
+                pu.id,
+                pu.nombre,
+                pu.gcs_path,
+                pu.version,
                 pu.creado_en,
                 fa.extension,
-                fa.mime_type,
-                tpu.nombre AS tipo_nombre
+                fa.mime_type
             FROM plantillas_utilidad pu
             LEFT JOIN formato_archivo fa ON fa.id = pu.formato_id
-            LEFT JOIN tipo_plantilla_utilidad tpu ON tpu.id = pu.tipo_id
             WHERE pu.tipo_id = 1 AND pu.formato_id = 1
             ORDER BY pu.id DESC
-            LIMIT 1
         """)
-        plantilla = dictfetchone(cursor)
+        versiones = dictfetchall(cursor)
+
+    plantilla = versiones[0] if versiones else None
+
     preview_url = None
     controles = []
 
+    # 2. Generar controls de contenido para la versión ACTUAL
     if plantilla:
         preview_url = generar_url_previa(plantilla["gcs_path"])
         controles = extraer_controles_contenido_desde_gcs(plantilla["gcs_path"])
 
     office_url = office_or_download_url(preview_url) if preview_url else None
 
+    # 3. Generar office_url para cada versión historica
+    versiones_procesadas = []
+    for v in versiones:
+        entrada = v.copy()
+        if v["gcs_path"]:
+            try:
+                prev = generar_url_previa(v["gcs_path"])
+                entrada["office_url"] = office_or_download_url(prev)
+            except:
+                entrada["office_url"] = None
+        else:
+            entrada["office_url"] = None
+
+        versiones_procesadas.append(entrada)
+
     return render(request, "portada_word_detalle.html", {
-            "plantilla": plantilla,
-            "preview_url": preview_url,
-            "office_url": office_url,
-            "controles": controles,
+        "plantilla": plantilla,
+        "preview_url": preview_url,
+        "office_url": office_url,
+        "controles": controles,
+        "versiones": versiones_procesadas,
     })
+
 
 
 @login_required
@@ -1355,3 +1373,67 @@ def mover_carpeta_gcs(old_prefix, new_prefix):
         b.delete()
 
     return True
+
+
+
+
+@login_required
+def eliminar_version_portada(request, version_id):
+
+    # 1. Buscar versión en BD
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT id, gcs_path
+            FROM plantillas_utilidad
+            WHERE id = %s
+        """, [version_id])
+        reg = dictfetchone(cursor)
+
+    if not reg:
+        messages.error(request, "Versión no encontrada.")
+        return redirect("plantillas:portada_word_detalle")
+
+    gcs_path = reg["gcs_path"]
+
+    # 2. Extraer carpeta de la versión
+    version_folder = "/".join(gcs_path.split("/")[:-1]) + "/"
+    base_folder = "/".join(version_folder.split("/")[:-2]) + "/"
+
+    client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
+    bucket = client.bucket(settings.GCP_BUCKET_NAME)
+
+    # 3. Borrar todos los archivos dentro de la carpeta de versión
+    blobs_version = list(bucket.list_blobs(prefix=version_folder))
+    for b in blobs_version:
+        try:
+            b.delete()
+        except:
+            pass
+
+    # 4. Eliminar registro en BD
+    with connection.cursor() as cursor:
+        cursor.execute("DELETE FROM plantillas_utilidad WHERE id = %s", [version_id])
+
+    # 5. Revisar si quedan otras versiones
+    blobs_base = list(bucket.list_blobs(prefix=base_folder))
+
+    carpetas_versiones = set()
+    for b in blobs_base:
+        partes = b.name.split("/")
+        for p in partes:
+            if p.startswith("V") and "." in p:
+                carpetas_versiones.add(p)
+
+    # 6. Si no hay versiones → eliminar carpeta base
+    if len(carpetas_versiones) == 0:
+        for b in blobs_base:
+            try:
+                b.delete()
+            except:
+                pass
+        
+        messages.success(request, "✔ Se eliminaron todas las versiones de la portada.")
+        return redirect("plantillas:portada_word_detalle")
+
+    messages.success(request, "✔ Versión eliminada.")
+    return redirect("plantillas:portada_word_detalle")

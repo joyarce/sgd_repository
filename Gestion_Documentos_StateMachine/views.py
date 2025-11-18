@@ -18,6 +18,8 @@ from decimal import Decimal
 import json
 import mimetypes
 import re
+from django.db import transaction
+
 
 def clean(x):
     if not x:
@@ -348,12 +350,13 @@ class VersionManager:
 
 
 
+
 @login_required
 def detalle_documento(request, requerimiento_id):
     mensaje = ""
 
     # ============================================================
-    #                OBTENER DATOS PRINCIPALES DEL DOC
+    #   OBTENER DATOS PRINCIPALES
     # ============================================================
     with connection.cursor() as cursor:
         cursor.execute("""
@@ -393,7 +396,7 @@ def detalle_documento(request, requerimiento_id):
         return redirect("documentos:lista_documentos_asignados")
 
     # ============================================================
-    #                       HISTORIAL ESTADOS
+    #   HISTORIAL DE ESTADOS
     # ============================================================
     with connection.cursor() as cursor:
         cursor.execute("""
@@ -415,7 +418,7 @@ def detalle_documento(request, requerimiento_id):
         ]
 
     # ============================================================
-    #                      HISTORIAL VERSIONES
+    #   HISTORIAL VERSIONES
     # ============================================================
     with connection.cursor() as cursor:
         cursor.execute("""
@@ -439,7 +442,7 @@ def detalle_documento(request, requerimiento_id):
         ]
 
     # ============================================================
-    #                      MÁQUINA DE ESTADOS
+    #   MÁQUINA DE ESTADOS
     # ============================================================
     estado_inicial = documento["estado_actual"] or "Pendiente de Inicio"
     rol_id = documento.get("rol_id") or 0
@@ -452,23 +455,18 @@ def detalle_documento(request, requerimiento_id):
     historial_simulador = request.session.get("historial_simulador", [])
 
     # ============================================================
-    #                              POST
+    #   POST: PROCESAR EVENTOS
     # ============================================================
     if request.method == "POST":
+
         evento = request.POST.get("evento")
         comentario = request.POST.get("comentario", "").strip()
         archivo = request.FILES.get("archivo")
 
         eventos_con_comentario = ["rechazar_revision", "rechazar_aprobacion"]
+        eventos_con_archivo = ["enviar_revision", "reenviar_revision", "rechazar_revision", "rechazar_aprobacion"]
 
-        eventos_con_archivo = [
-            "enviar_revision",
-            "reenviar_revision",
-            "rechazar_revision",
-            "rechazar_aprobacion"
-        ]
-
-        # VALIDACIONES
+        # --- VALIDACIONES ---
         if evento in eventos_con_comentario and not comentario:
             mensaje = f"❌ Debes ingresar un comentario para ejecutar '{evento}'."
 
@@ -480,106 +478,132 @@ def detalle_documento(request, requerimiento_id):
 
         else:
             try:
-                # Ejecutar transición
-                getattr(machine, evento)()
-                nuevo_estado = machine.current_state.name
-                documento["estado_actual"] = nuevo_estado
+                with transaction.atomic():
 
-                with connection.cursor() as cursor:
-                    # Registrar log de estado
-                    cursor.execute("""
-                        INSERT INTO public.log_estado_requerimiento_documento
-                            (requerimiento_id, estado_destino_id, usuario_id, fecha_cambio, observaciones)
-                        SELECT %s, id, %s, NOW(), %s
-                        FROM public.estado_documento
-                        WHERE nombre = %s
-                    """, [
-                        requerimiento_id,
-                        request.user.id,
-                        comentario or f"Evento: {evento}",
-                        nuevo_estado
-                    ])
+                    with connection.cursor() as cursor:
 
-                    # ============================================
-                    #   REGISTRAR NUEVA VERSIÓN (si corresponde)
-                    # ============================================
-                    if machine.evento_genera_version(evento):
-                        vm = VersionManager(
-                            requerimiento_id=requerimiento_id,
-                            cursor=cursor
-                        )
+                        # Ejecutar transición de estado
+                        getattr(machine, evento)()
+                        nuevo_estado = machine.current_state.name
 
-                        nueva_version = vm.registrar_version(
-                            evento,
-                            nuevo_estado,
-                            request.user.id,
-                            comentario or f"Evento: {evento}"
-                        )
+                        resultado = None
 
-                        # =============================================
-                        #         SUBIR ARCHIVO SI CORRESPONDE
-                        # =============================================
-                        if evento in eventos_con_archivo and archivo:
-
-                            cursor.execute("""
-                                SELECT 
-                                    P.nombre AS proyecto,
-                                    CL.nombre AS cliente,
-                                    CDT.nombre AS categoria,
-                                    TDT.nombre AS tipo
-                                FROM requerimiento_documento_tecnico R
-                                JOIN proyectos P ON R.proyecto_id = P.id
-                                JOIN contratos C ON P.contrato_id = C.id
-                                JOIN clientes CL ON C.cliente_id = CL.id
-                                JOIN tipo_documentos_tecnicos TDT ON R.tipo_documento_id = TDT.id
-                                JOIN categoria_documentos_tecnicos CDT ON TDT.categoria_id = CDT.id
-                                WHERE R.id = %s
-                            """, [requerimiento_id])
-
-                            proyecto, cliente, categoria, tipo = cursor.fetchone()
-
-
-
-                            cliente = clean(cliente)
-                            proyecto = clean(proyecto)
-                            categoria = clean(categoria)
-                            tipo = clean(tipo)
-                            nombre_archivo = clean(archivo.name)
-
-                            ruta_final = (
-                                f"DocumentosProyectos/{cliente}/{proyecto}/"
-                                f"Documentos_Tecnicos/{categoria}/{tipo}/RQ-{requerimiento_id}/"
-                                f"{nueva_version}/{nombre_archivo}"
-                            )
-
+                        # ======================================================
+                        #   SI ES iniciar_elaboracion → CREAR TODO
+                        # ======================================================
+                        if evento == "iniciar_elaboracion":
 
                             from google.cloud import storage
-                            import mimetypes
-
                             storage_client = storage.Client()
                             bucket = storage_client.bucket("sgdmtso_jova")
 
-                            mime_type, _ = mimetypes.guess_type(nombre_archivo)
-
-                            blob = bucket.blob(ruta_final)
-                            blob.upload_from_file(
-                                archivo.file,
-                                content_type=mime_type or "application/octet-stream"
+                            resultado = inicializar_plantillas_requerimiento(
+                                cursor=cursor,
+                                bucket=bucket,
+                                requerimiento_id=requerimiento_id
                             )
 
-                            signed_url = blob.generate_signed_url(
-                                version="v4",
-                                expiration=timedelta(days=7)
+                        # ======================================================
+                        #   REGISTRAR LOG DE ESTADO
+                        # ======================================================
+                        cursor.execute("""
+                            INSERT INTO public.log_estado_requerimiento_documento
+                                (requerimiento_id, estado_destino_id, usuario_id, fecha_cambio, observaciones)
+                            SELECT %s, id, %s, NOW(), %s
+                            FROM public.estado_documento
+                            WHERE nombre = %s
+                        """, [
+                            requerimiento_id,
+                            request.user.id,
+                            comentario or f"Evento: {evento}",
+                            nuevo_estado
+                        ])
+
+                        # ======================================================
+                        #   VERSIONAMIENTO
+                        # ======================================================
+                        if machine.evento_genera_version(evento):
+
+                            vm = VersionManager(
+                                requerimiento_id=requerimiento_id,
+                                cursor=cursor
                             )
 
-                            cursor.execute("""
-                                UPDATE version_documento_tecnico
-                                SET signed_url = %s
-                                WHERE requerimiento_documento_id = %s
-                                AND version = %s
-                            """, [signed_url, requerimiento_id, nueva_version])
+                            nueva_version = vm.registrar_version(
+                                evento,
+                                nuevo_estado,
+                                request.user.id,
+                                comentario or f"Evento: {evento}"
+                            )
 
-                # Añadir al historial local
+                            # ==================================================
+                            #   SUBIR ARCHIVO (si corresponde)
+                            # ==================================================
+                            if evento in eventos_con_archivo and archivo:
+
+                                cursor.execute("""
+                                    SELECT 
+                                        P.nombre AS proyecto,
+                                        CL.nombre AS cliente,
+                                        CDT.nombre AS categoria,
+                                        TDT.nombre AS tipo
+                                    FROM requerimiento_documento_tecnico R
+                                    JOIN proyectos P ON R.proyecto_id = P.id
+                                    JOIN contratos C ON P.contrato_id = C.id
+                                    JOIN clientes CL ON C.cliente_id = CL.id
+                                    JOIN tipo_documentos_tecnicos TDT ON R.tipo_documento_id = TDT.id
+                                    JOIN categoria_documentos_tecnicos CDT ON TDT.categoria_id = CDT.id
+                                    WHERE R.id = %s
+                                """, [requerimiento_id])
+
+                                proyecto, cliente, categoria, tipo = cursor.fetchone()
+
+                                cliente = clean(cliente)
+                                proyecto = clean(proyecto)
+                                categoria = clean(categoria)
+                                tipo = clean(tipo)
+                                nombre_archivo = clean(archivo.name)
+
+                                ruta_final = (
+                                    f"DocumentosProyectos/{cliente}/{proyecto}/"
+                                    f"Documentos_Tecnicos/{categoria}/{tipo}/RQ-{requerimiento_id}/"
+                                    f"{nueva_version}/{nombre_archivo}"
+                                )
+
+                                from google.cloud import storage
+                                storage_client = storage.Client()
+                                bucket = storage_client.bucket("sgdmtso_jova")
+
+                                mime_type, _ = mimetypes.guess_type(nombre_archivo)
+                                blob = bucket.blob(ruta_final)
+
+                                blob.upload_from_file(
+                                    archivo.file,
+                                    content_type=mime_type or "application/octet-stream"
+                                )
+
+                                signed_url = blob.generate_signed_url(
+                                    version="v4",
+                                    expiration=timedelta(days=7)
+                                )
+
+                                cursor.execute("""
+                                    UPDATE version_documento_tecnico
+                                    SET signed_url = %s
+                                    WHERE requerimiento_documento_id = %s
+                                    AND version = %s
+                                """, [signed_url, requerimiento_id, nueva_version])
+
+                # ======================================================
+                #   PONER WARNINGS (fuera del cursor, dentro de atomic)
+                # ======================================================
+                if resultado:
+                    for w in resultado["warnings"]:
+                        messages.warning(request, w)
+
+                # ======================================================
+                #   AGREGAR AL HISTORIAL LOCAL
+                # ======================================================
                 historial_simulador.append({
                     "evento": evento,
                     "nuevo_estado": nuevo_estado,
@@ -596,7 +620,7 @@ def detalle_documento(request, requerimiento_id):
                 mensaje = f"❌ Error al ejecutar '{evento}': {str(e)}"
 
     # ============================================================
-    #           GENERAR LISTA DE EVENTOS DISPONIBLES
+    #   EVENTOS DISPONIBLES
     # ============================================================
     todos_eventos = [
         "iniciar_elaboracion",
@@ -609,12 +633,8 @@ def detalle_documento(request, requerimiento_id):
         "reenviar_revision"
     ]
 
-    eventos_disponibles = [
-        ev for ev in todos_eventos if machine.puede_transicionar(ev)
-    ]
-
-    eventos_formateados = [ev.replace("_", " ").capitalize() for ev in eventos_disponibles]
-    eventos_tuplas = list(zip(eventos_disponibles, eventos_formateados))
+    eventos_disponibles = [ev for ev in todos_eventos if machine.puede_transicionar(ev)]
+    eventos_tuplas = list(zip(eventos_disponibles, [ev.replace("_", " ").capitalize() for ev in eventos_disponibles]))
 
     colores_estado = {
         "Pendiente de Inicio": "secondary",
@@ -644,8 +664,6 @@ def detalle_documento(request, requerimiento_id):
     }
 
     return render(request, "detalle_documento.html", context)
-
-
 
 
 
@@ -749,3 +767,152 @@ def subir_archivo_documento(request, requerimiento_id):
         messages.error(request, f"⚠ Error al subir archivo: {e}")
 
     return redirect("documentos:detalle_documento", requerimiento_id=requerimiento_id)
+
+
+
+
+def inicializar_plantillas_requerimiento(cursor, bucket, requerimiento_id):
+    """
+    Crea estructura RQ-ID/Plantilla/, copia portada y cuerpo (si existen),
+    registra documentos_generados solo de lo que exista,
+    y devuelve un resumen.
+    """
+
+    # ==========================================================
+    # Obtener datos necesarios del requerimiento
+    # ==========================================================
+    cursor.execute("""
+        SELECT 
+            P.nombre AS proyecto,
+            CL.nombre AS cliente,
+            CDT.nombre AS categoria,
+            TDT.nombre AS tipo,
+            TDT.id    AS tipo_id,
+            F.id      AS formato_id
+        FROM requerimiento_documento_tecnico R
+        JOIN proyectos P ON R.proyecto_id = P.id
+        JOIN contratos C ON P.contrato_id = C.id
+        JOIN clientes CL ON C.cliente_id = CL.id
+        JOIN tipo_documentos_tecnicos TDT ON R.tipo_documento_id = TDT.id
+        JOIN categoria_documentos_tecnicos CDT ON TDT.categoria_id = CDT.id
+        JOIN formato_archivo F ON TDT.formato_id = F.id
+        WHERE R.id = %s
+    """, [requerimiento_id])
+
+    proyecto, cliente, categoria, tipo, tipo_id, formato_id = cursor.fetchone()
+
+    cliente = clean(cliente)
+    proyecto = clean(proyecto)
+    categoria = clean(categoria)
+    tipo = clean(tipo)
+
+    # Ruta base
+    base = (
+        f"DocumentosProyectos/{cliente}/{proyecto}/"
+        f"Documentos_Tecnicos/{categoria}/{tipo}/RQ-{requerimiento_id}/Plantilla/"
+    )
+
+    # Crear carpetas base
+    bucket.blob(base).upload_from_string("")
+    bucket.blob(base + "Portada/").upload_from_string("")
+    bucket.blob(base + "Portada/Word/").upload_from_string("")
+    bucket.blob(base + "Cuerpo/").upload_from_string("")
+
+    resumen = {
+        "cuerpo": None,
+        "portada": None,
+        "doc_cuerpo_id": None,
+        "doc_portada_id": None,
+        "warnings": []
+    }
+
+    # ==========================================================
+    # Obtener plantilla del CUERPO
+    # ==========================================================
+    cursor.execute("""
+        SELECT gcs_path, id
+        FROM plantillas_documentos_tecnicos
+        WHERE tipo_documento_id = %s
+        ORDER BY version DESC
+        LIMIT 1
+    """, [tipo_id])
+
+    row = cursor.fetchone()
+    if not row:
+        resumen["warnings"].append("⚠ No existe plantilla de cuerpo para este tipo de documento.")
+    else:
+        cuerpo_path, cuerpo_id = row
+
+        cuerpo_blob = bucket.blob(cuerpo_path)
+        cuerpo_bytes = cuerpo_blob.download_as_bytes()
+
+        cuerpo_nombre = cuerpo_path.split("/")[-1]
+        new_cuerpo_path = base + "Cuerpo/" + cuerpo_nombre
+
+        bucket.blob(new_cuerpo_path).upload_from_string(
+            cuerpo_bytes,
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+
+        resumen["cuerpo"] = new_cuerpo_path
+
+        # Registrar documento generado
+        cursor.execute("""
+            INSERT INTO documentos_generados
+                (proyecto_id, tipo_documento_id, ruta_gcs, fecha_generacion,
+                 plantilla_documento_tecnico_id, formato_id, plantilla_utilidad_id)
+            SELECT proyecto_id, tipo_documento_id, %s, NOW(),
+                   %s, %s, NULL
+            FROM requerimiento_documento_tecnico
+            WHERE id = %s
+            RETURNING id
+        """, [new_cuerpo_path, cuerpo_id, formato_id, requerimiento_id])
+
+        resumen["doc_cuerpo_id"] = cursor.fetchone()[0]
+
+    # ==========================================================
+    # Obtener PORTADA según formato+tipo
+    # ==========================================================
+    cursor.execute("""
+        SELECT gcs_path, id
+        FROM plantillas_utilidad
+        WHERE formato_id = %s AND tipo_id = 1   -- 1 = Portada
+        ORDER BY version DESC
+        LIMIT 1
+    """, [formato_id])
+
+    row = cursor.fetchone()
+    if not row:
+        resumen["warnings"].append("⚠ No existe portada para este tipo de documento y formato.")
+    else:
+        portada_path, portada_id = row
+
+        portada_blob = bucket.blob(portada_path)
+        portada_bytes = portada_blob.download_as_bytes()
+
+        portada_nombre = portada_path.split("/")[-1]
+        new_portada_path = base + "Portada/Word/" + portada_nombre
+
+        bucket.blob(new_portada_path).upload_from_string(
+            portada_bytes,
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+
+        resumen["portada"] = new_portada_path
+
+        # Registrar documento generado
+        cursor.execute("""
+            INSERT INTO documentos_generados
+                (proyecto_id, tipo_documento_id, ruta_gcs, fecha_generacion,
+                 plantilla_documento_tecnico_id, formato_id, plantilla_utilidad_id)
+            SELECT proyecto_id, tipo_documento_id, %s, NOW(),
+                   NULL, %s, %s
+            FROM requerimiento_documento_tecnico
+            WHERE id = %s
+            RETURNING id
+        """, [new_portada_path, formato_id, portada_id, requerimiento_id])
+
+        resumen["doc_portada_id"] = cursor.fetchone()[0]
+
+    return resumen
+
