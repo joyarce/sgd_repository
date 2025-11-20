@@ -138,7 +138,7 @@ def validar_orden_ajax(request):
 
         try:
             wb = openpyxl.load_workbook(archivo, data_only=True)
-            numero_orden = None
+            numero_servicio = None
 
             for defined_name in wb.defined_names.values():
                 if defined_name.name.lower() == "numordenservicio":
@@ -148,11 +148,11 @@ def validar_orden_ajax(request):
                     valor_celda = sheet[cell_coord].value
 
                     if valor_celda is not None:
-                        numero_orden = str(valor_celda).strip()
+                        numero_servicio = str(valor_celda).strip()
                         break
 
-            if numero_orden:
-                return JsonResponse({"numero_orden": numero_orden})
+            if numero_servicio:
+                return JsonResponse({"numero_servicio": numero_servicio})
             else:
                 return JsonResponse({"error": "No se encontró el nombre definido 'NumOrdenServicio' o la celda está vacía."}, status=400)
 
@@ -188,7 +188,7 @@ def detalle_proyecto(request, proyecto_id):
         P.id AS proyecto_id,
         P.nombre AS nombre_proyecto,
         P.descripcion AS proyecto_descripcion,
-        P.numero_orden,
+        P.numero_servicio,
         P.fecha_recepcion_evaluacion,
         P.fecha_inicio_planificacion,
         P.fecha_inicio_ejecucion,
@@ -814,7 +814,7 @@ def nuevo_requerimiento(request, proyecto_id):
                         ])
 
                         req_id = cursor.fetchone()[0]
-
+                        generar_codigo_documento(cursor, req_id)
                         # =====================================================
                         # 2) LOG INICIAL
                         # =====================================================
@@ -1227,7 +1227,7 @@ def crear_proyecto(request):
                     "fecha_inicio_ejecucion": request.POST.get("fecha_inicio_ejecucion"),
                     "fecha_cierre_proyecto": request.POST.get("fecha_cierre_proyecto"),
                     "administrador": request.POST.get("administrador"),
-                    "numero_orden": request.POST.get("numero_orden"),
+                    "numero_servicio": request.POST.get("numero_servicio"),
                     "maquinas_ids": request.POST.getlist("maquinas_ids[]"),
                 }
 
@@ -1367,7 +1367,7 @@ def crear_proyecto(request):
                         # === Insertar proyecto ===
                         cursor.execute("""
                             INSERT INTO proyectos(
-                                nombre, descripcion, abreviatura, numero_orden,
+                                nombre, descripcion, abreviatura, numero_servicio,
                                 contrato_id, faena_id, administrador_id,
                                 fecha_recepcion_evaluacion, fecha_inicio_planificacion,
                                 fecha_inicio_ejecucion, fecha_cierre_proyecto, path_gcs
@@ -1376,7 +1376,7 @@ def crear_proyecto(request):
                             RETURNING id;
                         """, [
                             resumen.get("nombre"), resumen.get("descripcion"), resumen.get("abreviatura"),
-                            resumen.get("numero_orden"), contrato_id, faena_id,
+                            resumen.get("numero_servicio"), contrato_id, faena_id,
                             resumen.get("administrador"),
                             resumen.get("fecha_recepcion_evaluacion"),
                             resumen.get("fecha_inicio_planificacion"),
@@ -1413,7 +1413,7 @@ def crear_proyecto(request):
                                 roles.get("restriccion", "no_restringido")
                             ])
                             req_id = cursor.fetchone()[0]
-
+                            generar_codigo_documento(cursor, req_id)
                             # === Insertar roles ===
                             for rol, usuarios_ids in {
                                 "redactor": roles.get("redactores", []),
@@ -1724,7 +1724,7 @@ def obtener_numordenservicio(path_archivo):
     return ""
 
 @login_required
-def leer_excel_numero_orden(request):
+def leer_excel_numero_servicio(request):
     if request.method == "POST" and request.FILES.get("archivo"):
         archivo = request.FILES["archivo"]
         import tempfile, os
@@ -1734,10 +1734,10 @@ def leer_excel_numero_orden(request):
             for chunk in archivo.chunks():
                 tmp.write(chunk)
             tmp_path = tmp.name
-        numero_orden = obtener_numordenservicio(tmp_path)
+        numero_servicio = obtener_numordenservicio(tmp_path)
         os.remove(tmp_path)
-        return JsonResponse({"numero_orden": numero_orden})
-    return JsonResponse({"numero_orden": ""})
+        return JsonResponse({"numero_servicio": numero_servicio})
+    return JsonResponse({"numero_servicio": ""})
 
 
 @login_required
@@ -1858,7 +1858,7 @@ def editar_proyecto(request, proyecto_id):
         P.id AS proyecto_id,
         P.nombre AS nombre_proyecto,
         P.descripcion AS proyecto_descripcion,
-        P.numero_orden,
+        P.numero_servicio,
         P.fecha_recepcion_evaluacion,
         P.fecha_cierre_proyecto,
         U.id AS administrador_id,
@@ -1946,4 +1946,43 @@ def editar_maquina(request, maquina_id):
 
     return render(request, 'editar_maquina.html', {'maquina': maquina})
 
+
+def generar_codigo_documento(cursor, req_id):
+    """
+    Genera código_documento usando abreviaturas, no nombres.
+    Formato:
+    CLIENTE_ABREV - PROYECTO_ABREV - CATEG_ABREV - TIPO_ABREV - RQ<ID>
+    """
+
+    cursor.execute("""
+        SELECT 
+            CL.abreviatura AS cliente_abrev,
+            P.abreviatura AS proyecto_abrev,
+            CDT.abreviatura AS categoria_abrev,
+            TDT.abreviatura AS tipo_abrev
+        FROM requerimiento_documento_tecnico R
+        JOIN proyectos P ON R.proyecto_id = P.id
+        JOIN contratos C ON P.contrato_id = C.id
+        JOIN clientes CL ON C.cliente_id = CL.id
+        JOIN tipo_documentos_tecnicos TDT ON R.tipo_documento_id = TDT.id
+        JOIN categoria_documentos_tecnicos CDT ON TDT.categoria_id = CDT.id
+        WHERE R.id = %s
+    """, [req_id])
+
+    row = cursor.fetchone()
+    cliente_abrev, proyecto_abrev, categoria_abrev, tipo_abrev = row
+
+    # Si alguna abreviatura viene NULL → reemplazar
+    cliente_abrev = cliente_abrev or "CLT"
+    proyecto_abrev = proyecto_abrev or "PRY"
+    categoria_abrev = categoria_abrev or "CAT"
+    tipo_abrev = tipo_abrev or "DOC"
+
+    codigo = f"{cliente_abrev}-{proyecto_abrev}-{categoria_abrev}-{tipo_abrev}-RQ{req_id}"
+
+    cursor.execute("""
+        UPDATE requerimiento_documento_tecnico
+        SET codigo_documento = %s
+        WHERE id = %s
+    """, [codigo, req_id])
 

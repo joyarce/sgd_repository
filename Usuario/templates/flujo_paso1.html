@@ -44,11 +44,11 @@
   {% endfor %}
 </select>
 
-<label>Número de Orden:</label>
-<input type="text" id="numero_orden_input" name="numero_orden" class="readonly-campo" placeholder="Número de orden" readonly>
-<input type="hidden" id="numero_orden_hidden" name="numero_orden">
+<label>Número de servicio:</label>
+<input type="text" id="numero_servicio_input" name="numero_servicio" class="readonly-campo" placeholder="Número de servicio" readonly>
+<input type="hidden" id="numero_servicio_hidden" name="numero_servicio">
 
-<small id="mensaje-ok" class="mensaje-exito" style="display:none;">Número de orden cargado correctamente.</small>
+<small id="mensaje-ok" class="mensaje-exito" style="display:none;">Número de servicio cargado correctamente.</small>
 <small id="mensaje-error-carga" class="mensaje-error" style="display:none;">Error al leer el archivo.</small>
 
 <label>Archivo Excel (para leer número de orden):</label>
@@ -142,22 +142,22 @@ archivoInput.addEventListener('change', async (event) => {
   const formData = new FormData();
   formData.append('archivo', archivo);
 
-  const inputOrden = document.getElementById('numero_orden_input');
-  const hiddenOrden = document.getElementById('numero_orden_hidden');
+  const inputOrden = document.getElementById('numero_servicio_input');
+  const hiddenOrden = document.getElementById('numero_servicio_hidden');
   const mensajeOk = document.getElementById('mensaje-ok');
   const mensajeError = document.getElementById('mensaje-error-carga');
 
   try {
-    const response = await fetch("{% url 'usuario:leer_excel_numero_orden' %}", {
+    const response = await fetch("{% url 'usuario:leer_excel_numero_servicio' %}", {
       method: 'POST',
       headers: { 'X-CSRFToken': '{{ csrf_token }}' },
       body: formData
     });
     const data = await response.json();
 
-    if (data.numero_orden) {
-      inputOrden.value = data.numero_orden;
-      hiddenOrden.value = data.numero_orden;
+    if (data.numero_servicio) {
+      inputOrden.value = data.numero_servicio;
+      hiddenOrden.value = data.numero_servicio;
       mensajeOk.style.display = 'block';
       mensajeError.style.display = 'none';
     } else {

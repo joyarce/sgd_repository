@@ -773,7 +773,7 @@ def subir_archivo_documento(request, requerimiento_id):
 
 def inicializar_plantillas_requerimiento(cursor, bucket, requerimiento_id):
     """
-    Crea estructura RQ-ID/Plantilla/, copia portada y cuerpo (si existen),
+    Crea estructura RQ-ID/Plantilla/, copia y procesa portada y cuerpo (si existen),
     registra documentos_generados solo de lo que exista,
     y devuelve un resumen.
     """
@@ -806,7 +806,7 @@ def inicializar_plantillas_requerimiento(cursor, bucket, requerimiento_id):
     categoria = clean(categoria)
     tipo = clean(tipo)
 
-    # Ruta base
+    # Ruta base del requerimiento
     base = (
         f"DocumentosProyectos/{cliente}/{proyecto}/"
         f"Documentos_Tecnicos/{categoria}/{tipo}/RQ-{requerimiento_id}/Plantilla/"
@@ -827,7 +827,7 @@ def inicializar_plantillas_requerimiento(cursor, bucket, requerimiento_id):
     }
 
     # ==========================================================
-    # Obtener plantilla del CUERPO
+    # OBTENER PLANTILLA DEL CUERPO
     # ==========================================================
     cursor.execute("""
         SELECT gcs_path, id
@@ -856,7 +856,6 @@ def inicializar_plantillas_requerimiento(cursor, bucket, requerimiento_id):
 
         resumen["cuerpo"] = new_cuerpo_path
 
-        # Registrar documento generado
         cursor.execute("""
             INSERT INTO documentos_generados
                 (proyecto_id, tipo_documento_id, ruta_gcs, fecha_generacion,
@@ -871,7 +870,7 @@ def inicializar_plantillas_requerimiento(cursor, bucket, requerimiento_id):
         resumen["doc_cuerpo_id"] = cursor.fetchone()[0]
 
     # ==========================================================
-    # Obtener PORTADA según formato+tipo
+    # OBTENER PORTADA
     # ==========================================================
     cursor.execute("""
         SELECT gcs_path, id
@@ -884,35 +883,131 @@ def inicializar_plantillas_requerimiento(cursor, bucket, requerimiento_id):
     row = cursor.fetchone()
     if not row:
         resumen["warnings"].append("⚠ No existe portada para este tipo de documento y formato.")
-    else:
-        portada_path, portada_id = row
+        return resumen
 
-        portada_blob = bucket.blob(portada_path)
-        portada_bytes = portada_blob.download_as_bytes()
+    portada_path, portada_id = row
 
-        portada_nombre = portada_path.split("/")[-1]
-        new_portada_path = base + "Portada/Word/" + portada_nombre
+    portada_blob = bucket.blob(portada_path)
+    portada_bytes = portada_blob.download_as_bytes()
 
-        bucket.blob(new_portada_path).upload_from_string(
-            portada_bytes,
-            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
+    from io import BytesIO
+    from .docx_filler import process_template_docx
 
-        resumen["portada"] = new_portada_path
+    # ==========================================================
+    # DATOS COMPLETOS DEL REQUERIMIENTO
+    # ==========================================================
+    cursor.execute("""
+        SELECT 
+            P.nombre AS proyecto,
+            CL.nombre AS cliente,
+            F.nombre AS faena,
+            C.numero_contrato,
+            P.numero_servicio,
+            U.nombre AS administrador_servicio,
+            TDT.nombre AS tipo_documento,
+            RDT.codigo_documento
+        FROM requerimiento_documento_tecnico RDT
+        JOIN proyectos P ON RDT.proyecto_id = P.id
+        JOIN contratos C ON P.contrato_id = C.id
+        JOIN clientes CL ON C.cliente_id = CL.id
+        JOIN faenas F ON P.faena_id = F.id
+        JOIN tipo_documentos_tecnicos TDT ON RDT.tipo_documento_id = TDT.id
+        LEFT JOIN usuarios U ON U.id = P.administrador_id
+        WHERE RDT.id = %s
+    """, [requerimiento_id])
 
-        # Registrar documento generado
-        cursor.execute("""
-            INSERT INTO documentos_generados
-                (proyecto_id, tipo_documento_id, ruta_gcs, fecha_generacion,
-                 plantilla_documento_tecnico_id, formato_id, plantilla_utilidad_id)
-            SELECT proyecto_id, tipo_documento_id, %s, NOW(),
-                   NULL, %s, %s
-            FROM requerimiento_documento_tecnico
-            WHERE id = %s
-            RETURNING id
-        """, [new_portada_path, formato_id, portada_id, requerimiento_id])
+    (
+        nombre_proyecto, nombre_cliente, nombre_faena,
+        numero_contrato, numero_servicio,
+        administrador_servicio, tipo_documento, codigo_documento
+    ) = cursor.fetchone()
 
-        resumen["doc_portada_id"] = cursor.fetchone()[0]
+    # ==========================================================
+    # EQUIPO DEL REQUERIMIENTO
+    # ==========================================================
+    cursor.execute("""
+        SELECT rol_id, U.nombre
+        FROM requerimiento_equipo_rol RER
+        JOIN usuarios U ON U.id = RER.usuario_id
+        WHERE requerimiento_id = %s AND activo = TRUE
+    """, [requerimiento_id])
+
+    roles_data = cursor.fetchall()
+
+    equipo = {
+        "redactores_equipo": ", ".join([r[1] for r in roles_data if r[0] == 1]),
+        "revisores_equipo":  ", ".join([r[1] for r in roles_data if r[0] == 2]),
+        "aprobadores_equipo":", ".join([r[1] for r in roles_data if r[0] == 3])
+    }
+
+    # ==========================================================
+    # HISTORIAL VERSIONES
+    # ==========================================================
+    cursor.execute("""
+        SELECT version, fecha, comentario,
+        (SELECT nombre FROM estado_documento WHERE id = estado_id)
+        FROM version_documento_tecnico
+        WHERE requerimiento_documento_id = %s
+        ORDER BY fecha ASC
+    """, [requerimiento_id])
+
+    historial = []
+    for v, fecha, comentario, estado in cursor.fetchall():
+        historial.append({
+            "h.version": v,
+            "h.estado": estado,
+            "h.fecha": fecha.strftime("%d-%m-%Y %H:%M"),
+            "h.comentario": comentario or ""
+        })
+
+    # ==========================================================
+    # DATOS PARA CONTROLES DE CONTENIDO
+    # ==========================================================
+    simple_data = {
+        "tipo_documento": tipo_documento,
+        "codigo_documento": codigo_documento,
+        "nombre_proyecto": nombre_proyecto,
+        "nombre_cliente": nombre_cliente,
+        "nombre_faena": nombre_faena,
+        "numero_contrato": numero_contrato,
+        "numero_servicio": numero_servicio,
+        "administrador_servicio": administrador_servicio
+    }
+    simple_data.update(equipo)
+
+    # ==========================================================
+    # PROCESAR DOCX
+    # ==========================================================
+    portada_final_bytes = process_template_docx(
+        template_bytes=BytesIO(portada_bytes),
+        simple_data=simple_data,
+        historial_versiones=historial
+    )
+
+    # ==========================================================
+    # SUBIR PORTADA PROCESADA
+    # ==========================================================
+    portada_nombre = portada_path.split("/")[-1]
+    new_portada_path = base + "Portada/Word/" + portada_nombre
+
+    bucket.blob(new_portada_path).upload_from_string(
+        portada_final_bytes,
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
+    resumen["portada"] = new_portada_path
+
+    cursor.execute("""
+        INSERT INTO documentos_generados
+            (proyecto_id, tipo_documento_id, ruta_gcs, fecha_generacion,
+             plantilla_documento_tecnico_id, formato_id, plantilla_utilidad_id)
+        SELECT proyecto_id, tipo_documento_id, %s, NOW(),
+               NULL, %s, %s
+        FROM requerimiento_documento_tecnico
+        WHERE id = %s
+        RETURNING id
+    """, [new_portada_path, formato_id, portada_id, requerimiento_id])
+
+    resumen["doc_portada_id"] = cursor.fetchone()[0]
 
     return resumen
-

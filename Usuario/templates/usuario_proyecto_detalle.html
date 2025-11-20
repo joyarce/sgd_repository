@@ -173,7 +173,7 @@ table tr:hover { background: #fdf2e8; }
             <a href="{% url 'usuario:editar_proyecto' proyecto.proyecto_id %}" class="edit-icon" title="Editar Proyecto">✏️</a>
         </h2>
         <div class="indicator"><span>Descripción:</span> <span>{{ proyecto.proyecto_descripcion }}</span></div>
-        <div class="indicator"><span>Número de Orden:</span> <span>{{ proyecto.numero_orden }}</span></div>
+        <div class="indicator"><span>Número de Orden:</span> <span>{{ proyecto.numero_servicio }}</span></div>
         <div class="indicator"><span>Administrador:</span> 
             <span>{{ proyecto.administrador_nombre_completo }} ({{ proyecto.administrador_email }})</span>
         </div>
