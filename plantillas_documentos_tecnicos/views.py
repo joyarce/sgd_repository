@@ -1,4 +1,5 @@
 # C:\Users\jonat\Documents\gestion_docs\plantillas_documentos_tecnicos\views.py
+
 # IMPORTS
 # ============================
 from django.http import HttpResponse, JsonResponse, Http404
@@ -13,6 +14,7 @@ import os
 import tempfile
 from zipfile import ZipFile, BadZipFile
 from datetime import timedelta
+import json
 
 from google.cloud import storage
 from openpyxl import load_workbook
@@ -169,10 +171,10 @@ def editar_categoria(request, categoria_id):
             try:
                 mover_carpeta_gcs(old_prefix, new_prefix)
 
-                # Actualizar rutas en BD
+                # Actualizar rutas en BD (nueva tabla de versiones)
                 with connection.cursor() as cursor:
                     cursor.execute("""
-                        UPDATE plantillas_documentos_tecnicos
+                        UPDATE plantilla_tipo_doc_versiones
                         SET gcs_path = REPLACE(gcs_path, %s, %s)
                         WHERE gcs_path LIKE %s
                     """, [old_prefix, new_prefix, old_prefix + "%"])
@@ -220,23 +222,37 @@ def tipo_detalle(request, tipo_id):
         if not tipo:
             return render(request, "404.html", status=404)
 
-        # Última versión (actual)
+        # Última versión (actual) desde las tablas nuevas
         cursor.execute("""
-            SELECT id, gcs_path, version, creado_en
-            FROM plantillas_documentos_tecnicos
-            WHERE tipo_documento_id = %s
-            ORDER BY id DESC LIMIT 1
+            SELECT 
+                v.id,
+                v.plantilla_id,
+                v.gcs_path,
+                v.version,
+                v.creado_en
+            FROM plantilla_tipo_doc p
+            JOIN plantilla_tipo_doc_versiones v
+                ON v.id = p.version_actual_id
+            WHERE p.tipo_documento_id = %s
+            LIMIT 1
         """, [tipo_id])
         plantilla = dictfetchone(cursor)
 
-        # Todas las versiones
-        cursor.execute("""
-            SELECT id, gcs_path, version, creado_en
-            FROM plantillas_documentos_tecnicos
-            WHERE tipo_documento_id = %s
-            ORDER BY id DESC
-        """, [tipo_id])
-        versiones = dictfetchall(cursor)
+        # Todas las versiones de esa plantilla (si existe)
+        if plantilla:
+            cursor.execute("""
+                SELECT 
+                    id,
+                    gcs_path,
+                    version,
+                    creado_en
+                FROM plantilla_tipo_doc_versiones
+                WHERE plantilla_id = %s
+                ORDER BY creado_en DESC, id DESC
+            """, [plantilla["plantilla_id"]])
+            versiones = dictfetchall(cursor)
+        else:
+            versiones = []
 
     archivo_existe = False
     preview_url = None
@@ -450,8 +466,9 @@ def crear_tipo_documento(request):
 @login_required
 def subir_plantilla(request, tipo_id):
     """
-    Versión genérica que podrías seguir usando, pero ya tienes
-    `subir_plantilla_tipo_doc`. Puedes dejar una sola en uso si quieres.
+    Versión genérica. Ahora usa las tablas:
+      - plantilla_tipo_doc
+      - plantilla_tipo_doc_versiones
     """
 
     with connection.cursor() as cursor:
@@ -463,6 +480,10 @@ def subir_plantilla(request, tipo_id):
         """, [tipo_id])
         tipo = dictfetchone(cursor)
 
+    if not tipo:
+        messages.error(request, "Tipo de documento no encontrado.")
+        return redirect("plantillas:lista_plantillas")
+
     if request.method == "POST":
 
         archivo = request.FILES.get("plantilla")
@@ -473,32 +494,75 @@ def subir_plantilla(request, tipo_id):
         categoria = clean(tipo["categoria"])
         tipo_nom = clean(tipo["nombre"])
 
-        path = f"Plantillas/Documentos_Tecnicos/{categoria}/{tipo_nom}/"
-        blob_name = f"{path}{archivo.name}"
-
+        base_path = f"Plantillas/Documentos_Tecnicos/{categoria}/{tipo_nom}/"
         client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
         bucket = client.bucket(settings.GCP_BUCKET_NAME)
-        blob = bucket.blob(blob_name)
-        blob.upload_from_file(archivo)
 
-        # Obtener última versión previa, si existe
+        # ===== 1) Buscar/crear registro maestro en plantilla_tipo_doc =====
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT version
-                FROM plantillas_documentos_tecnicos
-                WHERE tipo_documento_id = %s
-                ORDER BY id DESC LIMIT 1
+                SELECT p.id AS plantilla_id, v.version, v.gcs_path
+                FROM plantilla_tipo_doc p
+                LEFT JOIN plantilla_tipo_doc_versiones v
+                    ON v.id = p.version_actual_id
+                WHERE p.tipo_documento_id = %s
+                LIMIT 1
             """, [tipo_id])
-            row = cursor.fetchone()
+            anterior = dictfetchone(cursor)
 
-        last_version = row[0] if row else None
-        nueva_version = siguiente_version(last_version)
+        if anterior:
+            plantilla_id = anterior["plantilla_id"]
+            version_anterior = anterior["version"]
+            ruta_anterior = anterior["gcs_path"]
+            controles_antes = extraer_controles_contenido_desde_gcs(ruta_anterior) if ruta_anterior else []
+        else:
+            # crear registro maestro
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO plantilla_tipo_doc (tipo_documento_id)
+                    VALUES (%s)
+                    RETURNING id
+                """, [tipo_id])
+                plantilla_id = cursor.fetchone()[0]
+            version_anterior = None
+            controles_antes = []
 
+        # ===== 2) Guardar archivo temporal =====
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
+            for chunk in archivo.chunks():
+                tmp.write(chunk)
+            nuevo_local = tmp.name
+
+        controles_despues = extraer_controles_contenido_desde_file(nuevo_local)
+
+        # ===== 3) Calcular versión =====
+        nueva_version = versionar_plantilla(version_anterior, controles_antes, controles_despues)
+
+        # ===== 4) Crear carpeta V{version} =====
+        version_folder = f"{base_path}V{nueva_version}/"
+        bucket.blob(version_folder).upload_from_string("")
+
+        filename = archivo.name
+        blob_name = f"{version_folder}{filename}"
+
+        blob = bucket.blob(blob_name)
+        blob.upload_from_filename(nuevo_local)
+
+        # ===== 5) Insertar nueva versión en plantilla_tipo_doc_versiones =====
         with connection.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO plantillas_documentos_tecnicos (tipo_documento_id, gcs_path, version)
-                VALUES (%s, %s, %s)
-            """, [tipo_id, blob_name, nueva_version])
+                INSERT INTO plantilla_tipo_doc_versiones (plantilla_id, version, gcs_path, controles)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id
+            """, [plantilla_id, nueva_version, blob_name, json.dumps(controles_despues)])
+            version_id = cursor.fetchone()[0]
+
+            cursor.execute("""
+                UPDATE plantilla_tipo_doc
+                SET version_actual_id = %s,
+                    actualizado_en = NOW()
+                WHERE id = %s
+            """, [version_id, plantilla_id])
 
         messages.success(request, f"✔ Plantilla subida (versión {nueva_version}).")
         return redirect("plantillas:detalle_tipo", tipo_id=tipo_id)
@@ -532,37 +596,52 @@ def extraer_etiquetas_word(blob):
 
 @login_required
 def portada_word_detalle(request):
-    # 1. Obtener TODAS las versiones
+    """
+    Usa plantilla_portada + plantilla_portada_versiones
+    y filtra por ruta que contenga /Portada/Word/
+    """
     with connection.cursor() as cursor:
+        # Versión actual (Word)
         cursor.execute("""
             SELECT 
-                pu.id,
-                pu.nombre,
-                pu.gcs_path,
-                pu.version,
-                pu.creado_en,
-                fa.extension,
-                fa.mime_type
-            FROM plantillas_utilidad pu
-            LEFT JOIN formato_archivo fa ON fa.id = pu.formato_id
-            WHERE pu.tipo_id = 1 AND pu.formato_id = 1
-            ORDER BY pu.id DESC
+                pv.id,
+                pv.plantilla_id,
+                pv.gcs_path,
+                pv.version,
+                pv.creado_en
+            FROM plantilla_portada p
+            JOIN plantilla_portada_versiones pv
+                ON pv.id = p.version_actual_id
+            WHERE p.utilidad_id = 1
+              AND pv.gcs_path LIKE 'Plantillas/Utilidad/Portada/Word/%'
+            ORDER BY pv.creado_en DESC, pv.id DESC
+            LIMIT 1
         """)
-        versiones = dictfetchall(cursor)
+        plantilla = dictfetchone(cursor)
 
-    plantilla = versiones[0] if versiones else None
+        versiones = []
+        if plantilla:
+            cursor.execute("""
+                SELECT 
+                    id,
+                    gcs_path,
+                    version,
+                    creado_en
+                FROM plantilla_portada_versiones
+                WHERE plantilla_id = %s
+                ORDER BY creado_en DESC, id DESC
+            """, [plantilla["plantilla_id"]])
+            versiones = dictfetchall(cursor)
 
     preview_url = None
     controles = []
 
-    # 2. Generar controls de contenido para la versión ACTUAL
     if plantilla:
         preview_url = generar_url_previa(plantilla["gcs_path"])
         controles = extraer_controles_contenido_desde_gcs(plantilla["gcs_path"])
 
     office_url = office_or_download_url(preview_url) if preview_url else None
 
-    # 3. Generar office_url para cada versión historica
     versiones_procesadas = []
     for v in versiones:
         entrada = v.copy()
@@ -574,7 +653,6 @@ def portada_word_detalle(request):
                 entrada["office_url"] = None
         else:
             entrada["office_url"] = None
-
         versiones_procesadas.append(entrada)
 
     return render(request, "portada_word_detalle.html", {
@@ -584,7 +662,6 @@ def portada_word_detalle(request):
         "controles": controles,
         "versiones": versiones_procesadas,
     })
-
 
 
 @login_required
@@ -601,14 +678,22 @@ def subir_portada_word(request):
         bucket = client.bucket(settings.GCP_BUCKET_NAME)
 
         # ===========================
-        # 1) Buscar portada existente
+        # 1) Buscar/crear portada (utilidad_id=1) asociada a Word
         # ===========================
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT id, gcs_path, version
-                FROM plantillas_utilidad
-                WHERE tipo_id = 1 AND formato_id = 1
-                ORDER BY id DESC
+                SELECT 
+                    p.id AS plantilla_id,
+                    pv.id AS version_id,
+                    pv.gcs_path,
+                    pv.version
+                FROM plantilla_portada p
+                LEFT JOIN plantilla_portada_versiones pv
+                    ON pv.id = p.version_actual_id
+                WHERE p.utilidad_id = 1
+                  AND (pv.gcs_path LIKE 'Plantillas/Utilidad/Portada/Word/%'
+                       OR pv.gcs_path IS NULL)
+                ORDER BY p.id
                 LIMIT 1
             """)
             existente = dictfetchone(cursor)
@@ -616,10 +701,20 @@ def subir_portada_word(request):
         controles_antes = []
         version_anterior = None
 
-        if existente:
+        if existente and existente.get("version") is not None:
+            plantilla_id = existente["plantilla_id"]
             version_anterior = existente["version"]
-            # extraer controles anteriores
-            controles_antes = extraer_controles_contenido_desde_gcs(existente["gcs_path"])
+            if existente["gcs_path"]:
+                controles_antes = extraer_controles_contenido_desde_gcs(existente["gcs_path"])
+        else:
+            # Crear registro maestro para utilidad Portada (id=1)
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO plantilla_portada (utilidad_id)
+                    VALUES (1)
+                    RETURNING id
+                """)
+                plantilla_id = cursor.fetchone()[0]
 
         # ===========================
         # 2) Guardar archivo temporal
@@ -631,7 +726,6 @@ def subir_portada_word(request):
 
         controles_despues = extraer_controles_contenido_desde_file(nuevo_path_local)
 
-
         # ===========================
         # 3) Calcular nueva versión
         # ===========================
@@ -642,7 +736,7 @@ def subir_portada_word(request):
         # ===========================
         base_path = "Plantillas/Utilidad/Portada/Word/"
         version_folder = f"{base_path}V{nueva_version}/"
-        bucket.blob(version_folder).upload_from_string("")  # crea carpeta vacía
+        bucket.blob(version_folder).upload_from_string("")
 
         # ===========================
         # 5) Nombre final del archivo
@@ -657,30 +751,27 @@ def subir_portada_word(request):
         blob.upload_from_filename(nuevo_path_local)
 
         # ===========================
-        # 7) Insertar o actualizar BD
+        # 7) Insertar nueva versión en plantilla_portada_versiones
         # ===========================
-        if existente:
-            with connection.cursor() as cursor:
-                cursor.execute("""
-                    UPDATE plantillas_utilidad
-                    SET gcs_path = %s,
-                        version = %s,
-                        creado_en = NOW()
-                    WHERE id = %s
-                """, [blob_name, nueva_version, existente["id"]])
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO plantilla_portada_versiones (plantilla_id, version, gcs_path, controles)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id
+            """, [plantilla_id, nueva_version, blob_name, json.dumps(controles_despues)])
+            version_id = cursor.fetchone()[0]
 
-        else:
-            with connection.cursor() as cursor:
-                cursor.execute("""
-                    INSERT INTO plantillas_utilidad (tipo_id, formato_id, nombre, gcs_path, version)
-                    VALUES (1, 1, 'Portada Word', %s, %s)
-                """, [blob_name, nueva_version])
+            cursor.execute("""
+                UPDATE plantilla_portada
+                SET version_actual_id = %s,
+                    actualizado_en = NOW()
+                WHERE id = %s
+            """, [version_id, plantilla_id])
 
         messages.success(request, f"✔ Portada Word actualizada (versión {nueva_version})")
         return redirect("plantillas:portada_word_detalle")
 
     return render(request, "subir_portada_word.html")
-
 
 
 # =============================================================================
@@ -689,34 +780,34 @@ def subir_portada_word(request):
 
 @login_required
 def portada_excel_detalle(request):
-
+    """
+    Usa plantilla_portada + plantilla_portada_versiones,
+    filtrando por rutas con /Portada/Excel/
+    """
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT 
-                pu.id,
-                pu.nombre,
-                pu.gcs_path,
-                pu.version,
-                pu.creado_en,
-                fa.extension,
-                fa.mime_type,
-                tpu.nombre AS tipo_nombre
-            FROM plantillas_utilidad pu
-            LEFT JOIN formato_archivo fa ON fa.id = pu.formato_id
-            LEFT JOIN tipo_plantilla_utilidad tpu ON tpu.id = pu.tipo_id
-            WHERE pu.tipo_id = 1 AND pu.formato_id = 2
-            ORDER BY pu.id DESC
+                pv.id,
+                pv.plantilla_id,
+                pv.gcs_path,
+                pv.version,
+                pv.creado_en
+            FROM plantilla_portada p
+            JOIN plantilla_portada_versiones pv
+                ON pv.id = p.version_actual_id
+            WHERE p.utilidad_id = 1
+              AND pv.gcs_path LIKE 'Plantillas/Utilidad/Portada/Excel/%'
+            ORDER BY pv.creado_en DESC, pv.id DESC
             LIMIT 1
         """)
         plantilla = dictfetchone(cursor)
 
-    etiquetas = []
+    etiquetas = []  # Por ahora, sin análisis de etiquetas en Excel
 
     return render(request, "portada_excel_detalle.html", {
         "plantilla": plantilla,
         "etiquetas": etiquetas,
     })
-
 
 
 @login_required
@@ -729,47 +820,65 @@ def subir_portada_excel(request):
             messages.error(request, "Debes seleccionar un archivo Excel.")
             return redirect(request.path)
 
-        path = "Plantillas/Utilidad/Portada/Excel/"
-        blob_name = f"{path}{archivo.name}"
-
         client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
         bucket = client.bucket(settings.GCP_BUCKET_NAME)
-        blob = bucket.blob(blob_name)
-        blob.upload_from_file(archivo)
 
-        # Buscar si ya existe una portada Excel
+        # Buscar/crear portada Excel (utilidad_id=1, ruta Excel)
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT id, version
-                FROM plantillas_utilidad
-                WHERE tipo_id = 1 AND formato_id = 2
-                ORDER BY id DESC
+                SELECT 
+                    p.id AS plantilla_id,
+                    pv.id AS version_id,
+                    pv.gcs_path,
+                    pv.version
+                FROM plantilla_portada p
+                LEFT JOIN plantilla_portada_versiones pv
+                    ON pv.id = p.version_actual_id
+                WHERE p.utilidad_id = 1
+                  AND (pv.gcs_path LIKE 'Plantillas/Utilidad/Portada/Excel/%'
+                       OR pv.gcs_path IS NULL)
+                ORDER BY p.id
                 LIMIT 1
             """)
             existente = dictfetchone(cursor)
 
-        if existente:
-            nuevo_id = existente["id"]
-            nueva_version = siguiente_version(existente["version"])
-
-            with connection.cursor() as cursor:
-                cursor.execute("""
-                    UPDATE plantillas_utilidad
-                    SET gcs_path = %s,
-                        version = %s,
-                        creado_en = NOW()
-                    WHERE id = %s
-                """, [blob_name, nueva_version, nuevo_id])
-
+        if existente and existente.get("version") is not None:
+            plantilla_id = existente["plantilla_id"]
+            version_anterior = existente["version"]
         else:
-            nueva_version = "1.0"
             with connection.cursor() as cursor:
                 cursor.execute("""
-                INSERT INTO plantillas_utilidad (tipo_id, formato_id, nombre, gcs_path, version)
-                VALUES (1, 2, 'Portada Excel', %s, %s)
+                    INSERT INTO plantilla_portada (utilidad_id)
+                    VALUES (1)
                     RETURNING id
-                """, [blob_name, nueva_version])
-                nuevo_id = cursor.fetchone()[0]
+                """)
+                plantilla_id = cursor.fetchone()[0]
+            version_anterior = None
+
+        nueva_version = siguiente_version(version_anterior)
+
+        base_path = "Plantillas/Utilidad/Portada/Excel/"
+        version_folder = f"{base_path}V{nueva_version}/"
+        bucket.blob(version_folder).upload_from_string("")
+
+        blob_name = f"{version_folder}{archivo.name}"
+        blob = bucket.blob(blob_name)
+        blob.upload_from_file(archivo)
+
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO plantilla_portada_versiones (plantilla_id, version, gcs_path)
+                VALUES (%s, %s, %s)
+                RETURNING id
+            """, [plantilla_id, nueva_version, blob_name])
+            version_id = cursor.fetchone()[0]
+
+            cursor.execute("""
+                UPDATE plantilla_portada
+                SET version_actual_id = %s,
+                    actualizado_en = NOW()
+                WHERE id = %s
+            """, [version_id, plantilla_id])
 
         messages.success(request, f"✔ Portada Excel subida/actualizada (versión {nueva_version}).")
         return redirect("plantillas:portada_excel_detalle")
@@ -800,84 +909,6 @@ def generar_url_previa(blob_path):
         return None
 
 
-# =============================================================================
-# EXTRACCIÓN DE CONTROLES (w:sdt) DESDE GCS
-# =============================================================================
-
-NS = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
-
-
-def extraer_controles_contenido_desde_gcs(gcs_path):
-    """
-    Descarga un DOCX desde GCS y extrae TODOS los controles de contenido (w:sdt),
-    devolviendo una lista única ordenada.
-    """
-
-    client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
-    bucket = client.bucket(settings.GCP_BUCKET_NAME)
-    blob = bucket.blob(gcs_path)
-
-    # 1) Validar que el archivo exista en GCS
-    if not blob.exists():
-        return []
-
-    # 2) Descargar archivo temporal
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
-        blob.download_to_filename(tmp.name)
-        local_path = tmp.name
-
-    # 3) Validar tamaño mínimo (archivo vacío → plantilla rota o no subida)
-    if os.path.getsize(local_path) < 50:     # puedes bajar o subir el umbral
-        return []
-
-    controles = set()
-
-    # 4) Intentar abrir como zip
-    try:
-        with ZipFile(local_path, "r") as docx:
-
-            # --- Cuerpo ---
-            if "word/document.xml" in docx.namelist():
-                xml_doc = etree.fromstring(docx.read("word/document.xml"))
-                for sdt in xml_doc.xpath("//w:sdt", namespaces=NS):
-                    alias = _extraer_alias(sdt)
-                    if alias:
-                        controles.add(alias)
-
-            # --- Encabezados ---
-            for name in docx.namelist():
-                if name.startswith("word/header") and name.endswith(".xml"):
-                    xml_h = etree.fromstring(docx.read(name))
-                    for sdt in xml_h.xpath("//w:sdt", namespaces=NS):
-                        alias = _extraer_alias(sdt)
-                        if alias:
-                            controles.add(alias)
-
-            # --- Pies ---
-            for name in docx.namelist():
-                if name.startswith("word/footer") and name.endswith(".xml"):
-                    xml_f = etree.fromstring(docx.read(name))
-                    for sdt in xml_f.xpath("//w:sdt", namespaces=NS):
-                        alias = _extraer_alias(sdt)
-                        if alias:
-                            controles.add(alias)
-
-    except BadZipFile:
-        # archivo no válido → devolver vacío en vez de crashear
-        return []
-    except Exception:
-        return []
-
-    return sorted(controles)
-
-
-
-def _extraer_alias(sdt_node):
-    """Obtiene el alias de un control de contenido w:sdt."""
-    alias_node = sdt_node.xpath(".//w:alias", namespaces=NS)
-    if alias_node:
-        return alias_node[0].get("{%s}val" % NS["w"])
-    return None
 
 
 # =============================================================================
@@ -914,28 +945,36 @@ def subir_plantilla_tipo_doc(request, tipo_id):
         # Base path sin versión
         base_path = f"Plantillas/Documentos_Tecnicos/{categoria}/{tipo_nom}/"
 
-        # ===== 2) Buscar plantilla anterior =====
+        # ===== 2) Buscar registro maestro y versión anterior =====
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT id, gcs_path, version
-                FROM plantillas_documentos_tecnicos
-                WHERE tipo_documento_id = %s
-                ORDER BY id DESC LIMIT 1
+                SELECT 
+                    p.id AS plantilla_id,
+                    v.version,
+                    v.gcs_path
+                FROM plantilla_tipo_doc p
+                LEFT JOIN plantilla_tipo_doc_versiones v
+                    ON v.id = p.version_actual_id
+                WHERE p.tipo_documento_id = %s
+                LIMIT 1
             """, [tipo_id])
             anterior = dictfetchone(cursor)
 
-        # ==== protección contra NULL en gcs_path ====
-        controles_antes = []
-        version_anterior = None
-
         if anterior:
+            plantilla_id = anterior["plantilla_id"]
             version_anterior = anterior["version"]
             ruta_anterior = anterior["gcs_path"]
-
-            if ruta_anterior:
-                controles_antes = extraer_controles_contenido_desde_gcs(ruta_anterior)
-            else:
-                controles_antes = []
+            controles_antes = extraer_controles_contenido_desde_gcs(ruta_anterior) if ruta_anterior else []
+        else:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO plantilla_tipo_doc (tipo_documento_id)
+                    VALUES (%s)
+                    RETURNING id
+                """, [tipo_id])
+                plantilla_id = cursor.fetchone()[0]
+            version_anterior = None
+            controles_antes = []
 
         # ===== 3) Guardar archivo temporal =====
         with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
@@ -943,7 +982,6 @@ def subir_plantilla_tipo_doc(request, tipo_id):
                 tmp.write(chunk)
             nuevo_local = tmp.name
 
-        # Controles nuevos
         controles_despues = extraer_controles_contenido_desde_file(nuevo_local)
 
         # ===== 4) Calcular versión =====
@@ -966,9 +1004,18 @@ def subir_plantilla_tipo_doc(request, tipo_id):
         # ===== 7) Insertar registro de versión =====
         with connection.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO plantillas_documentos_tecnicos (tipo_documento_id, gcs_path, version)
-                VALUES (%s, %s, %s)
-            """, [tipo_id, blob_name, nueva_version])
+                INSERT INTO plantilla_tipo_doc_versiones (plantilla_id, version, gcs_path, controles)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id
+            """, [plantilla_id, nueva_version, blob_name, json.dumps(controles_despues)])
+            version_id = cursor.fetchone()[0]
+
+            cursor.execute("""
+                UPDATE plantilla_tipo_doc
+                SET version_actual_id = %s,
+                    actualizado_en = NOW()
+                WHERE id = %s
+            """, [version_id, plantilla_id])
 
         messages.success(
             request,
@@ -978,8 +1025,6 @@ def subir_plantilla_tipo_doc(request, tipo_id):
         return redirect("plantillas:detalle_tipo", tipo_id=tipo_id)
 
     return render(request, "subir_plantilla_tipo_doc.html", {"tipo": tipo})
-
-
 
 
 @login_required
@@ -1001,20 +1046,18 @@ def descargar_gcs(request, path):
     return response
 
 
-
 def office_or_download_url(preview_url):
     """
     Intenta abrir en Office Web Apps.
-    Si Office no puede abrirlo (Chrome, Brave, etc), Office lo descarga.
+    Si Office no puede abrirlo, Office lo descarga.
     """
     encoded = urllib.parse.quote(preview_url, safe='')
     return f"https://view.officeapps.live.com/op/view.aspx?src={encoded}"
 
 
-
 def versionar_plantilla(version_actual, controles_antes, controles_despues):
     """
-    Sistema de versionado corregido:
+    Sistema de versionado:
     - La primera versión SIEMPRE es 1.0
     - Cambio mayor si los controles cambian
     - Cambio menor si solo cambia el archivo sin afectar controles
@@ -1044,9 +1087,6 @@ def versionar_plantilla(version_actual, controles_antes, controles_despues):
     return f"{major}.{minor + 1}"
 
 
-
-
-
 def crear_carpeta_version(bucket, base_path, version):
     """
     Crea la carpeta de versión, ej:
@@ -1058,40 +1098,6 @@ def crear_carpeta_version(bucket, base_path, version):
     bucket.blob(version_path).upload_from_string("")  # crear carpeta vacía
     return version_path
 
-
-
-def extraer_controles_contenido_desde_file(local_path):
-    controles = set()
-    try:
-        with ZipFile(local_path, "r") as docx:
-
-            if "word/document.xml" in docx.namelist():
-                xml_doc = etree.fromstring(docx.read("word/document.xml"))
-                for sdt in xml_doc.xpath("//w:sdt", namespaces=NS):
-                    alias = _extraer_alias(sdt)
-                    if alias:
-                        controles.add(alias)
-
-            for name in docx.namelist():
-                if name.startswith("word/header") and name.endswith(".xml"):
-                    xml_h = etree.fromstring(docx.read(name))
-                    for sdt in xml_h.xpath("//w:sdt", namespaces=NS):
-                        alias = _extraer_alias(sdt)
-                        if alias:
-                            controles.add(alias)
-
-            for name in docx.namelist():
-                if name.startswith("word/footer") and name.endswith(".xml"):
-                    xml_f = etree.fromstring(docx.read(name))
-                    for sdt in xml_f.xpath("//w:sdt", namespaces=NS):
-                        alias = _extraer_alias(sdt)
-                        if alias:
-                            controles.add(alias)
-
-    except:
-        return []
-
-    return sorted(controles)
 
 
 
@@ -1138,18 +1144,28 @@ def eliminar_plantilla(request, tipo_id):
             pass  # si ya no existe, continuar
 
     # ============================
-    # 4) Eliminar registros en BD
+    # 4) Eliminar registros en BD (nuevas tablas)
     # ============================
     with connection.cursor() as cursor:
+        # Primero eliminar versiones
         cursor.execute("""
-            DELETE FROM plantillas_documentos_tecnicos
+            DELETE FROM plantilla_tipo_doc_versiones
+            WHERE plantilla_id IN (
+                SELECT id
+                FROM plantilla_tipo_doc
+                WHERE tipo_documento_id = %s
+            )
+        """, [tipo_id])
+
+        # Luego eliminar registros maestro
+        cursor.execute("""
+            DELETE FROM plantilla_tipo_doc
             WHERE tipo_documento_id = %s
         """, [tipo_id])
 
-    messages.success(request, "🗑️ Todas las versiones de la plantilla fueron eliminadas correctamente.")
+    messages.success(request, "️Todas las versiones de la plantilla fueron eliminadas correctamente.")
 
     return redirect("plantillas:detalle_tipo", tipo_id=tipo_id)
-
 
 
 @login_required
@@ -1233,9 +1249,13 @@ def editar_tipo_documento(request, tipo_id):
 
                 with connection.cursor() as cursor:
                     cursor.execute("""
-                        UPDATE plantillas_documentos_tecnicos
+                        UPDATE plantilla_tipo_doc_versiones
                         SET gcs_path = REPLACE(gcs_path, %s, %s)
-                        WHERE tipo_documento_id = %s
+                        WHERE plantilla_id IN (
+                            SELECT id
+                            FROM plantilla_tipo_doc
+                            WHERE tipo_documento_id = %s
+                        )
                           AND gcs_path LIKE %s
                     """, [old_prefix, new_prefix, tipo_id, old_prefix + "%"])
             except Exception as e:
@@ -1264,16 +1284,21 @@ def editar_tipo_documento(request, tipo_id):
     })
 
 
-
 @login_required
 def eliminar_version(request, version_id):
 
-    # 1) Obtener registro de la versión
+    # 1) Obtener registro de la versión (nueva tabla)
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT id, tipo_documento_id, gcs_path
-            FROM plantillas_documentos_tecnicos
-            WHERE id = %s
+            SELECT 
+                v.id,
+                v.gcs_path,
+                v.plantilla_id,
+                p.tipo_documento_id,
+                p.version_actual_id
+            FROM plantilla_tipo_doc_versiones v
+            JOIN plantilla_tipo_doc p ON p.id = v.plantilla_id
+            WHERE v.id = %s
         """, [version_id])
         reg = dictfetchone(cursor)
 
@@ -1283,14 +1308,12 @@ def eliminar_version(request, version_id):
 
     tipo_id = reg["tipo_documento_id"]
     gcs_path = reg["gcs_path"]
+    plantilla_id = reg["plantilla_id"]
+    version_actual_id = reg["version_actual_id"]
 
     # 2) Extraer carpetas desde gcs_path
-    # Ej: Plantillas/.../TipoDocumento/V1.0/archivo.docx
     version_folder = "/".join(gcs_path.split("/")[:-1]) + "/"
-    # Ej: Plantillas/.../TipoDocumento/V1.0/
-
     base_folder = "/".join(version_folder.split("/")[:-2]) + "/"
-    # Ej: Plantillas/.../TipoDocumento/
 
     client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
     bucket = client.bucket(settings.GCP_BUCKET_NAME)
@@ -1305,7 +1328,25 @@ def eliminar_version(request, version_id):
 
     # 4) Eliminar registro en BD
     with connection.cursor() as cursor:
-        cursor.execute("DELETE FROM plantillas_documentos_tecnicos WHERE id = %s", [version_id])
+        cursor.execute("DELETE FROM plantilla_tipo_doc_versiones WHERE id = %s", [version_id])
+
+        # Si era la versión actual, buscar nueva versión actual
+        if version_id == version_actual_id:
+            cursor.execute("""
+                SELECT id
+                FROM plantilla_tipo_doc_versiones
+                WHERE plantilla_id = %s
+                ORDER BY version DESC, creado_en DESC, id DESC
+                LIMIT 1
+            """, [plantilla_id])
+            nueva = cursor.fetchone()
+            nuevo_version_actual_id = nueva[0] if nueva else None
+
+            cursor.execute("""
+                UPDATE plantilla_tipo_doc
+                SET version_actual_id = %s
+                WHERE id = %s
+            """, [nuevo_version_actual_id, plantilla_id])
 
     # 5) Verificar si quedan otras versiones dentro de la carpeta base del tipo
     blobs_base = list(bucket.list_blobs(prefix=base_folder))
@@ -1327,14 +1368,12 @@ def eliminar_version(request, version_id):
             except:
                 pass
 
-        # Lista ahora vacía
         messages.success(request, "✔ Versión y carpeta del tipo eliminadas completamente.")
         return redirect("plantillas:lista_plantillas")
 
     # Si sí quedan versiones → dejar carpeta base intacta
     messages.success(request, "✔ Versión eliminada exitosamente.")
     return redirect("plantillas:detalle_tipo", tipo_id=tipo_id)
-
 
 
 def renombrar_archivo_gcs(ruta_actual, nueva_ruta):
@@ -1354,10 +1393,6 @@ def mover_carpeta_gcs(old_prefix, new_prefix):
     """
     Mueve TODOS los blobs cuya ruta comienza con old_prefix a new_prefix,
     manteniendo el resto del path igual.
-
-    Ej:
-      old_prefix = Plantillas/Documentos_Tecnicos/MECANICA/INFORME/
-      new_prefix = Plantillas/Documentos_Tecnicos/MECÁNICA_NUEVA/INFORME_NUEVO/
     """
     client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
     bucket = client.bucket(settings.GCP_BUCKET_NAME)
@@ -1367,25 +1402,27 @@ def mover_carpeta_gcs(old_prefix, new_prefix):
     for b in blobs:
         old_name = b.name
         new_name = old_name.replace(old_prefix, new_prefix, 1)
-        # copiar en la nueva ruta
         bucket.copy_blob(b, bucket, new_name)
-        # eliminar antiguo
         b.delete()
 
     return True
 
 
-
-
 @login_required
 def eliminar_version_portada(request, version_id):
 
-    # 1. Buscar versión en BD
+    # 1. Buscar versión en BD nueva
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT id, gcs_path
-            FROM plantillas_utilidad
-            WHERE id = %s
+            SELECT 
+                v.id,
+                v.gcs_path,
+                v.plantilla_id,
+                p.utilidad_id,
+                p.version_actual_id
+            FROM plantilla_portada_versiones v
+            JOIN plantilla_portada p ON p.id = v.plantilla_id
+            WHERE v.id = %s
         """, [version_id])
         reg = dictfetchone(cursor)
 
@@ -1394,6 +1431,8 @@ def eliminar_version_portada(request, version_id):
         return redirect("plantillas:portada_word_detalle")
 
     gcs_path = reg["gcs_path"]
+    plantilla_id = reg["plantilla_id"]
+    version_actual_id = reg["version_actual_id"]
 
     # 2. Extraer carpeta de la versión
     version_folder = "/".join(gcs_path.split("/")[:-1]) + "/"
@@ -1412,7 +1451,25 @@ def eliminar_version_portada(request, version_id):
 
     # 4. Eliminar registro en BD
     with connection.cursor() as cursor:
-        cursor.execute("DELETE FROM plantillas_utilidad WHERE id = %s", [version_id])
+        cursor.execute("DELETE FROM plantilla_portada_versiones WHERE id = %s", [version_id])
+
+        # Si era la versión actual, recalcular
+        if version_id == version_actual_id:
+            cursor.execute("""
+                SELECT id
+                FROM plantilla_portada_versiones
+                WHERE plantilla_id = %s
+                ORDER BY version DESC, creado_en DESC, id DESC
+                LIMIT 1
+            """, [plantilla_id])
+            nueva = cursor.fetchone()
+            nuevo_version_actual_id = nueva[0] if nueva else None
+
+            cursor.execute("""
+                UPDATE plantilla_portada
+                SET version_actual_id = %s
+                WHERE id = %s
+            """, [nuevo_version_actual_id, plantilla_id])
 
     # 5. Revisar si quedan otras versiones
     blobs_base = list(bucket.list_blobs(prefix=base_folder))
@@ -1437,3 +1494,229 @@ def eliminar_version_portada(request, version_id):
 
     messages.success(request, "✔ Versión eliminada.")
     return redirect("plantillas:portada_word_detalle")
+
+
+# =============================================================================
+# EXTRACCIÓN DE CONTROLES (w:sdt) DESDE DOCX (GCS / LOCAL) - MODO PRO
+# =============================================================================
+
+NS = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+
+
+def _normalizar_control(nombre):
+    """
+    Normaliza el nombre de un control para comparar de forma robusta:
+    - quita acentos
+    - quita espacios raros
+    - reemplaza espacios por _
+    - pasa a minúsculas
+    - deja solo [a-z0-9_.], el resto lo convierte en _
+    - colapsa múltiples _ consecutivos
+    """
+    if not nombre:
+        return None
+
+    # A texto simple
+    s = str(nombre)
+
+    # Quitar espacios no separables y similares
+    s = s.replace("\u00A0", " ")
+
+    # Quitar acentos
+    s = unidecode(s)
+
+    # Strip y espacios → _
+    s = s.strip()
+    s = re.sub(r"\s+", "_", s)
+
+    # Minúsculas para comparar sin importar mayúsculas
+    s = s.lower()
+
+    # Solo letras, números, punto y guión bajo
+    s = re.sub(r"[^a-z0-9_.]+", "_", s)
+
+    # Colapsar guiones bajos
+    s = re.sub(r"_+", "_", s)
+
+    return s.strip("_") or None
+
+
+def _extraer_tag_o_alias(sdt_node):
+    """
+    Devuelve primero el TAG del control si existe (w:tag @w:val),
+    si no, devuelve el ALIAS (w:alias @w:val).
+    """
+    # 1) TAG
+    tag_node = sdt_node.xpath(".//w:tag", namespaces=NS)
+    if tag_node:
+        val = tag_node[0].get(f"{{{NS['w']}}}val")
+        if val and str(val).strip():
+            return str(val).strip()
+
+    # 2) ALIAS
+    alias_node = sdt_node.xpath(".//w:alias", namespaces=NS)
+    if alias_node:
+        val = alias_node[0].get(f"{{{NS['w']}}}val")
+        if val and str(val).strip():
+            return str(val).strip()
+
+    return None
+
+
+def _agregar_control(mapa_controles, nombre_crudo):
+    """
+    Usa _normalizar_control para evitar duplicados "visualmente iguales".
+    mapa_controles: dict { nombre_normalizado: nombre_original_primero }
+    """
+    norm = _normalizar_control(nombre_crudo)
+    if not norm:
+        return
+
+    if norm not in mapa_controles:
+        mapa_controles[norm] = nombre_crudo.strip()
+
+
+def _procesar_docx_zip(docx, mapa_controles, log_prefix=""):
+    """
+    Procesa un ZipFile de DOCX y agrega controles encontrados en:
+    - word/document.xml
+    - word/header*.xml
+    - word/footer*.xml
+    """
+    print(f"{log_prefix}📂 Archivos dentro del DOCX:")
+    for n in docx.namelist():
+        print(f"{log_prefix}   - {n}")
+
+    # ---------------------------
+    # Helper interno para escanear una parte
+    # ---------------------------
+    def _scan_part(part_name, etiqueta="document"):
+        try:
+            xml = etree.fromstring(docx.read(part_name))
+            encontrados = xml.xpath("//w:sdt", namespaces=NS)
+            print(f"{log_prefix}🧩 Controles en {etiqueta} ({part_name}): {len(encontrados)}")
+            for sdt in encontrados:
+                raw = _extraer_tag_o_alias(sdt)
+                print(f"{log_prefix}   - raw: {raw}")
+                if raw:
+                    _agregar_control(mapa_controles, raw)
+        except Exception as e:
+            print(f"{log_prefix}⚠ Error procesando parte {part_name}: {e}")
+
+    # ---------------------------
+    # DOCUMENTO PRINCIPAL
+    # ---------------------------
+    if "word/document.xml" in docx.namelist():
+        _scan_part("word/document.xml", etiqueta="document.xml")
+
+    # ---------------------------
+    # ENCABEZADOS
+    # ---------------------------
+    for name in docx.namelist():
+        if name.startswith("word/header") and name.endswith(".xml"):
+            _scan_part(name, etiqueta="header")
+
+    # ---------------------------
+    # PIE DE PÁGINA
+    # ---------------------------
+    for name in docx.namelist():
+        if name.startswith("word/footer") and name.endswith(".xml"):
+            _scan_part(name, etiqueta="footer")
+
+
+def extraer_controles_contenido_desde_gcs(gcs_path):
+    """
+    Descarga un DOCX desde GCS y extrae todos los controles de contenido (w:sdt).
+    Devuelve lista ordenada (sin duplicados, con preferencia TAG > ALIAS).
+    """
+
+    print("\n" + "=" * 80)
+    print("🔍 EXTRAER CONTROLES DESDE GCS (MODO PRO)")
+    print("📌 Ruta solicitada:", gcs_path)
+
+    client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
+    bucket = client.bucket(settings.GCP_BUCKET_NAME)
+    blob = bucket.blob(gcs_path)
+
+    exists = blob.exists()
+    print("📦 ¿Blob existe en GCS?:", exists)
+
+    if not exists:
+        print("❌ Blob no existe en GCS")
+        print("=" * 80)
+        return []
+
+    # Descargar archivo local temp
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
+        blob.download_to_filename(tmp.name)
+        local_path = tmp.name
+
+    print("📄 Archivo DOCX descargado en:", local_path)
+    size = os.path.getsize(local_path)
+    print("📏 Tamaño del archivo:", size, "bytes")
+
+    if size < 50:
+        print("⚠ Archivo demasiado pequeño, parece inválido")
+        print("=" * 80)
+        return []
+
+    mapa_controles = {}
+
+    try:
+        with ZipFile(local_path, "r") as docx:
+            _procesar_docx_zip(docx, mapa_controles, log_prefix="[GCS] ")
+    except Exception as e:
+        print("⚠ ERROR procesando DOCX (GCS):", e)
+        import traceback
+        traceback.print_exc()
+
+    # Convertir dict a lista de nombres "bonitos"
+    controles = sorted(mapa_controles.values(), key=lambda x: x.lower())
+
+    print("[GCS] 🔎 Total controles detectados (normalizados):", len(mapa_controles))
+    print("[GCS] ➡ Controles devueltos:", controles)
+    print("=" * 80 + "\n")
+
+    return controles
+
+
+def extraer_controles_contenido_desde_file(local_path):
+    """
+    Extrae controles desde un DOCX local (ruta en disco).
+    Misma lógica que extraer_controles_contenido_desde_gcs, pero sin GCS.
+    """
+
+    print("\n" + "=" * 80)
+    print("🔍 EXTRAER CONTROLES DESDE ARCHIVO LOCAL (MODO PRO)")
+    print("📄 Archivo:", local_path)
+
+    if not os.path.exists(local_path):
+        print("❌ El archivo local no existe.")
+        print("=" * 80)
+        return []
+
+    size = os.path.getsize(local_path)
+    print("📏 Tamaño:", size, "bytes")
+
+    if size < 50:
+        print("⚠ Archivo demasiado pequeño, parece inválido")
+        print("=" * 80)
+        return []
+
+    mapa_controles = {}
+
+    try:
+        with ZipFile(local_path, "r") as docx:
+            _procesar_docx_zip(docx, mapa_controles, log_prefix="[LOCAL] ")
+    except Exception as e:
+        print("⚠ ERROR leyendo archivo local:", e)
+        import traceback
+        traceback.print_exc()
+
+    controles = sorted(mapa_controles.values(), key=lambda x: x.lower())
+
+    print("[LOCAL] 🔎 Total controles detectados (normalizados):", len(mapa_controles))
+    print("[LOCAL] ➡ Controles devueltos:", controles)
+    print("=" * 80 + "\n")
+
+    return controles

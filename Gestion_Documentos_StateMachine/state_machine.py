@@ -1,4 +1,4 @@
-# state_machine.py C:\Users\jonat\Documents\gestion_docs\Gestion_Documentos_StateMachine\state_machine.py
+# state_machine.py
 from statemachine import StateMachine, State
 
 class DocumentoTecnicoStateMachine(StateMachine):
@@ -36,9 +36,19 @@ class DocumentoTecnicoStateMachine(StateMachine):
         """
         Devuelve True si el rol puede ejecutar la transición desde el estado actual.
         """
+
+        estado = self.current_state.name
+
+        # =======================================================
+        # 🔥 REGLA ESPECIAL (la que tú pediste):
+        # Cuando el estado es APROBADO solo permitir PUBLICAR
+        # =======================================================
+        if estado == "Aprobado. Listo para Publicación":
+            return evento == "publicar_documento" and self.rol_id == 3
+
         # Permisos por rol (1=Redactor, 2=Revisor, 3=Aprobador)
         permisos = {
-            "iniciar_elaboracion": [1],   # El redactor puede comenzar
+            "iniciar_elaboracion": [1],
             "enviar_revision": [1],
             "reenviar_revision": [1],
             "revision_aceptada": [2],
@@ -48,13 +58,18 @@ class DocumentoTecnicoStateMachine(StateMachine):
             "publicar_documento": [3],
         }
 
+        # Evento inexistente
         if evento not in permisos:
             return False
 
-        # Restricciones específicas por rol y estado
-        estado = self.current_state.name
+        # Rol no autorizado
+        if self.rol_id not in permisos[evento]:
+            return False
 
-        if self.rol_id == 1:  # Redactor
+        # --- LÓGICA POR ESTADO ---
+
+        # 1. Redactor
+        if self.rol_id == 1:
             if estado == "Pendiente de Inicio":
                 return evento == "iniciar_elaboracion"
             if estado == "En Elaboración":
@@ -62,11 +77,18 @@ class DocumentoTecnicoStateMachine(StateMachine):
             if estado == "Re Estructuración":
                 return evento == "reenviar_revision"
 
-        if self.rol_id not in permisos[evento]:
-            return False
+        # 2. Revisor
+        if self.rol_id == 2:
+            if estado == "En Revisión":
+                return evento in ["revision_aceptada", "rechazar_revision"]
 
-        # Evitar publicar si no está aprobado
-        if evento == "publicar_documento" and self.current_state != self.aprobado:
+        # 3. Aprobador
+        if self.rol_id == 3:
+            if estado == "En Aprobación":
+                return evento in ["aprobar_documento", "rechazar_aprobacion"]
+
+        # Evitar publicar fuera de APROBADO
+        if evento == "publicar_documento" and estado != "Aprobado. Listo para Publicación":
             return False
 
         return True
@@ -77,7 +99,7 @@ class DocumentoTecnicoStateMachine(StateMachine):
         Indica si la transición genera nueva versión del documento.
         """
         return evento in [
-            "iniciar_elaboracion",   # Genera versión inicial (plantilla abierta)
+            "iniciar_elaboracion",
             "enviar_revision",
             "revision_aceptada",
             "rechazar_revision",
@@ -95,31 +117,23 @@ class DocumentoTecnicoStateMachine(StateMachine):
 
         # --- 1️⃣ Redactor ---
         if self.rol_id == 1:
-            # a) Al iniciar elaboración (crear plantilla inicial)
             if estado == "Pendiente de Inicio" and evento_actual == "iniciar_elaboracion":
                 return True
-            # b) Durante la elaboración del documento
             if estado == "En Elaboración":
                 return True
-            # c) En reestructuración (tras rechazo)
             if estado == "Re Estructuración":
                 return True
-            # d) Al reenviar documento a revisión
             if evento_actual in ["enviar_revision", "reenviar_revision"]:
                 return True
 
         # --- 2️⃣ Revisor ---
         if self.rol_id == 2:
-            # Puede adjuntar documento de rechazo (por ejemplo con comentarios)
             if estado == "En Revisión" and evento_actual == "rechazar_revision":
                 return True
 
         # --- 3️⃣ Aprobador ---
         if self.rol_id == 3:
-            # Puede adjuntar archivo con observaciones en rechazo
             if estado == "En Aprobación" and evento_actual == "rechazar_aprobacion":
                 return True
 
-        # --- Por defecto, no puede subir ---
         return False
-

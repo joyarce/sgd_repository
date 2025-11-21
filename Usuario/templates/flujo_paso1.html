@@ -209,7 +209,7 @@ async function generarAbreviaturaProyecto() {
     });
 
     const data = await resp.json();
-    console.log("📦 Respuesta abreviatura:", data);
+    console.log(" Respuesta abreviatura:", data);
 
     if (data.abreviatura) {
       abreviaturaInput.value = data.abreviatura;

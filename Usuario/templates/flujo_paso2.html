@@ -22,7 +22,7 @@
   position: relative;
 }
 .readonly-abreviatura:hover::after {
-  content: "🔒";
+  content: "";
   position: absolute;
   right: 10px;
   top: 5px;
@@ -64,11 +64,11 @@
 </style>
 
 <div class="step-inner">
-  <h3>📑 Paso 2 — Cliente, Faena y Contrato</h3>
+  <h3> Paso 2 — Cliente, Faena y Contrato</h3>
 
   <div class="form-card">
 
-    <!-- 🧑‍💼 CLIENTE -->
+    <!-- ‍ CLIENTE -->
     <h4>Cliente</h4>
     <input type="text" id="cliente-lectura" value="" readonly style="width:100%; margin-bottom:10px; display:none;">
 
@@ -134,7 +134,7 @@
 
     <hr class="my-3">
 
-    <!-- 📜 CONTRATO -->
+    <!--  CONTRATO -->
     <h4>Contrato</h4>
     <label>Seleccionar Contrato Existente:</label>
     <select name="contrato_id" id="select-contrato" onchange="onContratoChange(this.value)">
@@ -400,6 +400,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<!-- 🔹 JSON seguros -->
+<!--  JSON seguros -->
 {{ contratos|json_script:"contratos-data" }}
 {{ faenas|json_script:"faenas-data" }}

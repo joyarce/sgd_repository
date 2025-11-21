@@ -364,7 +364,7 @@ def eliminar_proyecto(request, proyecto_id):
             with connection.cursor() as cursor:
                 cursor.execute("DELETE FROM proyectos WHERE id = %s", [proyecto_id])
 
-        messages.success(request, "🗑 Proyecto eliminado completamente (BD + GCS).")
+        messages.success(request, " Proyecto eliminado completamente (BD + GCS).")
         return redirect("usuario:lista_proyectos")
 
     except Exception as e:
@@ -773,7 +773,7 @@ def nuevo_requerimiento(request, proyecto_id):
 
         documentos_roles = {}
 
-        # 🔥 CAPTURAR TODA LA INFO DEL FORMULARIO
+        #  CAPTURAR TODA LA INFO DEL FORMULARIO
         for doc_id in documentos_ids:
             documentos_roles[doc_id] = {
                 "redactores": request.POST.getlist(f"redactor_id_{doc_id}[]"),
@@ -810,7 +810,7 @@ def nuevo_requerimiento(request, proyecto_id):
                             proyecto_id,
                             doc_id,
                             roles.get("observaciones"),
-                            roles.get("restriccion")   # 🔥 GUARDANDO EN LA BD
+                            roles.get("restriccion")   #  GUARDANDO EN LA BD
                         ])
 
                         req_id = cursor.fetchone()[0]
@@ -849,7 +849,7 @@ def nuevo_requerimiento(request, proyecto_id):
                                     VALUES (%s, %s, %s, NOW(), TRUE);
                                 """, [req_id, uid, rol_id])
 
-            messages.success(request, "📁 Requerimientos creados y carpetas generadas correctamente.")
+            messages.success(request, " Requerimientos creados y carpetas generadas correctamente.")
             return redirect("usuario:detalle_proyecto", proyecto_id=proyecto_id)
 
         except Exception as e:
@@ -928,7 +928,7 @@ def editar_requerimiento(request, requerimiento_id):
         revisores_post = request.POST.getlist("revisores")
         aprobadores_post = request.POST.getlist("aprobadores")
 
-        # 🔥 Nuevo: captura de confidencialidad
+        #  Nuevo: captura de confidencialidad
         confidencialidad = request.POST.get("confidencialidad", "no_restringido")
 
         # Seguridad — evita valores inválidos
@@ -1096,7 +1096,7 @@ def eliminar_requerimiento(request, requerimiento_id):
             for blob in bucket.list_blobs(prefix=carpeta_tipo):
                 blob.delete()
         else:
-            print(f"📁 Carpeta {carpeta_tipo} NO se elimina — existen otros requerimientos del mismo tipo.")
+            print(f" Carpeta {carpeta_tipo} NO se elimina — existen otros requerimientos del mismo tipo.")
 
         # ============================================================
         # 🆕 5.2 ELIMINAR DOCUMENTOS GENERADOS ASOCIADOS A ESTE RQ
@@ -1121,7 +1121,7 @@ def eliminar_requerimiento(request, requerimiento_id):
                 DELETE FROM requerimiento_documento_tecnico WHERE id = %s
             """, [requerimiento_id])
 
-        messages.success(request, "🗑️ Requerimiento eliminado correctamente (BD + GCS).")
+        messages.success(request, "️ Requerimiento eliminado correctamente (BD + GCS).")
         return redirect("usuario:detalle_proyecto", proyecto_id=proyecto_id)
 
     except Exception as e:
@@ -1598,7 +1598,7 @@ def generar_abreviatura_proyecto(request):
         descripcion = data.get("descripcion", "").strip().upper()
         fecha = data.get("fecha_recepcion_evaluacion", "").strip()
 
-        print("📩 Datos recibidos:", data)  # DEBUG
+        print(" Datos recibidos:", data)  # DEBUG
 
         if not maquina or not fecha:
             return JsonResponse({"abreviatura": ""})

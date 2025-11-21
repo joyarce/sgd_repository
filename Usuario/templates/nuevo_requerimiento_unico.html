@@ -201,14 +201,14 @@ button.btn:hover {
   <form method="POST">
     {% csrf_token %}
     <div class="step-inner">
-      <h2>📄 Documentos Técnicos del Proyecto</h2>
+      <h2> Documentos Técnicos del Proyecto</h2>
       <p class="subtexto-paso">
         Selecciona los documentos requeridos y completa los datos correspondientes.
       </p>
 
       <hr style="margin:20px 0; border-color:#e0e0e0;">
 
-      <!-- 🔎 Buscador + Filtros -->
+      <!--  Buscador + Filtros -->
       <div class="filtros">
         <input type="text" id="filtroBusqueda" placeholder="Buscar documento..." />
         <select id="filtroGrupo">
@@ -219,7 +219,7 @@ button.btn:hover {
         </select>
       </div>
 
-      <!-- 📄 Lista de documentos -->
+      <!--  Lista de documentos -->
       <div id="listaDocumentos" class="lista-documentos">
         {% for grupo in grupos_maestros %}
           {% for doc in grupo.documentos %}
@@ -234,14 +234,14 @@ button.btn:hover {
         {% endfor %}
       </div>
 
-      <!-- 🧾 Contenedor dinámico -->
+      <!--  Contenedor dinámico -->
       <div id="contenedorAsignaciones" class="contenedor-asignaciones" style="display:none;">
-        <h4>📑 Documentos Seleccionados</h4>
+        <h4> Documentos Seleccionados</h4>
         <div id="cardsContainer"></div>
       </div>
 
       <div style="text-align:right; margin-top:25px;">
-        <button type="submit" class="btn">💾 Confirmar y Crear</button>
+        <button type="submit" class="btn"> Confirmar y Crear</button>
       </div>
     </div>
   </form>
@@ -343,7 +343,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
       <div class="hitos-card">
-        <h6>📅 Planificación de Hitos</h6>
+        <h6> Planificación de Hitos</h6>
         <div class="row">
           <div>
             <label>Inicio de Elaboración</label>

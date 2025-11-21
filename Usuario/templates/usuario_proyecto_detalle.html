@@ -159,11 +159,11 @@ table tr:hover { background: #fdf2e8; }
 
     <h1>{{ proyecto.nombre_proyecto }}</h1>
 
-    <!-- 🔴 Botón eliminar -->
+    <!--  Botón eliminar -->
     <div style="text-align: center; margin-bottom: 25px;">
         <form action="{% url 'usuario:eliminar_proyecto' proyecto.proyecto_id %}" method="POST" onsubmit="return confirmarEliminacion()">
             {% csrf_token %}
-            <button type="submit" class="btn-delete">🗑️ Eliminar Proyecto</button>
+            <button type="submit" class="btn-delete">️ Eliminar Proyecto</button>
         </form>
     </div>
 

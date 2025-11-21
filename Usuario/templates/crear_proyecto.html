@@ -4,7 +4,7 @@
 
 {% block extra_css %}
 <style>
-/* 🎨 Estilos idénticos a tu plantilla original */
+/*  Estilos idénticos a tu plantilla original */
 :root {
   --metso-dark-gray: #333;
   --metso-light-gray: #f7f7f7;
@@ -82,7 +82,7 @@ button.btn:active {
   <h1>Crear Proyecto</h1>
   <p class="subtitle">Flujo de trabajo multi-paso para el registro de un nuevo proyecto.</p>
 
-  <!-- 🔶 Barra de progreso -->
+  <!--  Barra de progreso -->
   <div class="progress-bar">
     {% for label in steps %}
       <div class="step">
@@ -96,7 +96,7 @@ button.btn:active {
     {% endfor %}
   </div>
 
-  <!-- 🧩 Formulario principal -->
+  <!--  Formulario principal -->
   <form method="POST">
     {% csrf_token %}
     <input type="hidden" name="paso_actual" value="{{ paso_actual|default:'1' }}">
@@ -113,7 +113,7 @@ button.btn:active {
       {% endif %}
     </div>
 
-    <!-- 🔘 Navegación -->
+    <!--  Navegación -->
     <div style="text-align:right; margin-top:30px;">
       {% if paso_actual != '1' %}
         <button type="submit" class="btn btn-secondary" name="accion" value="anterior">← Anterior</button>
@@ -121,7 +121,7 @@ button.btn:active {
       {% if paso_actual != '4' %}
         <button type="submit" class="btn" name="accion" value="siguiente">Siguiente →</button>
       {% else %}
-        <button type="submit" class="btn" name="accion" value="confirmar">💾 Confirmar y Crear</button>
+        <button type="submit" class="btn" name="accion" value="confirmar"> Confirmar y Crear</button>
       {% endif %}
     </div>
   </form>
