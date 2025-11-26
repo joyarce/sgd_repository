@@ -22,12 +22,24 @@
   <div id="listaDocumentos" class="lista-documentos">
     {% for grupo in grupos_maestros %}
       {% for doc in grupo.documentos %}
-      <label class="doc-item" data-grupo="{{ grupo.nombre }}">
+      <label class="doc-item {% if not doc.tiene_plantilla %} sin-plantilla {% endif %}"
+             data-grupo="{{ grupo.nombre }}"
+             data-tiene-plantilla="{{ doc.tiene_plantilla }}"
+             data-tiene-version="{{ doc.tiene_version }}">
+        
         <input type="checkbox" class="doc-checkbox"
                name="documentos_ids[]" value="{{ doc.id }}"
-               data-nombre="{{ doc.nombre }}">
+               data-nombre="{{ doc.nombre }}"
+               {% if not doc.tiene_plantilla %} disabled {% endif %}
+        >
+
         <span class="doc-nombre">{{ doc.nombre }}</span>
-        <small class="doc-grupo">({{ grupo.nombre }})</small>
+
+        {% if doc.tiene_plantilla %}
+            <small class="doc-grupo text-success">(Plantilla disponible)</small>
+        {% else %}
+            <small class="doc-grupo text-danger">(SIN plantilla)</small>
+        {% endif %}
       </label>
       {% endfor %}
     {% endfor %}
@@ -48,177 +60,73 @@
   padding:25px;
   box-shadow:0 3px 12px rgba(0,0,0,.06);
 }
-h2 {
-  color:#2F2F8C;
-  font-weight:600;
-  margin-bottom:8px;
+
+/* 🔴 DOCUMENTOS SIN PLANTILLA */
+.sin-plantilla {
+  opacity:0.55;
+  background:#f2f2f2 !important;
+  border:1px dashed #999 !important;
+  cursor:not-allowed !important;
 }
-.subtexto-paso {
-  color:#555;
-  margin-bottom:15px;
+.sin-plantilla:hover {
+  background:#f2f2f2 !important;
+  border-color:#999 !important;
 }
 
+/* resto igual */
+h2 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
+.subtexto-paso { color:#555; margin-bottom:15px; }
+
 .filtros {
-  display:flex;
-  gap:10px;
-  margin-bottom:15px;
+  display:flex; gap:10px; margin-bottom:15px;
 }
 .filtros input, .filtros select {
-  padding:8px 12px;
-  border:1px solid #ddd;
-  border-radius:6px;
-  font-size:.9rem;
-  flex:1;
+  padding:8px 12px; border:1px solid #ddd;
+  border-radius:6px; font-size:.9rem; flex:1;
 }
 
 .lista-documentos {
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-  gap:8px;
-  margin-bottom:25px;
-  max-height:260px;
-  overflow-y:auto;
-  background:#fafafa;
-  border:1px solid #eee;
-  padding:10px;
-  border-radius:8px;
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:8px; margin-bottom:25px; max-height:260px; overflow-y:auto;
+  background:#fafafa; border:1px solid #eee; padding:10px; border-radius:8px;
 }
+
 .doc-item {
-  display:flex;
-  flex-direction:column;
-  background:#fff;
-  border:1px solid #e0e0e0;
-  border-radius:6px;
-  padding:10px;
-  font-size:.9rem;
-  cursor:pointer;
-  transition:all .15s ease;
+  display:flex; flex-direction:column; background:#fff;
+  border:1px solid #e0e0e0; border-radius:6px; padding:10px;
+  font-size:.9rem; cursor:pointer; transition:all .15s ease;
 }
 .doc-item:hover {
-  background:#fdf7f3;
-  border-color:#f36f21;
-}
-.doc-item input {
-  margin-bottom:4px;
-}
-.doc-grupo {
-  color:#777;
-  font-size:.8rem;
+  background:#fdf7f3; border-color:#f36f21;
 }
 
-.contenedor-asignaciones h4 {
-  color:#2F2F8C;
-  font-weight:600;
-  margin-bottom:15px;
-}
+.doc-item input { margin-bottom:4px; }
+.doc-grupo { color:#777; font-size:.8rem; }
 
+/* --- tarjetas --- */
 .card-doc {
-  border:1px solid #ddd;
-  border-radius:10px;
-  padding:15px 20px;
-  margin-bottom:20px;
-  background:#fafafa;
+  border:1px solid #ddd; border-radius:10px;
+  padding:15px 20px; margin-bottom:20px; background:#fafafa;
   box-shadow:0 2px 5px rgba(0,0,0,0.05);
   transition:transform 0.2s;
 }
-.card-doc:hover {
-  transform:scale(1.01);
-}
+.card-doc:hover { transform:scale(1.01); }
 
 .card-header {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+  display:flex; justify-content:space-between; align-items:center;
   margin-bottom:12px;
 }
-.card-header h5 {
-  margin:0;
-  font-weight:600;
-  color:#333;
-}
+.card-header h5 { margin:0; font-weight:600; color:#333; }
 .btn-remove {
-  background:#f8d7da;
-  border:none;
-  color:#721c24;
-  border-radius:6px;
-  padding:4px 10px;
-  cursor:pointer;
-  font-size:.8rem;
+  background:#f8d7da; border:none; color:#721c24;
+  border-radius:6px; padding:4px 10px; cursor:pointer; font-size:.8rem;
 }
-.btn-remove:hover {
-  background:#f5c6cb;
-}
+.btn-remove:hover { background:#f5c6cb; }
 
-.roles-grid {
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-  gap:10px;
-  margin-bottom:15px;
-}
-.roles-grid label {
-  font-weight:500;
-  color:#444;
-  font-size:.9rem;
-  margin-bottom:4px;
-  display:block;
-}
-
-.observaciones-block {
-  margin-bottom:15px;
-}
-.observaciones-block textarea {
-  width:100%;
-  resize:vertical;
-  border-radius:6px;
-  border:1px solid #ccc;
-  padding:8px;
-  font-size:.9rem;
-  background:#fff;
-}
-
-.hitos-card {
-  background:#fff;
-  border:1px solid #ddd;
-  border-radius:8px;
-  padding:12px 15px;
-}
-.hitos-card h6 {
-  color:#2F2F8C;
-  font-weight:600;
-  margin-bottom:10px;
-}
-.hitos-card .row {
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-  gap:10px;
-  margin-bottom:10px;
-}
-.hitos-card label {
-  font-size:0.85rem;
-  color:#444;
-}
-.hitos-card input {
-  width:100%;
-  border:1px solid #ccc;
-  border-radius:6px;
-  padding:6px 8px;
-  font-size:0.85rem;
-}
-
-/* Tom Select */
-.ts-control {
-  border-radius:6px !important;
-  border-color:#ccc !important;
-}
-.ts-control .item {
-  background:#f36f21 !important;
-  color:#fff !important;
-  border-radius:12px;
-}
-.ts-dropdown {
-  border-radius:8px !important;
-  z-index:9999 !important;
-}
+/* TOM SELECT STYLES */
+.ts-control { border-radius:6px !important; border-color:#ccc !important; }
+.ts-control .item { background:#f36f21 !important; color:#fff !important; border-radius:12px; }
+.ts-dropdown { border-radius:8px !important; z-index:9999 !important; }
 </style>
 
 <!-- === LIBRERÍAS === -->
@@ -243,9 +151,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const seleccionados = {};
 
-  // -------------------------------
-  // CLICK DOCUMENTO
-  // -------------------------------
+  // ============================================
+  // 🚫 BLOQUEAR CLICK EN DOCUMENTOS SIN PLANTILLA
+  // ============================================
+  lista.addEventListener("click", e => {
+    const item = e.target.closest(".doc-item");
+    if (!item) return;
+
+    const tienePlantilla = item.dataset.tienePlantilla === "True" || item.dataset.tienePlantilla === "1";
+
+    if (!tienePlantilla) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      alert("❌ Este documento no tiene plantilla disponible.");
+      return false;
+    }
+  });
+
+  // -------------------------------------------
+  // SELECCIÓN DE DOCUMENTOS
+  // -------------------------------------------
   lista.addEventListener("change", e => {
     if (!e.target.classList.contains("doc-checkbox")) return;
 
@@ -259,9 +184,9 @@ document.addEventListener("DOMContentLoaded", () => {
     contenedor.style.display = Object.keys(seleccionados).length ? "block" : "none";
   });
 
-  // -------------------------------
+  // -------------------------------------------
   // CREAR TARJETA
-  // -------------------------------
+  // -------------------------------------------
   function addCard(id, nombre) {
     if (seleccionados[id]) return;
 
@@ -297,79 +222,30 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </div>
 
-      <!-- Restricción -->
       <div class="restriccion-block" style="margin:18px 0;">
         <label style="font-weight:600;color:#444;">Tipo de restricción</label>
-
         <div style="display:flex;gap:25px;font-size:.9rem;margin-top:6px;">
-          <label style="display:flex;align-items:center;gap:4px;">
-            <input type="radio" name="restriccion_tipo_${id}" value="confidencial">
-            Confidencial
-          </label>
-
-          <label style="display:flex;align-items:center;gap:4px;">
-            <input type="radio" name="restriccion_tipo_${id}" value="restringido">
-            Restringido
-          </label>
-
-          <label style="display:flex;align-items:center;gap:4px;">
-            <input type="radio" name="restriccion_tipo_${id}" value="no_restringido" checked>
-            No restringido
-          </label>
+          <label><input type="radio" name="restriccion_tipo_${id}" value="confidencial"> Confidencial</label>
+          <label><input type="radio" name="restriccion_tipo_${id}" value="restringido"> Restringido</label>
+          <label><input type="radio" name="restriccion_tipo_${id}" value="no_restringido" checked> No restringido</label>
         </div>
       </div>
 
       <div class="observaciones-block">
         <label>Observaciones / Alcance Inicial</label>
-        <textarea name="observaciones_${id}" rows="2" placeholder="Describa consideraciones para este documento..."></textarea>
-      </div>
-
-      <div class="hitos-card">
-        <h6> Planificación de Hitos</h6>
-
-        <div class="row">
-          <div>
-            <label>Inicio de Elaboración</label>
-            <input type="date" name="fecha_inicio_elaboracion_${id}">
-          </div>
-          <div>
-            <label>Notificar días antes</label>
-            <input type="number" name="alertar_dias_inicio_${id}" min="1" placeholder="Ej: 1">
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>Primera Revisión Técnica</label>
-            <input type="date" name="fecha_primera_revision_${id}">
-          </div>
-          <div>
-            <label>Notificar días antes</label>
-            <input type="number" name="alertar_dias_revision_${id}" min="1" placeholder="Ej: 3">
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>Entrega / Aprobación Final</label>
-            <input type="date" name="fecha_entrega_${id}">
-          </div>
-          <div>
-            <label>Notificar días antes</label>
-            <input type="number" name="alertar_dias_entrega_${id}" min="1" placeholder="Ej: 5">
-          </div>
-        </div>
+        <textarea name="observaciones_${id}" rows="2"
+          placeholder="Describa consideraciones para este documento..."></textarea>
       </div>
     `;
 
     cardsContainer.appendChild(card);
 
-    // Tom Selects
+    // Selects dinámicos
     crearSelector(`#selRed-${id}`, "redactores", `hidden-redactor-${id}`, id);
     crearSelector(`#selRev-${id}`, "revisores", `hidden-revisor-${id}`, id);
     crearSelector(`#selApr-${id}`, "aprobadores", `hidden-aprobador-${id}`, id);
 
-    // Acción quitar
+    // Botón de quitar
     card.querySelector(".btn-remove").addEventListener("click", () => {
       document.querySelector(`.doc-checkbox[value="${id}"]`).checked = false;
       removeCard(id);
@@ -377,9 +253,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // -------------------------------
-  // CREAR SELECTOR
-  // -------------------------------
   function crearSelector(selectId, role, hiddenDivId, docId) {
     const ts = new TomSelect(selectId, {
       plugins: ["remove_button"],
@@ -388,16 +261,13 @@ document.addEventListener("DOMContentLoaded", () => {
       placeholder: "Seleccionar..."
     });
 
-    ts.on("change", function() {
+    ts.on("change", () => {
       const valores = ts.getValue();
       seleccionados[docId][role] = valores;
       syncHidden(hiddenDivId, role, docId, valores);
     });
   }
 
-  // -------------------------------
-  // SINCRONIZAR INPUTS HIDDEN
-  // -------------------------------
   function syncHidden(hiddenDivId, role, docId, valores) {
     const host = document.getElementById(hiddenDivId);
     host.innerHTML = "";
@@ -417,18 +287,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // -------------------------------
-  // QUITAR TARJETA
-  // -------------------------------
   function removeCard(id) {
     delete seleccionados[id];
     const card = document.getElementById("card-" + id);
     if (card) card.remove();
   }
 
-  // -------------------------------
+  // -------------------------------------------
   // FILTROS
-  // -------------------------------
+  // -------------------------------------------
   function filtrar() {
     const texto = filtroTxt.value.toLowerCase();
     const grupoSel = filtroGrupo.value;

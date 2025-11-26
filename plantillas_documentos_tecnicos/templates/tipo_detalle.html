@@ -1,4 +1,3 @@
-<!-- C:\Users\jonat\Documents\gestion_docs\plantillas_documentos_tecnicos\templates\tipo_detalle.html -->
 {% extends "base.html" %}
 {% load static %}
 
@@ -22,6 +21,75 @@
     </div>
 
     <div class="card shadow-sm border-0 p-3 rounded-3">
+
+        <!-- ============================== -->
+        <!--   PANEL DE ESTADÍSTICAS        -->
+        <!-- ============================== -->
+        {% if plantilla %}
+        <div class="mb-4 p-3 border rounded bg-light small">
+
+            <h6 class="fw-semibold text-dark mb-3">Estado del Documento</h6>
+
+            <div class="row">
+
+                <div class="col-6 mb-2">
+                    <strong>Archivo actual:</strong>
+                    {% if archivo_existe %}
+                        <span class="text-success fw-semibold">Disponible</span>
+                    {% else %}
+                        <span class="text-danger fw-semibold">No encontrado</span>
+                    {% endif %}
+                </div>
+
+                <div class="col-6 mb-2">
+                    <strong>Calidad controles:</strong>
+                    {% if calidad == "alta" %}
+                        <span class="text-success fw-semibold">Alta</span>
+                    {% elif calidad == "media" %}
+                        <span class="text-warning fw-semibold">Media</span>
+                    {% else %}
+                        <span class="text-danger fw-semibold">Baja</span>
+                    {% endif %}
+                </div>
+
+                <div class="col-6 mb-2">
+                    <strong>Total versiones:</strong>
+                    {{ stats_versiones.total_versiones }}
+                </div>
+
+                <div class="col-6 mb-2">
+                    <strong>Versiones sanas:</strong>
+                    <span class="text-success fw-semibold">{{ stats_versiones.versiones_ok }}</span>
+                </div>
+
+                <div class="col-6 mb-2">
+                    <strong>Versiones dañadas:</strong>
+                    <span class="text-danger fw-semibold">{{ stats_versiones.versiones_rotas }}</span>
+                </div>
+
+                <div class="col-6 mb-2">
+                    <strong>Controles detectados:</strong>
+                    {{ stats_controles.controles_total }} ({{ stats_controles.controles_unicos }} únicos)
+                </div>
+
+            </div>
+
+            {% if stats_diferencias.controles_nuevos or stats_diferencias.controles_eliminados %}
+            <div class="mt-3">
+                <strong class="d-block mb-1">Cambios vs versión anterior:</strong>
+
+                {% if stats_diferencias.controles_nuevos %}
+                    <div class="text-success">+ Nuevos: {{ stats_diferencias.controles_nuevos|join:", " }}</div>
+                {% endif %}
+
+                {% if stats_diferencias.controles_eliminados %}
+                    <div class="text-danger">– Eliminados: {{ stats_diferencias.controles_eliminados|join:", " }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        </div>
+        {% endif %}
 
         <!-- ========================== -->
         <!--     INFO DEL TIPO         -->
@@ -51,7 +119,7 @@
                 No existe plantilla cargada para este tipo de documento.
             </div>
 
-            <a href="{% url 'plantillas:subir_plantilla_tipo_doc' tipo.id %}"
+            <a href="{% url 'plantillas:subir_plantilla' tipo.id %}"
                class="btn btn-sm btn-metso-replace">
                Subir plantilla
             </a>
@@ -59,42 +127,34 @@
         {% else %}
 
             {% if not archivo_existe %}
-                <!-- ARCHIVO NO EXISTE -->
                 <div class="alert alert-danger shadow-sm border-0 mb-3">
                     ⚠ <strong>El archivo no existe en Google Cloud Storage.</strong><br>
                     Ruta esperada: <code>{{ plantilla.gcs_path }}</code>
                 </div>
 
-                <a href="{% url 'plantillas:subir_plantilla_tipo_doc' tipo.id %}"
+                <a href="{% url 'plantillas:subir_plantilla' tipo.id %}"
                    class="btn btn-sm btn-metso-replace">
                     Subir nuevamente la plantilla
                 </a>
 
             {% else %}
-                <!-- ========================== -->
-                <!--   ACCIONES DE LA PLANTILLA -->
-                <!-- ========================== -->
                 <div class="d-flex flex-wrap gap-2 mb-3">
 
-                    <!-- VER ONLINE -->
                     <a href="{{ office_url }}" target="_blank"
                        class="btn btn-sm btn-metso-view">
                         Ver archivo
                     </a>
 
-                    <!-- DESCARGAR -->
                     <a href="{% url 'plantillas:descargar_gcs' plantilla.gcs_path %}"
                        class="btn btn-sm btn-metso-download">
                         Descargar archivo
                     </a>
 
-                    <!-- REEMPLAZAR -->
-                    <a href="{% url 'plantillas:subir_plantilla_tipo_doc' tipo.id %}"
+                    <a href="{% url 'plantillas:subir_plantilla' tipo.id %}"
                        class="btn btn-sm btn-metso-replace">
                         Reemplazar plantilla
                     </a>
 
-                    <!-- ELIMINAR TODAS LAS VERSIONES -->
                     <a href="{% url 'plantillas:eliminar_plantilla' tipo.id %}"
                        class="btn btn-sm btn-danger"
                        onclick="return confirm('¿Eliminar TODAS las versiones de esta plantilla?');">
@@ -108,7 +168,7 @@
         <hr class="my-4">
 
         <!-- ======================================================== -->
-        <!--    LISTA COMPLETA DE VERSIONES DEL TIPO DE DOCUMENTO    -->
+        <!--    HISTORIAL DE VERSIONES                                -->
         <!-- ======================================================== -->
 
         <h5 class="fw-semibold mt-2">Historial de versiones</h5>
@@ -152,9 +212,9 @@
 
         <hr class="my-4">
 
-        <!-- =============================================== -->
-        <!--         CONTROLES DE CONTENIDO ACTUALES         -->
-        <!-- =============================================== -->
+        <!-- ================================================= -->
+        <!--      CONTROLES DETECTADOS EN VERSIÓN ACTUAL       -->
+        <!-- ================================================= -->
 
         <h5 class="fw-semibold text-dark mb-3">Controles de contenido detectados</h5>
 

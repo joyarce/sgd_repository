@@ -1,4 +1,3 @@
-<!-- C:\Users\jonat\Documents\gestion_docs\plantillas_documentos_tecnicos\templates\lista_plantillas.html -->
 {% extends "base.html" %}
 {% load static %}
 
@@ -7,9 +6,39 @@
 {% block content %}
 <div class="container py-4">
 
-    <!-- ======================================== -->
-    <!-- Encabezado -->
-    <!-- ======================================== -->
+    <!-- ========================== -->
+    <!-- PANEL ESTADÍSTICAS GLOBALES -->
+    <!-- ========================== -->
+    <div class="card shadow-sm border-0 p-3 mb-4 rounded-3">
+
+        <h5 class="fw-semibold text-dark mb-3">Estadísticas Generales</h5>
+
+        <div class="row small text-muted">
+
+            <div class="col-md-3 col-6 mb-2">
+                <strong>Total tipos:</strong>
+                <span class="d-block">{{ stats_globales.total_tipos }}</span>
+            </div>
+
+            <div class="col-md-3 col-6 mb-2">
+                <strong>Con plantilla:</strong>
+                <span class="d-block text-success fw-semibold">{{ stats_globales.con_plantilla }}</span>
+            </div>
+
+            <div class="col-md-3 col-6 mb-2">
+                <strong>Sin plantilla:</strong>
+                <span class="d-block text-danger fw-semibold">{{ stats_globales.sin_plantilla }}</span>
+            </div>
+
+            <div class="col-md-3 col-6 mb-2">
+                <strong>Plantillas dañadas:</strong>
+                <span class="d-block text-danger fw-semibold">{{ stats_globales.plantillas_rotas }}</span>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
         <h2 class="fw-semibold text-dark mb-2">Categorías de Documentos</h2>
 
@@ -22,54 +51,8 @@
         </div>
     </div>
 
-
-
-    <!-- ======================================== -->
-    <!-- SECCIÓN DE PORTADAS (Word + Excel) -->
-    <!-- ======================================== -->
-    <div class="border rounded p-3 mb-4 bg-white">
-
-        <div class="fw-semibold mb-2">Plantilla de Portada</div>
-
-        <div class="d-flex justify-content-between align-items-center flex-wrap">
-
-            <div class="fw-semibold d-flex align-items-center gap-2">
-                <i class="bi bi-file-earmark-text text-secondary"></i>
-                Portada general del sistema
-            </div>
-
-            <div class="d-flex flex-wrap gap-2">
-
-                <!-- ========================= -->
-                <!-- PORTADA EXCEL -->
-                <!-- ========================= -->
-                <a href="{% url 'plantillas:portada_excel_detalle' %}" 
-                   class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-eye"></i> Excel
-                </a>
-
-
-                <!-- ========================= -->
-                <!-- PORTADA WORD -->
-                <!-- ========================= -->
-                <a href="{% url 'plantillas:portada_word_detalle' %}" 
-                   class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-eye"></i> Word
-                </a>
-
-
-            </div>
-
-        </div>
-    </div>
-
-
-
-    <!-- ======================================== -->
-    <!-- Categorías (Acordeón Liviano) -->
-    <!-- ======================================== -->
+    <!-- CATEGORÍAS -->
     <div class="border rounded bg-white">
-        <div class="p-3 fw-semibold border-bottom bg-light">Por tipo de documento técnico</div>
 
         {% if categorias %}
         <div class="accordion accordion-flush" id="accordionCategorias">
@@ -77,10 +60,8 @@
             {% for cat in categorias %}
             <div class="accordion-item">
 
-                <!-- ==== HEADER ==== -->
+                <!-- HEADER -->
                 <h2 class="accordion-header d-flex align-items-center" id="h{{ cat.id }}">
-
-                    <!-- Nombre clickeable -->
                     <a href="{% url 'plantillas:detalle_categoria' cat.id %}"
                        class="categoria-link me-auto fw-semibold text-dark text-decoration-none px-3">
                         {{ cat.nombre }}
@@ -89,52 +70,60 @@
                         {% endif %}
                     </a>
 
-                    <!-- Botón del acordeón -->
                     <button class="accordion-button collapsed flex-shrink-0 small toggle-btn"
-                            type="button"
-                            data-bs-toggle="collapse"
+                            type="button" data-bs-toggle="collapse"
                             data-bs-target="#c{{ cat.id }}">
                     </button>
-
                 </h2>
 
-                <!-- ==== CONTENIDO ==== -->
+                <!-- CONTENIDO -->
                 <div id="c{{ cat.id }}" class="accordion-collapse collapse">
                     <div class="accordion-body small text-muted">
 
-                        <div class="mb-3">
-                            {{ cat.descripcion|default:"Sin descripción." }}
-                        </div>
+                        <div class="mb-3">{{ cat.descripcion|default:"Sin descripción." }}</div>
 
-                        <!-- LISTADO DE TIPOS -->
                         {% if cat.tipos %}
                         <ul class="tipo-list">
                             {% for tipo in cat.tipos %}
                             <li class="tipo-item">
-                                <a href="{% url 'plantillas:detalle_tipo' tipo.id %}" class="tipo-card-link">
+
+                                <a href="{% url 'plantillas:detalle_tipo' tipo.id %}"
+                                   class="tipo-card-link {% if not tipo.tiene_plantilla %} sin-plantilla {% endif %}">
 
                                     <div class="fw-semibold text-dark">
                                         {{ tipo.nombre }}
                                         {% if tipo.abreviatura %}
-                                        <span class="badge bg-light border text-muted ms-1">
-                                            {{ tipo.abreviatura }}
-                                        </span>
+                                            <span class="badge bg-light border text-muted ms-1">
+                                                {{ tipo.abreviatura }}
+                                            </span>
                                         {% endif %}
                                     </div>
 
                                     {% if tipo.descripcion %}
-                                    <div class="small text-muted mt-1">
-                                        {{ tipo.descripcion }}
-                                    </div>
+                                        <div class="small text-muted mt-1">
+                                            {{ tipo.descripcion }}
+                                        </div>
+                                    {% endif %}
+
+                                    {% if tipo.tiene_plantilla %}
+                                        <div class="small mt-1 text-success fw-semibold">
+                                            ✔ Plantilla disponible
+                                        </div>
+                                    {% else %}
+                                        <div class="small mt-1 text-danger fw-semibold">
+                                            ✖ SIN plantilla — haz click para subir
+                                        </div>
                                     {% endif %}
 
                                 </a>
+
                             </li>
                             {% endfor %}
                         </ul>
                         {% else %}
                         <em>No hay tipos asociados.</em>
                         {% endif %}
+
                     </div>
                 </div>
 
@@ -142,7 +131,6 @@
             {% endfor %}
 
         </div>
-
         {% else %}
         <div class="text-center py-5 text-muted">
             <p class="fs-5 mb-1">No hay categorías registradas aún.</p>
@@ -156,67 +144,50 @@
 </div>
 
 
-
-<!-- ======================================== -->
-<!-- CSS ULTRA-LIGERO Y OPTIMIZADO -->
-<!-- ======================================== -->
 <style>
-:root {
-    --metso-orange: #f36f21;
-}
+:root { --metso-orange: #f36f21; }
 
-/* Botón primario */
 .btn-primary {
     background-color: var(--metso-orange);
     border: none;
 }
 .btn-primary:hover { background-color: #d65c1a; }
 
-/* Nombre clickeable - tamaño reducido */
 .categoria-link {
     padding-top: .55rem;
     padding-bottom: .55rem;
     font-size: 0.92rem;
 }
 
-/* Botón flecha */
-.toggle-btn {
-    width: 42px;
-    justify-content: center;
-}
+.toggle-btn { width: 42px; justify-content: center; }
 
-/* TIPOS */
-.tipo-list {
-    list-style: none;
-    padding-left: 0;
-    margin: 0;
-}
-
-.tipo-item {
-    padding: 8px 0;
-    border-bottom: 1px solid #eee;
-}
-
-.tipo-item:last-child {
-    border-bottom: none;
-}
+.tipo-list { list-style: none; margin: 0; padding-left: 0; }
+.tipo-item { padding: 8px 0; border-bottom: 1px solid #eee; }
+.tipo-item:last-child { border-bottom: none; }
 
 .tipo-card-link {
     display: block;
-    padding: 8px 10px;
+    padding: 10px 12px;
     border-radius: 6px;
     text-decoration: none;
+    background: #fff;
+    border: 1px solid transparent;
+    transition: all .15s ease;
 }
-
 .tipo-card-link:hover {
-    background-color: #f8f9fa;
-    text-decoration: none;
+    background: #f8f9fa;
+    border-color: #dcdcdc;
 }
 
-.accordion-button { 
-    font-size: .90rem; 
+.sin-plantilla {
+    background: #f3f3f3;
+    border: 1px dashed #b7b7b7;
+    opacity: 0.85;
 }
-
+.sin-plantilla:hover {
+    background: #eaeaea !important;
+    opacity: 1;
+}
 </style>
 
 {% endblock %}

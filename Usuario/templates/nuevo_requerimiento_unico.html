@@ -51,24 +51,52 @@ h2 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
   font-size:.9rem; flex:1;
 }
 
+/* ===== DOCUMENTOS ===== */
 .lista-documentos {
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-  gap:8px; margin-bottom:25px;
-  max-height:260px; overflow-y:auto;
-  background:#fafafa; border:1px solid #eee;
-  padding:10px; border-radius:8px;
+  gap:8px;
+  margin-bottom:25px;
+  max-height:260px;
+  overflow-y:auto;
+  background:#fafafa;
+  border:1px solid #eee;
+  padding:10px;
+  border-radius:8px;
 }
+
 .doc-item {
-  display:flex; flex-direction:column;
-  background:#fff; border:1px solid #e0e0e0;
-  border-radius:6px; padding:10px;
-  font-size:.9rem; cursor:pointer; transition:all .15s ease;
+  display:flex;
+  flex-direction:column;
+  background:#fff;
+  border:1px solid #e0e0e0;
+  border-radius:6px;
+  padding:10px;
+  font-size:.9rem;
+  cursor:pointer;
+  transition:all .15s ease;
 }
-.doc-item:hover { background:#fdf7f3; border-color:#f36f21; }
+.doc-item:hover {
+  background:#fdf7f3;
+  border-color:#f36f21;
+}
+
 .doc-item input { margin-bottom:4px; }
 .doc-grupo { color:#777; font-size:.8rem; }
 
+/* 🔴 SIN PLANTILLA */
+.sin-plantilla {
+  opacity:0.55;
+  background:#efefef !important;
+  border:1px dashed #999 !important;
+  cursor:not-allowed !important;
+}
+.sin-plantilla:hover {
+  background:#efefef !important;
+  border:1px dashed #999 !important;
+}
+
+/* ===== CARDS ===== */
 .contenedor-asignaciones h4 {
   color:#2F2F8C;
   font-weight:600;
@@ -108,7 +136,6 @@ h2 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
 }
 .btn-remove:hover { background:#f5c6cb; }
 
-/* Roles */
 .roles-grid {
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
@@ -172,7 +199,6 @@ h2 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
 .ts-control .item { background:#f36f21 !important; color:#fff !important; border-radius:12px; }
 .ts-dropdown { border-radius:8px !important; z-index:9999 !important; }
 
-/* Botón */
 button.btn {
   background-color: var(--metso-orange);
   color: var(--metso-white);
@@ -201,6 +227,7 @@ button.btn:hover {
   <form method="POST">
     {% csrf_token %}
     <div class="step-inner">
+
       <h2> Documentos Técnicos del Proyecto</h2>
       <p class="subtexto-paso">
         Selecciona los documentos requeridos y completa los datos correspondientes.
@@ -223,12 +250,25 @@ button.btn:hover {
       <div id="listaDocumentos" class="lista-documentos">
         {% for grupo in grupos_maestros %}
           {% for doc in grupo.documentos %}
-          <label class="doc-item" data-grupo="{{ grupo.nombre }}">
+          <label class="doc-item {% if not doc.tiene_plantilla %} sin-plantilla {% endif %}"
+                 data-grupo="{{ grupo.nombre }}"
+                 data-tiene-plantilla="{{ doc.tiene_plantilla }}"
+                 data-tiene-version="{{ doc.tiene_version }}"
+                 title="{% if not doc.tiene_plantilla %}SIN plantilla disponible{% endif %}">
+
             <input type="checkbox" class="doc-checkbox"
                    name="documentos_ids[]" value="{{ doc.id }}"
-                   data-nombre="{{ doc.nombre }}">
+                   data-nombre="{{ doc.nombre }}"
+                   {% if not doc.tiene_plantilla %} disabled {% endif %}>
+
             <span class="doc-nombre">{{ doc.nombre }}</span>
-            <small class="doc-grupo">({{ grupo.nombre }})</small>
+
+            {% if doc.tiene_plantilla %}
+              <small class="doc-grupo text-success">(Plantilla disponible)</small>
+            {% else %}
+              <small class="doc-grupo text-danger">(SIN plantilla)</small>
+            {% endif %}
+
           </label>
           {% endfor %}
         {% endfor %}
@@ -243,16 +283,17 @@ button.btn:hover {
       <div style="text-align:right; margin-top:25px;">
         <button type="submit" class="btn"> Confirmar y Crear</button>
       </div>
+
     </div>
   </form>
 </div>
 
 <!-- === LIBRERÍA TOM SELECT === -->
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+
   const lista = document.getElementById("listaDocumentos");
   const contenedor = document.getElementById("contenedorAsignaciones");
   const cardsContainer = document.getElementById("cardsContainer");
@@ -267,8 +308,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const seleccionados = {};
 
+  // ============================================================
+  // 🚫 BLOQUEAR SELECCIÓN SI NO TIENE PLANTILLA
+  // ============================================================
+  lista.addEventListener("click", e => {
+    const item = e.target.closest(".doc-item");
+    if (!item) return;
+
+    const tiene = item.dataset.tienePlantilla === "True" || item.dataset.tienePlantilla === "1";
+
+    if (!tiene) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      alert("❌ Este documento NO tiene plantilla disponible.");
+      return false;
+    }
+  });
+
+  // ============================================================
+  // CAMBIO DE CHECKBOX
+  // ============================================================
   lista.addEventListener("change", e => {
     if (!e.target.classList.contains("doc-checkbox")) return;
+
     const chk = e.target;
     const id = chk.value;
     const nombre = chk.dataset.nombre;
@@ -279,13 +341,18 @@ document.addEventListener("DOMContentLoaded", () => {
     contenedor.style.display = Object.keys(seleccionados).length ? "block" : "none";
   });
 
+  // ============================================================
+  // CREAR TARJETA
+  // ============================================================
   function addCard(id, nombre) {
     if (seleccionados[id]) return;
+
     seleccionados[id] = { redactores:[], revisores:[], aprobadores:[] };
 
     const card = document.createElement("div");
     card.className = "card-doc";
     card.id = "card-" + id;
+
     card.innerHTML = `
       <div class="card-header">
         <h5>${nombre}</h5>
@@ -310,37 +377,19 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </div>
 
-
       <div class="restriccion-block" style="margin:18px 0;">
-          <label style="font-weight:600;color:#444;">Tipo de restricción</label>
-      
-          <div style="display:flex;gap:25px;font-size:.9rem;margin-top:6px;">
-
-              <label style="display:flex;align-items:center;gap:4px;">
-                  <input type="radio" name="restriccion_tipo_${id}" value="confidencial">
-                  Confidencial
-              </label>
-            
-              <label style="display:flex;align-items:center;gap:4px;">
-                  <input type="radio" name="restriccion_tipo_${id}" value="restringido">
-                  Restringido
-              </label>
-            
-              <label style="display:flex;align-items:center;gap:4px;">
-                  <input type="radio" name="restriccion_tipo_${id}" value="no_restringido" checked>
-                  No restringido
-              </label>
-            
-          </div>
+        <label style="font-weight:600;color:#444;">Tipo de restricción</label>
+        <div style="display:flex;gap:25px;font-size:.9rem;margin-top:6px;">
+          <label><input type="radio" name="restriccion_tipo_${id}" value="confidencial"> Confidencial</label>
+          <label><input type="radio" name="restriccion_tipo_${id}" value="restringido"> Restringido</label>
+          <label><input type="radio" name="restriccion_tipo_${id}" value="no_restringido" checked> No restringido</label>
+        </div>
       </div>
 
       <div class="observaciones-block">
-          <label>Observaciones / Alcance Inicial</label>
-          <textarea name="observaciones_${id}" rows="2"
-                    placeholder="Describa consideraciones para este documento..."></textarea>
+        <label>Observaciones / Alcance Inicial</label>
+        <textarea name="observaciones_${id}" rows="2" placeholder="Describa consideraciones para este documento..."></textarea>
       </div>
-
-
 
       <div class="hitos-card">
         <h6> Planificación de Hitos</h6>
@@ -354,6 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <input type="number" name="alertar_dias_inicio_${id}" min="1" placeholder="Ej: 1">
           </div>
         </div>
+
         <div class="row">
           <div>
             <label>Primera Revisión Técnica</label>
@@ -364,6 +414,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <input type="number" name="alertar_dias_revision_${id}" min="1" placeholder="Ej: 3">
           </div>
         </div>
+
         <div class="row">
           <div>
             <label>Entrega / Aprobación Final</label>
@@ -374,16 +425,20 @@ document.addEventListener("DOMContentLoaded", () => {
             <input type="number" name="alertar_dias_entrega_${id}" min="1" placeholder="Ej: 5">
           </div>
         </div>
+
       </div>
     `;
+
     cardsContainer.appendChild(card);
 
+    // Selects
     setTimeout(() => {
       crearSelector(`#selRed-${id}`, "redactores", `hidden-redactor-${id}`, id);
       crearSelector(`#selRev-${id}`, "revisores", `hidden-revisor-${id}`, id);
       crearSelector(`#selApr-${id}`, "aprobadores", `hidden-aprobador-${id}`, id);
-    }, 0);
+    }, 10);
 
+    // Quitar
     card.querySelector(".btn-remove").addEventListener("click", () => {
       document.querySelector(`.doc-checkbox[value="${id}"]`).checked = false;
       removeCard(id);
@@ -391,24 +446,30 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function crearSelector(selectId, role, hiddenDivId, docId) {
+  function crearSelector(selectId, role, hiddenId, docId) {
     const ts = new TomSelect(selectId, {
-      plugins: ["remove_button"],
-      options: usuarios,
-      hideSelected: true,
-      placeholder: "Seleccionar...",
+      plugins:["remove_button"],
+      options:usuarios,
+      hideSelected:true,
+      placeholder:"Seleccionar..."
     });
     ts.on("change", () => {
       const valores = ts.getValue();
       seleccionados[docId][role] = valores;
-      syncHidden(hiddenDivId, role, docId, valores);
+      syncHidden(hiddenId, role, docId, valores);
     });
   }
 
-  function syncHidden(hiddenDivId, role, docId, valores) {
-    const host = document.getElementById(hiddenDivId);
+  function syncHidden(hiddenId, role, docId, valores) {
+    const host = document.getElementById(hiddenId);
     host.innerHTML = "";
-    const roleMap = { redactores:"redactor", revisores:"revisor", aprobadores:"aprobador" };
+
+    const roleMap = {
+      redactores:"redactor",
+      revisores:"revisor",
+      aprobadores:"aprobador"
+    };
+
     valores.forEach(v => {
       const input = document.createElement("input");
       input.type = "hidden";
@@ -427,15 +488,19 @@ document.addEventListener("DOMContentLoaded", () => {
   function filtrar() {
     const texto = filtroTxt.value.toLowerCase();
     const grupoSel = filtroGrupo.value;
+
     lista.querySelectorAll(".doc-item").forEach(item => {
-      const matchTexto = item.querySelector(".doc-nombre").textContent.toLowerCase().includes(texto);
-      const matchGrupo = !grupoSel || item.dataset.grupo === grupoSel;
+      const nombre = item.querySelector(".doc-nombre").textContent.toLowerCase();
+      const grupo = item.dataset.grupo;
+      const matchTexto = nombre.includes(texto);
+      const matchGrupo = !grupoSel || grupo === grupoSel;
       item.style.display = (matchTexto && matchGrupo) ? "flex" : "none";
     });
   }
 
   filtroTxt.addEventListener("input", filtrar);
   filtroGrupo.addEventListener("change", filtrar);
+
 });
 </script>
 {% endblock %}

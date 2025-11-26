@@ -15,29 +15,18 @@ urlpatterns = [
     path("tipos/<int:tipo_id>/", views.tipo_detalle, name="detalle_tipo"),
     path("tipos/<int:tipo_id>/editar/", views.editar_tipo_documento, name="editar_tipo_documento"),
 
-    # TIPOS - SUBIR PLANTILLA
+    # TIPOS - SUBIR PLANTILLA (CUERPO)
     path("tipo/<int:tipo_id>/subir/", views.subir_plantilla, name="subir_plantilla"),
-    path("subir-plantilla-tipo/<int:tipo_id>/",
-         views.subir_plantilla_tipo_doc,
-         name="subir_plantilla_tipo_doc"),
+    path("subir-plantilla-tipo/<int:tipo_id>/", views.subir_plantilla, name="subir_plantilla"),
 
     # CREAR
     path("crear/categoria/", views.crear_categoria, name="crear_categoria"),
     path("crear/tipo/", views.crear_tipo_documento, name="crear_tipo_documento"),
 
-    # PORTADA WORD
-    path("portada/word/", views.portada_word_detalle, name="portada_word_detalle"),
-    path("portada/word/subir/", views.subir_portada_word, name="subir_portada_word"),
-
-    # PORTADA EXCEL
-    path("portada/excel/", views.portada_excel_detalle, name="portada_excel_detalle"),
-    path("portada/excel/subir/", views.subir_portada_excel, name="subir_portada_excel"),
-
     # DESCARGA / ELIMINACIÓN
     path("descargar/<path:path>/", views.descargar_gcs, name="descargar_gcs"),
     path("eliminar-plantilla/<int:tipo_id>/", views.eliminar_plantilla, name="eliminar_plantilla"),
     path("version/<int:version_id>/eliminar/", views.eliminar_version, name="eliminar_version"),
+    path("ajax/detectar-controles/", views.detectar_controles_ajax, name="ajax_detectar_controles"),
 
-
-    path("portada/word/eliminar/<int:version_id>/",views.eliminar_version_portada,name="eliminar_version_portada"),
 ]

@@ -13,14 +13,6 @@ import json
 import mimetypes
 import re
 
-"""
-NOTA IMPORTANTE:
-- Ya NO se usan las tablas plantillas_utilidad_old ni plantillas_documentos_tecnicos_old.
-- Toda la lógica de este módulo asume las tablas actuales:
-    - plantilla_tipo_doc
-    - plantilla_portada
-"""
-
 
 def clean(x):
     if not x:
@@ -51,15 +43,15 @@ def to_json_safe(data):
 def validar_controles_archivo(requerimiento_id, archivo):
     """
     Compara los controles de contenido del archivo subido (DOCX)
-    contra la combinación de:
-      - Portada utilidad Word correspondiente (tipo_id = 1, formato_id del tipo)
-      - Plantilla de cuerpo del tipo_documento correspondiente
+    contra la PLANTILLA de tipo de documento de referencia:
+
+      - Preferentemente la versión registrada en documentos_generados
+      - Si no hay registro, usa la versión_actual de plantilla_tipo_doc
 
     Si hay diferencias, devuelve (False, mensaje_error).
-    Si todo ok o no hay plantillas de referencia, devuelve (True, None).
+    Si todo ok o no hay plantilla de referencia, devuelve (True, None).
     """
 
-    # Import local para evitar problemas de import circular
     from plantillas_documentos_tecnicos.views import (
         extraer_controles_contenido_desde_gcs,
         extraer_controles_contenido_desde_file,
@@ -73,113 +65,90 @@ def validar_controles_archivo(requerimiento_id, archivo):
             tmp.write(chunk)
         tmp_path = tmp.name
 
-    # MUY IMPORTANTE: resetear puntero para que luego pueda subirse normalmente
+    # Reset puntero para que luego pueda subirse normalmente
     try:
         archivo.seek(0)
     except Exception:
         pass
 
     try:
-        # 2) Extraer controles del archivo que sube el usuario
+        # 2) Controles del archivo que sube el usuario
         controles_subido = set(extraer_controles_contenido_desde_file(tmp_path) or [])
-
     finally:
-        # Eliminar archivo temporal
         try:
             os.remove(tmp_path)
         except Exception:
             pass
 
-    # Si el archivo no tiene controles, igual seguimos y comparamos con referencia
-    # 3) Obtener tipo_documento_id y formato_id del requerimiento
+    # 3) Obtener ruta GCS de la plantilla de referencia
+    ruta_plantilla = None
+
     with connection.cursor() as cursor:
+        # 3.1 Intentar usar la versión registrada en documentos_generados
         cursor.execute(
             """
             SELECT 
-                TDT.id AS tipo_id,
-                F.id   AS formato_id
-            FROM requerimiento_documento_tecnico R
-            JOIN tipo_documentos_tecnicos TDT ON R.tipo_documento_id = TDT.id
-            JOIN formato_archivo F           ON TDT.formato_id       = F.id
-            WHERE R.id = %s
-        """,
-            [requerimiento_id],
+                DG.plantilla_documento_tecnico_version_id,
+                V.gcs_path
+            FROM documentos_generados DG
+            LEFT JOIN plantilla_tipo_doc_versiones V
+                ON V.id = DG.plantilla_documento_tecnico_version_id
+            WHERE DG.ruta_gcs LIKE %s
+            ORDER BY DG.fecha_generacion DESC, DG.id DESC
+            LIMIT 1
+            """,
+            [f"%RQ-{requerimiento_id}/%"],
         )
         row = cursor.fetchone()
+        if row and row[0] and row[1]:
+            ruta_plantilla = row[1]
+        else:
+            # 3.2 Fallback: versión_actual del tipo_documento
+            cursor.execute(
+                """
+                SELECT 
+                    V.gcs_path
+                FROM requerimiento_documento_tecnico R
+                JOIN tipo_documentos_tecnicos TDT 
+                    ON R.tipo_documento_id = TDT.id
+                JOIN plantilla_tipo_doc P
+                    ON P.tipo_documento_id = TDT.id
+                JOIN plantilla_tipo_doc_versiones V
+                    ON V.id = P.version_actual_id
+                WHERE R.id = %s
+                ORDER BY V.creado_en DESC, V.id DESC
+                LIMIT 1
+                """,
+                [requerimiento_id],
+            )
+            row2 = cursor.fetchone()
+            if row2:
+                ruta_plantilla = row2[0]
 
-    if not row:
-        # No podemos validar sin datos, dejamos pasar
+    if not ruta_plantilla:
+        # No podemos validar, dejamos pasar
         return True, None
 
-    tipo_id, formato_id = row
-
-    # 4) Obtener GCS path de la plantilla de cuerpo (última versión)
-    cuerpo_path = None
-    portada_path = None
-
-    with connection.cursor() as cursor:
-        # Cuerpo: última plantilla del tipo de documento
-        cursor.execute(
-            """
-            SELECT gcs_path
-            FROM plantilla_tipo_doc
-            WHERE tipo_documento_id = %s
-            ORDER BY version DESC, id DESC
-            LIMIT 1
-        """,
-            [tipo_id],
+    # 4) Controles de referencia desde la plantilla
+    try:
+        controles_ref = set(
+            extraer_controles_contenido_desde_gcs(ruta_plantilla) or []
         )
-        row = cursor.fetchone()
-        if row and row[0]:
-            cuerpo_path = row[0]
+    except Exception:
+        # Si falla la extracción, tampoco bloqueamos
+        return True, None
 
-        # Portada utilidad correspondiente (tipo_id = 1 = Portada Word)
-        cursor.execute(
-            """
-            SELECT gcs_path
-            FROM plantilla_portada
-            WHERE tipo_id = 1 AND formato_id = %s
-            ORDER BY version DESC, id DESC
-            LIMIT 1
-        """,
-            [formato_id],
-        )
-        row = cursor.fetchone()
-        if row and row[0]:
-            portada_path = row[0]
-
-    # 5) Construir set de controles de referencia (portada + cuerpo)
-    controles_ref = set()
-
-    if cuerpo_path:
-        try:
-            controles_ref |= set(
-                extraer_controles_contenido_desde_gcs(cuerpo_path) or []
-            )
-        except Exception:
-            pass
-
-    if portada_path:
-        try:
-            controles_ref |= set(
-                extraer_controles_contenido_desde_gcs(portada_path) or []
-            )
-        except Exception:
-            pass
-
-    # Si no hay controles de referencia definidos, no validamos nada
     if not controles_ref:
         return True, None
 
-    # 6) Comparar
+    # 5) Comparar
     faltantes = sorted(controles_ref - controles_subido)
     sobrantes = sorted(controles_subido - controles_ref)
 
     if not faltantes and not sobrantes:
-        # Todo ok
         return True, None
 
-    partes_msg = ["❌ El archivo no coincide con las plantillas configuradas."]
+    partes_msg = ["❌ El archivo no coincide con la plantilla configurada."]
 
     if faltantes:
         partes_msg.append("Faltan controles: " + ", ".join(faltantes))
@@ -519,6 +488,7 @@ class VersionManager:
         self.version_actual = nueva_version
         return nueva_version
 
+
 @login_required
 def detalle_documento(request, requerimiento_id):
     from plantillas_documentos_tecnicos.views import (
@@ -632,62 +602,60 @@ def detalle_documento(request, requerimiento_id):
         ]
 
     # ============================================================
-    # OBTENER PLANTILLA PORTADA / CUERPO (VERSIÓN REAL)
+    # OBTENER PLANTILLA DE TIPO_DOCUMENTO (VERSIÓN REAL DE REFERENCIA)
     # ============================================================
-    plantilla_portada = None
-    plantilla_cuerpo = None
+    plantilla_portada = None  # ya no se usa, pero lo dejamos para template (queda vacío)
+    plantilla_cuerpo = None   # aquí guardamos la plantilla de tipo_doc
 
     with connection.cursor() as cursor:
+        # 1) Intentar usar la versión registrada en documentos_generados
         cursor.execute(
             """
             SELECT 
-                DG.ruta_gcs,
-
-                -- columnas REALES
                 DG.plantilla_documento_tecnico_version_id,
-                DG.plantilla_utilidad_version_id,
-
-                -- CUERPO
-                PTDV.version AS version_cuerpo,
-                PTDV.gcs_path AS plantilla_cuerpo_gcs,
-
-                -- PORTADA
-                PPV.version AS version_portada,
-                PPV.gcs_path AS plantilla_portada_gcs
-
+                V.version,
+                V.gcs_path
             FROM documentos_generados DG
-
-            LEFT JOIN plantilla_tipo_doc_versiones PTDV
-                ON DG.plantilla_documento_tecnico_version_id = PTDV.id
-
-            LEFT JOIN plantilla_portada_versiones PPV
-                ON DG.plantilla_utilidad_version_id = PPV.id
-
+            LEFT JOIN plantilla_tipo_doc_versiones V
+                ON DG.plantilla_documento_tecnico_version_id = V.id
             WHERE DG.ruta_gcs LIKE %s
+            ORDER BY DG.fecha_generacion DESC, DG.id DESC
+            LIMIT 1
             """,
             [f"%RQ-{requerimiento_id}/%"],
         )
-
-        for (
-            ruta,
-            cuerpo_ver_id,
-            portada_ver_id,
-            ver_cuerpo,
-            cuerpo_gcs,
-            ver_portada,
-            portada_gcs,
-        ) in cursor.fetchall():
-
-            if cuerpo_ver_id:
+        row = cursor.fetchone()
+        if row and row[0] and row[2]:
+            plantilla_cuerpo = {
+                "version": row[1],
+                "ruta": row[2],
+            }
+        else:
+            # 2) Fallback: versión_actual del tipo_documento
+            cursor.execute(
+                """
+                SELECT 
+                    V.id,
+                    V.version,
+                    V.gcs_path
+                FROM requerimiento_documento_tecnico R
+                JOIN tipo_documentos_tecnicos TDT 
+                    ON R.tipo_documento_id = TDT.id
+                JOIN plantilla_tipo_doc P
+                    ON P.tipo_documento_id = TDT.id
+                JOIN plantilla_tipo_doc_versiones V
+                    ON V.id = P.version_actual_id
+                WHERE R.id = %s
+                ORDER BY V.creado_en DESC, V.id DESC
+                LIMIT 1
+                """,
+                [requerimiento_id],
+            )
+            row2 = cursor.fetchone()
+            if row2:
                 plantilla_cuerpo = {
-                    "ruta": cuerpo_gcs,
-                    "version": ver_cuerpo,
-                }
-
-            if portada_ver_id:
-                plantilla_portada = {
-                    "ruta": portada_gcs,
-                    "version": ver_portada,
+                    "version": row2[1],
+                    "ruta": row2[2],
                 }
 
     # ============================================================
@@ -751,9 +719,9 @@ def detalle_documento(request, requerimiento_id):
             errores_controles = False
 
             # =====================================================
-            # VALIDACIÓN ESTRICTA DE CONTROLES (PORTADA + CUERPO)
+            # VALIDACIÓN ESTRICTA DE CONTROLES (SOLO PLANTILLA TIPO_DOC)
             # =====================================================
-            if evento in eventos_con_archivo and archivo:
+            if evento in eventos_con_archivo and archivo and plantilla_cuerpo and plantilla_cuerpo.get("ruta"):
 
                 try:
                     # Guardar archivo temporal
@@ -767,30 +735,17 @@ def detalle_documento(request, requerimiento_id):
                         extraer_controles_contenido_desde_file(tmp_path) or []
                     )
 
-                    # Controles esperados (portada + cuerpo)
+                    # Controles esperados desde la plantilla de tipo_doc
                     controles_esperados = set()
-
-                    if plantilla_portada and plantilla_portada.get("ruta"):
-                        try:
-                            controles_esperados.update(
-                                extraer_controles_contenido_desde_gcs(
-                                    plantilla_portada["ruta"]
-                                )
-                                or []
+                    try:
+                        controles_esperados.update(
+                            extraer_controles_contenido_desde_gcs(
+                                plantilla_cuerpo["ruta"]
                             )
-                        except Exception:
-                            pass
-
-                    if plantilla_cuerpo and plantilla_cuerpo.get("ruta"):
-                        try:
-                            controles_esperados.update(
-                                extraer_controles_contenido_desde_gcs(
-                                    plantilla_cuerpo["ruta"]
-                                )
-                                or []
-                            )
-                        except Exception:
-                            pass
+                            or []
+                        )
+                    except Exception:
+                        pass
 
                     if controles_esperados:
                         faltantes = sorted(controles_esperados - controles_archivo)
@@ -798,7 +753,7 @@ def detalle_documento(request, requerimiento_id):
 
                         if faltantes or sobrantes:
                             errores_controles = True
-                            msg_html = "❌ El archivo NO cumple:<br>"
+                            msg_html = "❌ El archivo NO cumple con la plantilla de referencia:<br>"
                             if faltantes:
                                 msg_html += "• Faltantes: " + ", ".join(faltantes) + "<br>"
                             if sobrantes:
@@ -834,7 +789,7 @@ def detalle_documento(request, requerimiento_id):
                             resultado = None
 
                             # -------------------
-                            # 2) iniciar_elaboracion → crea estructura y plantillas
+                            # 2) iniciar_elaboracion → crea estructura y copia plantilla
                             # -------------------
                             if evento == "iniciar_elaboracion":
                                 from google.cloud import storage
@@ -923,7 +878,6 @@ def detalle_documento(request, requerimiento_id):
                                         f"{nueva_version}/{nombre_archivo}"
                                     )
 
-                                    from google.cloud import storage
                                     from google.cloud import storage as gcs_storage
 
                                     storage_client = gcs_storage.Client()
@@ -1039,8 +993,8 @@ def detalle_documento(request, requerimiento_id):
         "historial_versiones": historial_versiones,
         "historial_simulador": historial_simulador,
         "eventos_con_comentario": eventos_con_comentario,
-        "plantilla_portada": plantilla_portada,
-        "plantilla_cuerpo": plantilla_cuerpo,
+        "plantilla_portada": plantilla_portada,   # queda None
+        "plantilla_cuerpo": plantilla_cuerpo,     # plantilla tipo_doc real
         "archivo_revision": archivo_revision,
     }
 
@@ -1051,7 +1005,7 @@ def detalle_documento(request, requerimiento_id):
 def subir_archivo_documento(request, requerimiento_id):
     """
     Sube archivo a:
-    DocumentosProyectos/Cliente/Proyecto/Documentos_Tecnicos/Categoria/Tipo/VERSION/Archivo.pdf
+    DocumentosProyectos/Cliente/Proyecto/Documentos_Tecnicos/Categoria/Tipo/VERSION/Archivo.ext
     """
 
     if request.method != "POST":
@@ -1163,14 +1117,11 @@ def subir_archivo_documento(request, requerimiento_id):
     return redirect("documentos:detalle_documento", requerimiento_id=requerimiento_id)
 
 
-
-
-
-
 def inicializar_plantillas_requerimiento(cursor, bucket, requerimiento_id):
     """
-    Crea estructura RQ-ID/Plantilla/, copia y procesa portada y cuerpo (si existen),
-    registra SOLO 1 registro fusionado en documentos_generados,
+    Crea estructura RQ-ID/Plantilla/,
+    copia la plantilla de tipo_documento (si existe) al folder del RQ,
+    registra 1 registro en documentos_generados,
     y devuelve un resumen.
     """
 
@@ -1223,19 +1174,17 @@ def inicializar_plantillas_requerimiento(cursor, bucket, requerimiento_id):
         f"Documentos_Tecnicos/{categoria}/{tipo}/RQ-{requerimiento_id}/Plantilla/"
     )
 
-    # Crear carpetas
-    for sub in ["", "Portada/", "Portada/Word/", "Cuerpo/"]:
-        bucket.blob(base + sub).upload_from_string("")
+    # Crear carpeta base de Plantilla
+    bucket.blob(base).upload_from_string("")
 
     resumen = {
         "cuerpo": None,
-        "portada": None,
         "doc_fusionado_id": None,
         "warnings": [],
     }
 
     # ==========================================================
-    # OBTENER ÚLTIMA VERSIÓN REAL DEL CUERPO
+    # OBTENER ÚLTIMA VERSIÓN REAL DE LA PLANTILLA TIPO_DOC
     # ==========================================================
     cursor.execute(
         """
@@ -1258,13 +1207,13 @@ def inicializar_plantillas_requerimiento(cursor, bucket, requerimiento_id):
     else:
         version_cuerpo_id, cuerpo_path = None, None
 
-    # Copia cuerpo al RQ
+    # Copia plantilla al RQ
     if cuerpo_path:
         cuerpo_blob = bucket.blob(cuerpo_path)
         cuerpo_bytes = cuerpo_blob.download_as_bytes()
 
         cuerpo_nombre = cuerpo_path.split("/")[-1]
-        new_cuerpo_path = base + "Cuerpo/" + cuerpo_nombre
+        new_cuerpo_path = base + cuerpo_nombre
 
         bucket.blob(new_cuerpo_path).upload_from_string(
             cuerpo_bytes,
@@ -1273,153 +1222,12 @@ def inicializar_plantillas_requerimiento(cursor, bucket, requerimiento_id):
 
         resumen["cuerpo"] = new_cuerpo_path
     else:
-        resumen["warnings"].append("⚠ No existe plantilla de cuerpo para este tipo.")
+        resumen["warnings"].append(
+            "⚠ No existe plantilla de tipo_documento para este tipo."
+        )
 
     # ==========================================================
-    # OBTENER ÚLTIMA VERSIÓN REAL DE LA PORTADA (WORD)
-    # ==========================================================
-    cursor.execute(
-        """
-        SELECT 
-            v.id AS version_id,
-            v.gcs_path
-        FROM plantilla_portada p
-        JOIN plantilla_portada_versiones v
-            ON v.id = p.version_actual_id
-        WHERE p.utilidad_id = 1 AND p.formato_id = %s
-        ORDER BY v.creado_en DESC, v.id DESC
-        LIMIT 1
-        """,
-        [formato_id],
-    )
-
-    row = cursor.fetchone()
-    if row:
-        version_portada_id, portada_path = row
-    else:
-        version_portada_id, portada_path = None, None
-
-    # Procesar portada
-    if portada_path:
-
-        portada_blob = bucket.blob(portada_path)
-        portada_bytes = portada_blob.download_as_bytes()
-
-        from io import BytesIO
-        from .docx_filler import process_template_docx
-
-        # ================== DATOS DEL REQUERIMIENTO ==================
-        cursor.execute(
-            """
-            SELECT 
-                P.nombre AS proyecto,
-                CL.nombre AS cliente,
-                F.nombre AS faena,
-                C.numero_contrato,
-                P.numero_servicio,
-                U.nombre AS administrador_servicio,
-                TDT.nombre AS tipo_documento,
-                RDT.codigo_documento
-            FROM requerimiento_documento_tecnico RDT
-            JOIN proyectos P ON RDT.proyecto_id = P.id
-            JOIN contratos C ON P.contrato_id = C.id
-            JOIN clientes CL ON C.cliente_id = CL.id
-            JOIN faenas F ON P.faena_id = F.id
-            JOIN tipo_documentos_tecnicos TDT ON RDT.tipo_documento_id = TDT.id
-            LEFT JOIN usuarios U ON U.id = P.administrador_id
-            WHERE RDT.id = %s
-            """,
-            [requerimiento_id],
-        )
-
-        (
-            nombre_proyecto,
-            nombre_cliente,
-            nombre_faena,
-            numero_contrato,
-            numero_servicio,
-            administrador_servicio,
-            tipo_documento,
-            codigo_documento,
-        ) = cursor.fetchone()
-
-        # Roles
-        cursor.execute(
-            """
-            SELECT rol_id, U.nombre
-            FROM requerimiento_equipo_rol RER
-            JOIN usuarios U ON U.id = RER.usuario_id
-            WHERE requerimiento_id = %s AND activo = TRUE
-            """,
-            [requerimiento_id],
-        )
-        roles_data = cursor.fetchall()
-
-        equipo = {
-            "redactores_equipo": ", ".join([r[1] for r in roles_data if r[0] == 1]),
-            "revisores_equipo": ", ".join([r[1] for r in roles_data if r[0] == 2]),
-            "aprobadores_equipo": ", ".join([r[1] for r in roles_data if r[0] == 3]),
-        }
-
-        # Historial
-        cursor.execute(
-            """
-            SELECT version, fecha, comentario,
-            (SELECT nombre FROM estado_documento WHERE id = estado_id)
-            FROM version_documento_tecnico
-            WHERE requerimiento_documento_id = %s
-            ORDER BY fecha ASC
-            """,
-            [requerimiento_id],
-        )
-
-        historial = []
-        for v, fecha, comentario, estado in cursor.fetchall():
-            historial.append(
-                {
-                    "h.version": v,
-                    "h.estado": estado,
-                    "h.fecha": fecha.strftime("%d-%m-%Y %H:%M"),
-                    "h.comentario": comentario or "",
-                }
-            )
-
-        # ==================================================================
-        # Rellenar portada con datos reales del RQ
-        # ==================================================================
-        simple_data = {
-            "tipo_documento": tipo_documento,
-            "codigo_documento": codigo_documento,
-            "nombre_proyecto": nombre_proyecto,
-            "nombre_cliente": nombre_cliente,
-            "nombre_faena": nombre_faena,
-            "numero_contrato": numero_contrato,
-            "numero_servicio": numero_servicio,
-            "administrador_servicio": administrador_servicio,
-        }
-        simple_data.update(equipo)
-
-        portada_final_bytes = process_template_docx(
-            template_bytes=BytesIO(portada_bytes),
-            simple_data=simple_data,
-            historial_versiones=historial,
-        )
-
-        # Subir portada generada
-        new_portada_path = base + "Portada/Word/" + portada_path.split("/")[-1]
-
-        bucket.blob(new_portada_path).upload_from_string(
-            portada_final_bytes,
-            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        )
-
-        resumen["portada"] = new_portada_path
-
-    else:
-        resumen["warnings"].append("⚠ No existe portada Word para este formato.")
-
-    # ==========================================================
-    # INSERTAR REGISTRO (VERSIÓN REAL)
+    # INSERTAR REGISTRO EN documentos_generados (SOLO PLANTILLA TIPO_DOC)
     # ==========================================================
     cursor.execute(
         """
@@ -1429,19 +1237,17 @@ def inicializar_plantillas_requerimiento(cursor, bucket, requerimiento_id):
              ruta_gcs,
              fecha_generacion,
              plantilla_documento_tecnico_version_id,
-             formato_id,
-             plantilla_utilidad_version_id
+             formato_id
             )
-        VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        VALUES (%s, %s, %s, NOW(), %s, %s)
         RETURNING id
         """,
         [
             proyecto_id,
             tipo_doc_id,
-            resumen["cuerpo"],       # ruta final del cuerpo
-            version_cuerpo_id,       # ✔ versión REAL del CUERPO
+            resumen["cuerpo"],       # ruta final de la copia de plantilla
+            version_cuerpo_id,       # versión REAL de plantilla_tipo_doc_versiones
             formato_id,
-            version_portada_id,      # ✔ versión REAL de la PORTADA
         ],
     )
 
@@ -1450,16 +1256,14 @@ def inicializar_plantillas_requerimiento(cursor, bucket, requerimiento_id):
     return resumen
 
 
-
-
-
 @login_required
 def prevalidar_controles(request, requerimiento_id):
     """
     Paso 1 del flujo A:
     El usuario sube un archivo y pide 'Ver comparación'.
     NO ejecuta el evento aún.
-    Solo muestra controles esperados vs controles reales.
+    Solo muestra controles esperados vs controles reales,
+    usando la plantilla de tipo_documento (versión del RQ o versión_actual).
     """
 
     from plantillas_documentos_tecnicos.views import (
@@ -1487,57 +1291,67 @@ def prevalidar_controles(request, requerimiento_id):
         tmp_path = tmp.name
 
     # Controles que trae el archivo del usuario
-    controles_subido = set(extraer_controles_contenido_desde_file(tmp_path))
+    controles_subido = set(extraer_controles_contenido_desde_file(tmp_path) or [])
 
     os.unlink(tmp_path)
 
     # ==============================
-    # OBTENER PLANTILLAS ORIGINAL DEL RQ
+    # OBTENER PLANTILLA ORIGINAL DEL RQ (O FALLBACK)
     # ==============================
-    plantilla_portada = None
-    plantilla_cuerpo = None
+    ruta_plantilla = None
 
     with connection.cursor() as cursor:
+        # 1) Usar versión registrada en documentos_generados, si existe
         cursor.execute(
             """
             SELECT 
-                DG.plantilla_documento_tecnico_id,
-                DG.plantilla_utilidad_id,
-                PDT.gcs_path,
-                PUT.gcs_path
+                DG.plantilla_documento_tecnico_version_id,
+                V.gcs_path
             FROM documentos_generados DG
-            LEFT JOIN plantilla_tipo_doc PDT 
-                ON DG.plantilla_documento_tecnico_id = PDT.id
-            LEFT JOIN plantilla_portada PUT
-                ON DG.plantilla_utilidad_id = PUT.id
+            LEFT JOIN plantilla_tipo_doc_versiones V
+                ON V.id = DG.plantilla_documento_tecnico_version_id
             WHERE DG.ruta_gcs LIKE %s
-        """,
+            ORDER BY DG.fecha_generacion DESC, DG.id DESC
+            LIMIT 1
+            """,
             [f"%RQ-{requerimiento_id}/%"],
         )
+        row = cursor.fetchone()
+        if row and row[0] and row[1]:
+            ruta_plantilla = row[1]
+        else:
+            # 2) Fallback: versión_actual del tipo_documento
+            cursor.execute(
+                """
+                SELECT 
+                    V.gcs_path
+                FROM requerimiento_documento_tecnico R
+                JOIN tipo_documentos_tecnicos TDT 
+                    ON R.tipo_documento_id = TDT.id
+                JOIN plantilla_tipo_doc P
+                    ON P.tipo_documento_id = TDT.id
+                JOIN plantilla_tipo_doc_versiones V
+                    ON V.id = P.version_actual_id
+                WHERE R.id = %s
+                ORDER BY V.creado_en DESC, V.id DESC
+                LIMIT 1
+                """,
+                [requerimiento_id],
+            )
+            row2 = cursor.fetchone()
+            if row2:
+                ruta_plantilla = row2[0]
 
-        for cuerpo_id, portada_id, cuerpo_path, portada_path in cursor.fetchall():
-            if cuerpo_id:
-                plantilla_cuerpo = cuerpo_path
-            if portada_id:
-                plantilla_portada = portada_path
-
-    # ==============================
-    # EXTRAER CONTROLES ESPERADOS
-    # ==============================
-    controles_portada = set()
     controles_cuerpo = set()
-
-    if plantilla_portada:
-        controles_portada = set(
-            extraer_controles_contenido_desde_gcs(plantilla_portada)
-        )
-
-    if plantilla_cuerpo:
+    if ruta_plantilla:
         controles_cuerpo = set(
-            extraer_controles_contenido_desde_gcs(plantilla_cuerpo)
+            extraer_controles_contenido_desde_gcs(ruta_plantilla) or []
         )
 
-    controles_esperados = controles_portada | controles_cuerpo
+    # Por compatibilidad con plantillas antiguas, dejamos controles_portada vacío
+    controles_portada = set()
+
+    controles_esperados = controles_cuerpo  # solo cuerpo ahora
 
     # ==============================
     # COMPARACIÓN COMPLETA
@@ -1563,9 +1377,19 @@ def prevalidar_controles(request, requerimiento_id):
 
     return render(request, "comparacion_controles.html", context)
 
+
 @login_required
 @require_POST
 def validar_controles_doc_ajax(request, requerimiento_id):
+    """
+    Valida por AJAX los controles del archivo subido contra la PLANTILLA
+    del tipo_documento (versión usada en el RQ o versión_actual).
+
+    Mantiene la estructura del JSON para no romper el JS:
+    - Usa *_cuerpo para la plantilla.
+    - Deja *_portada vacíos.
+    """
+
     from plantillas_documentos_tecnicos.views import (
         extraer_controles_contenido_desde_gcs,
         extraer_controles_contenido_desde_file,
@@ -1584,22 +1408,21 @@ def validar_controles_doc_ajax(request, requerimiento_id):
             tmp.write(chunk)
         tmp_path = tmp.name
 
-    controles_archivo = set(extraer_controles_contenido_desde_file(tmp_path))
+    controles_archivo = set(extraer_controles_contenido_desde_file(tmp_path) or [])
 
     try:
         os.unlink(tmp_path)
-    except:
+    except Exception:
         pass
 
     # ============================================================
-    # 2) Obtener IDs de VERSION usados en el RQ (CORREGIDO)
+    # 2) Obtener ID de VERSION usado en el RQ (SOLO PLANTILLA TIPO_DOC)
     # ============================================================
     with connection.cursor() as cursor:
         cursor.execute(
             """
             SELECT 
-                DG.plantilla_documento_tecnico_version_id,
-                DG.plantilla_utilidad_version_id
+                DG.plantilla_documento_tecnico_version_id
             FROM documentos_generados DG
             WHERE DG.ruta_gcs LIKE %s
             LIMIT 1
@@ -1609,13 +1432,10 @@ def validar_controles_doc_ajax(request, requerimiento_id):
 
         row = cursor.fetchone()
 
-        if not row:
-            return JsonResponse({"error": "No se pudo obtener metadatos del requerimiento."})
-
-        cuerpo_version_id, portada_version_id = row
+        cuerpo_version_id = row[0] if row else None
 
     # ============================================================
-    # 3) Obtener rutas GCS de las versiones reales (CORREGIDO)
+    # 3) Obtener ruta GCS de la versión real
     # ============================================================
     ruta_cuerpo = None
     if cuerpo_version_id:
@@ -1631,63 +1451,69 @@ def validar_controles_doc_ajax(request, requerimiento_id):
             row = cursor.fetchone()
             ruta_cuerpo = row[0] if row else None
 
-    ruta_portada = None
-    if portada_version_id:
+    # Fallback: versión_actual del tipo_documento
+    if not ruta_cuerpo:
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT gcs_path
-                FROM plantilla_portada_versiones
-                WHERE id = %s
+                SELECT 
+                    V.gcs_path
+                FROM requerimiento_documento_tecnico R
+                JOIN tipo_documentos_tecnicos TDT 
+                    ON R.tipo_documento_id = TDT.id
+                JOIN plantilla_tipo_doc P
+                    ON P.tipo_documento_id = TDT.id
+                JOIN plantilla_tipo_doc_versiones V
+                    ON V.id = P.version_actual_id
+                WHERE R.id = %s
+                ORDER BY V.creado_en DESC, V.id DESC
+                LIMIT 1
                 """,
-                [portada_version_id],
+                [requerimiento_id],
             )
-            row = cursor.fetchone()
-            ruta_portada = row[0] if row else None
+            row2 = cursor.fetchone()
+            if row2:
+                ruta_cuerpo = row2[0]
 
     # ============================================================
-    # 4) Extraer controles esperados (portada + cuerpo)
+    # 4) Extraer controles esperados (solo cuerpo)
     # ============================================================
     controles_esperados = set()
 
     controles_cuerpo = []
-    controles_portada = []
+    controles_portada = []  # ya no se usa, pero lo dejamos vacío para compatibilidad
 
     try:
         if ruta_cuerpo:
-            controles_cuerpo = extraer_controles_contenido_desde_gcs(ruta_cuerpo)
+            controles_cuerpo = extraer_controles_contenido_desde_gcs(ruta_cuerpo) or []
             controles_esperados.update(controles_cuerpo)
 
-        if ruta_portada:
-            controles_portada = extraer_controles_contenido_desde_gcs(ruta_portada)
-            controles_esperados.update(controles_portada)
-
         # ================================
-        # 5) Comparación por origen
+        # 5) Comparación por origen (solo cuerpo)
         # ================================
         set_cuerpo = set(controles_cuerpo)
-        set_portada = set(controles_portada)
 
         coincidencias_cuerpo = sorted(controles_archivo & set_cuerpo)
         faltantes_cuerpo = sorted(set_cuerpo - controles_archivo)
         sobrantes_cuerpo = sorted(controles_archivo - set_cuerpo)
 
-        coincidencias_portada = sorted(controles_archivo & set_portada)
-        faltantes_portada = sorted(set_portada - controles_archivo)
-        sobrantes_portada = sorted(controles_archivo - set_portada)
+        # Como ya no hay portada, las listas se dejan vacías
+        coincidencias_portada = []
+        faltantes_portada = []
+        sobrantes_portada = []
 
         # ================================
         # 6) Combinados
         # ================================
-        coincidencias = sorted(set(coincidencias_cuerpo) | set(coincidencias_portada))
-        faltantes = sorted(set(faltantes_cuerpo) | set(faltantes_portada))
-        sobrantes = sorted(set(sobrantes_cuerpo) | set(sobrantes_portada))
+        coincidencias = sorted(set(coincidencias_cuerpo))
+        faltantes = sorted(set(faltantes_cuerpo))
+        sobrantes = sorted(set(sobrantes_cuerpo))
 
     except Exception as e:
         return JsonResponse({"error": f"Error al procesar controles: {str(e)}"})
 
     # ============================================================
-    # 7) Respuesta final → Compatible con todo tu JS actual
+    # 7) Respuesta final → Compatible con tu JS actual
     # ============================================================
     return JsonResponse({
         # Combinados
@@ -1695,7 +1521,7 @@ def validar_controles_doc_ajax(request, requerimiento_id):
         "faltantes": faltantes,
         "sobrantes": sobrantes,
 
-        # Separados por origen
+        # Separados por origen (portada vacío)
         "coincidencias_portada": coincidencias_portada,
         "coincidencias_cuerpo": coincidencias_cuerpo,
         "faltantes_portada": faltantes_portada,
@@ -1709,5 +1535,5 @@ def validar_controles_doc_ajax(request, requerimiento_id):
         "controles_portada": controles_portada,
         "controles_cuerpo": controles_cuerpo,
         "ruta_cuerpo": ruta_cuerpo,
-        "ruta_portada": ruta_portada,
+        "ruta_portada": None,
     })

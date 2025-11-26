@@ -303,14 +303,6 @@ function cargarContratos(clienteId) {
   const seleccionActual = selectContrato.value;
   selectContrato.innerHTML = '<option value="">-- Nuevo Contrato --</option>';
 
-  contratos.forEach(c => {
-    if (String(c.cliente_id) === String(clienteId)) {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = c.numero_contrato;
-      selectContrato.appendChild(opt);
-    }
-  });
 
   if (seleccionActual === "" || !selectContrato.value) {
     nuevoContrato.style.display = 'block';
