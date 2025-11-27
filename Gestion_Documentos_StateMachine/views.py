@@ -488,7 +488,6 @@ class VersionManager:
         self.version_actual = nueva_version
         return nueva_version
 
-
 @login_required
 def detalle_documento(request, requerimiento_id):
     from plantillas_documentos_tecnicos.views import (
@@ -518,14 +517,10 @@ def detalle_documento(request, requerimiento_id):
                 COALESCE(EA.nombre, 'Pendiente de Inicio') AS estado_actual,
                 P.nombre AS nombre_proyecto
             FROM public.requerimiento_documento_tecnico RDT
-            INNER JOIN public.tipo_documentos_tecnicos TDT 
-                ON RDT.tipo_documento_id = TDT.id
-            INNER JOIN public.categoria_documentos_tecnicos CDT 
-                ON TDT.categoria_id = CDT.id
+            INNER JOIN public.tipo_documentos_tecnicos TDT ON RDT.tipo_documento_id = TDT.id
+            INNER JOIN public.categoria_documentos_tecnicos CDT ON TDT.categoria_id = CDT.id
             LEFT JOIN public.requerimiento_equipo_rol RER
-                ON RDT.id = RER.requerimiento_id 
-               AND RER.usuario_id = %s 
-               AND RER.activo = TRUE
+                   ON RDT.id = RER.requerimiento_id AND RER.usuario_id = %s AND RER.activo = TRUE
             LEFT JOIN public.roles_ciclodocumento RR ON RER.rol_id = RR.id
             INNER JOIN public.proyectos P ON RDT.proyecto_id = P.id
             LEFT JOIN public.estado_documento EA ON EA.id = (
@@ -559,10 +554,8 @@ def detalle_documento(request, requerimiento_id):
                 U.nombre AS usuario_nombre, 
                 LER.observaciones AS comentario
             FROM public.log_estado_requerimiento_documento LER
-            LEFT JOIN public.estado_documento E 
-                ON LER.estado_destino_id = E.id
-            LEFT JOIN public.usuarios U 
-                ON LER.usuario_id = U.id
+            LEFT JOIN public.estado_documento E ON LER.estado_destino_id = E.id
+            LEFT JOIN public.usuarios U ON LER.usuario_id = U.id
             WHERE LER.requerimiento_id = %s
             ORDER BY LER.fecha_cambio ASC
             """,
@@ -587,10 +580,8 @@ def detalle_documento(request, requerimiento_id):
                 VDT.comentario,
                 VDT.signed_url
             FROM public.version_documento_tecnico VDT
-            LEFT JOIN public.estado_documento E 
-                ON VDT.estado_id = E.id
-            LEFT JOIN public.usuarios U 
-                ON VDT.usuario_id = U.id
+            LEFT JOIN public.estado_documento E ON VDT.estado_id = E.id
+            LEFT JOIN public.usuarios U ON VDT.usuario_id = U.id
             WHERE VDT.requerimiento_documento_id = %s
             ORDER BY VDT.fecha ASC
             """,
@@ -602,13 +593,12 @@ def detalle_documento(request, requerimiento_id):
         ]
 
     # ============================================================
-    # OBTENER PLANTILLA DE TIPO_DOCUMENTO (VERSIÓN REAL DE REFERENCIA)
+    # OBTENER PLANTILLA BASE TIPO_DOCUMENTO
     # ============================================================
-    plantilla_portada = None  # ya no se usa, pero lo dejamos para template (queda vacío)
-    plantilla_cuerpo = None   # aquí guardamos la plantilla de tipo_doc
+    plantilla_portada = None
+    plantilla_cuerpo = None
 
     with connection.cursor() as cursor:
-        # 1) Intentar usar la versión registrada en documentos_generados
         cursor.execute(
             """
             SELECT 
@@ -625,26 +615,17 @@ def detalle_documento(request, requerimiento_id):
             [f"%RQ-{requerimiento_id}/%"],
         )
         row = cursor.fetchone()
+
         if row and row[0] and row[2]:
-            plantilla_cuerpo = {
-                "version": row[1],
-                "ruta": row[2],
-            }
+            plantilla_cuerpo = {"version": row[1], "ruta": row[2]}
         else:
-            # 2) Fallback: versión_actual del tipo_documento
             cursor.execute(
                 """
-                SELECT 
-                    V.id,
-                    V.version,
-                    V.gcs_path
+                SELECT V.id, V.version, V.gcs_path
                 FROM requerimiento_documento_tecnico R
-                JOIN tipo_documentos_tecnicos TDT 
-                    ON R.tipo_documento_id = TDT.id
-                JOIN plantilla_tipo_doc P
-                    ON P.tipo_documento_id = TDT.id
-                JOIN plantilla_tipo_doc_versiones V
-                    ON V.id = P.version_actual_id
+                JOIN tipo_documentos_tecnicos TDT ON R.tipo_documento_id = TDT.id
+                JOIN plantilla_tipo_doc P ON P.tipo_documento_id = TDT.id
+                JOIN plantilla_tipo_doc_versiones V ON V.id = P.version_actual_id
                 WHERE R.id = %s
                 ORDER BY V.creado_en DESC, V.id DESC
                 LIMIT 1
@@ -653,13 +634,10 @@ def detalle_documento(request, requerimiento_id):
             )
             row2 = cursor.fetchone()
             if row2:
-                plantilla_cuerpo = {
-                    "version": row2[1],
-                    "ruta": row2[2],
-                }
+                plantilla_cuerpo = {"version": row2[1], "ruta": row2[2]}
 
     # ============================================================
-    # ARCHIVO ENVIADO A REVISIÓN (última versión REV)
+    # ARCHIVO ÚLTIMA REV
     # ============================================================
     archivo_revision = None
     with connection.cursor() as cursor:
@@ -679,7 +657,7 @@ def detalle_documento(request, requerimiento_id):
             archivo_revision = {"version": row[0], "url": row[1], "fecha": row[2]}
 
     # ============================================================
-    # MÁQUINA DE ESTADOS
+    # STATE MACHINE
     # ============================================================
     estado_inicial = documento["estado_actual"] or "Pendiente de Inicio"
     rol_id = documento.get("rol_id") or 0
@@ -687,15 +665,10 @@ def detalle_documento(request, requerimiento_id):
     historial_simulador = request.session.get("historial_simulador", [])
 
     eventos_con_comentario = ["rechazar_revision", "rechazar_aprobacion"]
-    eventos_con_archivo = [
-        "enviar_revision",
-        "reenviar_revision",
-        "rechazar_revision",
-        "rechazar_aprobacion",
-    ]
+    eventos_con_archivo = ["enviar_revision", "reenviar_revision", "rechazar_revision", "rechazar_aprobacion"]
 
     # ============================================================
-    # POST — PROCESAR EVENTOS (VALIDACIÓN + TRANSICIÓN REAL)
+    # POST - EVENTOS
     # ============================================================
     if request.method == "POST":
 
@@ -703,9 +676,7 @@ def detalle_documento(request, requerimiento_id):
         comentario = request.POST.get("comentario", "").strip()
         archivo = request.FILES.get("archivo")
 
-        # -----------------------------
-        # VALIDACIONES BÁSICAS
-        # -----------------------------
+        # VALIDACIONES BASE
         if evento in eventos_con_comentario and not comentario:
             mensaje = f"❌ Debes ingresar un comentario para '{evento}'."
 
@@ -718,31 +689,20 @@ def detalle_documento(request, requerimiento_id):
         else:
             errores_controles = False
 
-            # =====================================================
-            # VALIDACIÓN ESTRICTA DE CONTROLES (SOLO PLANTILLA TIPO_DOC)
-            # =====================================================
+            # VALIDACIÓN DE CONTROLES SOLO PARA EVENTOS CON ARCHIVO
             if evento in eventos_con_archivo and archivo and plantilla_cuerpo and plantilla_cuerpo.get("ruta"):
-
                 try:
-                    # Guardar archivo temporal
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
                         for chunk in archivo.chunks():
                             tmp.write(chunk)
                         tmp_path = tmp.name
 
-                    # Controles del archivo subido
-                    controles_archivo = set(
-                        extraer_controles_contenido_desde_file(tmp_path) or []
-                    )
+                    controles_archivo = set(extraer_controles_contenido_desde_file(tmp_path) or [])
 
-                    # Controles esperados desde la plantilla de tipo_doc
                     controles_esperados = set()
                     try:
                         controles_esperados.update(
-                            extraer_controles_contenido_desde_gcs(
-                                plantilla_cuerpo["ruta"]
-                            )
-                            or []
+                            extraer_controles_contenido_desde_gcs(plantilla_cuerpo["ruta"]) or []
                         )
                     except Exception:
                         pass
@@ -761,39 +721,27 @@ def detalle_documento(request, requerimiento_id):
                             mensaje = msg_html
                             messages.error(request, mensaje)
 
-                    # limpiar temporal
-                    try:
-                        os.unlink(tmp_path)
-                    except Exception:
-                        pass
+                    os.unlink(tmp_path)
 
                 except Exception as e:
                     errores_controles = True
                     mensaje = f"⚠ Error validando controles: {e}"
                     messages.error(request, mensaje)
 
-            # =====================================================
-            # SI NO HAY ERRORES DE CONTROLES → EJECUTAR EVENTO
-            # =====================================================
+            # SI PASA VALIDACIONES → EJECUTAR EVENTO
             if not errores_controles:
                 try:
                     with transaction.atomic():
                         with connection.cursor() as cursor:
 
-                            # -------------------
-                            # 1) Ejecutar transición
-                            # -------------------
                             getattr(machine, evento)()
                             nuevo_estado = machine.current_state.name
 
                             resultado = None
 
-                            # -------------------
-                            # 2) iniciar_elaboracion → crea estructura y copia plantilla
-                            # -------------------
+                            # INICIAR ELABORACION → crea estructura + copia plantilla
                             if evento == "iniciar_elaboracion":
                                 from google.cloud import storage
-
                                 storage_client = storage.Client()
                                 bucket = storage_client.bucket("sgdmtso_jova")
 
@@ -803,9 +751,7 @@ def detalle_documento(request, requerimiento_id):
                                     requerimiento_id=requerimiento_id,
                                 )
 
-                            # -------------------
-                            # 3) Registrar log de estado
-                            # -------------------
+                            # REGISTRAR LOG
                             cursor.execute(
                                 """
                                 INSERT INTO public.log_estado_requerimiento_documento
@@ -822,15 +768,10 @@ def detalle_documento(request, requerimiento_id):
                                 ],
                             )
 
-                            # -------------------
-                            # 4) Versionamiento
-                            # -------------------
+                            # VERSIONAMIENTO
                             if machine.evento_genera_version(evento):
 
-                                vm = VersionManager(
-                                    requerimiento_id=requerimiento_id,
-                                    cursor=cursor,
-                                )
+                                vm = VersionManager(requerimiento_id=requerimiento_id, cursor=cursor)
 
                                 nueva_version = vm.registrar_version(
                                     evento,
@@ -839,7 +780,6 @@ def detalle_documento(request, requerimiento_id):
                                     comentario or f"Evento: {evento}",
                                 )
 
-                                # 5) Subir archivo asociado (si corresponde)
                                 if evento in eventos_con_archivo and archivo:
                                     cursor.execute(
                                         """
@@ -858,13 +798,7 @@ def detalle_documento(request, requerimiento_id):
                                         """,
                                         [requerimiento_id],
                                     )
-                                    row = cursor.fetchone()
-                                    (
-                                        proyecto,
-                                        cliente,
-                                        categoria,
-                                        tipo,
-                                    ) = row
+                                    proyecto, cliente, categoria, tipo = cursor.fetchone()
 
                                     cliente = clean(cliente)
                                     proyecto = clean(proyecto)
@@ -878,15 +812,13 @@ def detalle_documento(request, requerimiento_id):
                                         f"{nueva_version}/{nombre_archivo}"
                                     )
 
-                                    from google.cloud import storage as gcs_storage
-
-                                    storage_client = gcs_storage.Client()
+                                    from google.cloud import storage
+                                    storage_client = storage.Client()
                                     bucket = storage_client.bucket("sgdmtso_jova")
 
                                     mime_type, _ = mimetypes.guess_type(nombre_archivo)
                                     blob = bucket.blob(ruta_final)
 
-                                    # IMPORTANTÍSIMO: volver al inicio antes de subir
                                     try:
                                         archivo.file.seek(0)
                                     except Exception:
@@ -894,8 +826,7 @@ def detalle_documento(request, requerimiento_id):
 
                                     blob.upload_from_file(
                                         archivo.file,
-                                        content_type=mime_type
-                                        or "application/octet-stream",
+                                        content_type=mime_type or "application/octet-stream",
                                     )
 
                                     signed_url = blob.generate_signed_url(
@@ -913,9 +844,6 @@ def detalle_documento(request, requerimiento_id):
                                         [signed_url, requerimiento_id, nueva_version],
                                     )
 
-                    # -------------------
-                    # Fuera de la transacción
-                    # -------------------
                     if resultado:
                         for w in resultado.get("warnings", []):
                             messages.warning(request, w)
@@ -925,16 +853,12 @@ def detalle_documento(request, requerimiento_id):
                             "evento": evento,
                             "nuevo_estado": nuevo_estado,
                             "comentario": comentario,
-                            "timestamp": datetime.now().strftime(
-                                "%Y-%m-%d %H:%M:%S"
-                            ),
+                            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         }
                     )
                     request.session["historial_simulador"] = historial_simulador
 
-                    # Actualizar estado que se muestra en pantalla
                     documento["estado_actual"] = nuevo_estado
-
                     mensaje = f"✅ Evento '{evento}' ejecutado. Nuevo estado: {nuevo_estado}"
                     messages.success(request, mensaje)
 
@@ -956,15 +880,8 @@ def detalle_documento(request, requerimiento_id):
         "rechazar_aprobacion",
         "reenviar_revision",
     ]
-    eventos_disponibles = [
-        ev for ev in todos_eventos if machine.puede_transicionar(ev)
-    ]
-    eventos_tuplas = list(
-        zip(
-            eventos_disponibles,
-            [ev.replace("_", " ").capitalize() for ev in eventos_disponibles],
-        )
-    )
+    eventos_disponibles = [ev for ev in todos_eventos if machine.puede_transicionar(ev)]
+    eventos_tuplas = list(zip(eventos_disponibles, [ev.replace("_", " ").capitalize() for ev in eventos_disponibles]))
 
     colores_estado = {
         "Pendiente de Inicio": "secondary",
@@ -980,9 +897,7 @@ def detalle_documento(request, requerimiento_id):
     if not eventos_disponibles and not mensaje:
         mensaje = "⚙️ No tienes acciones disponibles para este estado."
 
-    # ============================================================
     # CONTEXTO FINAL
-    # ============================================================
     context = {
         "documento": documento,
         "estado_actual": documento["estado_actual"],
@@ -993,12 +908,13 @@ def detalle_documento(request, requerimiento_id):
         "historial_versiones": historial_versiones,
         "historial_simulador": historial_simulador,
         "eventos_con_comentario": eventos_con_comentario,
-        "plantilla_portada": plantilla_portada,   # queda None
-        "plantilla_cuerpo": plantilla_cuerpo,     # plantilla tipo_doc real
+        "plantilla_portada": plantilla_portada,
+        "plantilla_cuerpo": plantilla_cuerpo,
         "archivo_revision": archivo_revision,
     }
 
     return render(request, "detalle_documento.html", context)
+
 
 
 @login_required

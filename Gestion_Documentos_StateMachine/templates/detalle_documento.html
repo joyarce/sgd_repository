@@ -24,6 +24,7 @@
       Documento: {{ documento.tipo_documento }} ({{ documento.categoria_documento }})
     </div>
     <div class="card-body">
+
       <p><strong>Proyecto:</strong> {{ documento.nombre_proyecto }}</p>
       <p><strong>Observaciones:</strong> {{ documento.observaciones }}</p>
 
@@ -43,12 +44,28 @@
 
       <p><strong>Rol Asignado:</strong> {{ documento.rol_asignado }}</p>
       <p><strong>Fecha de Registro:</strong> {{ documento.fecha_registro }}</p>
+
     </div>
   </div>
 
+  {% if estado_actual == "Pendiente de Inicio" %}
+  <div class="alert alert-warning border-0 shadow-sm mt-3" style="font-size: 0.95rem;">
+      <strong>Aún no se ha iniciado la elaboración.</strong><br>
+      Para acceder a la plantilla del documento técnico y comenzar a trabajar,
+      debes presionar <strong>“Iniciar Elaboración”</strong>.
+  </div>
+
+  <style>.hidden-in-pendiente { display:none !important; }</style>
+  {% endif %}
+
+
+
+
+
   <!-- ========================================================= -->
-  <!-- BLOQUE: EN REVISIÓN -->
+  <!-- BLOQUES DE ESTADO (REVISIÓN, APROBACIÓN, PUBLICACIÓN, ETC) -->
   <!-- ========================================================= -->
+
   {% if estado_actual == "En Revisión" %}
   <div class="card border-warning shadow-sm mb-4">
     <div class="card-header bg-warning text-dark fw-semibold">
@@ -56,15 +73,7 @@
     </div>
     <div class="card-body">
 
-      <p><strong>Versión de Portada Utilizada:</strong>
-        {% if plantilla_portada %}
-          {{ plantilla_portada.version }}
-        {% else %}
-          <span class="text-muted">No registrada</span>
-        {% endif %}
-      </p>
-
-      <p><strong>Versión de Plantilla de Documento:</strong>
+      <p><strong>Versión de Plantilla:</strong>
         {% if plantilla_cuerpo %}
           {{ plantilla_cuerpo.version }}
         {% else %}
@@ -81,7 +90,7 @@
         <p>Fecha: {{ archivo_revision.fecha|date:"d-m-Y H:i" }}</p>
 
         <div class="d-flex gap-2">
-          <a class="btn btn-outline-primary btn-sm" target="_blank" href="{{ archivo_revision.url }}">Ver archivo</a>
+          <a class="btn btn-outline-primary btn-sm" target="_blank" href="{{ archivo_revision.url }}">Ver</a>
           <a class="btn btn-outline-secondary btn-sm" href="{{ archivo_revision.url }}" download>⬇ Descargar</a>
         </div>
       {% else %}
@@ -91,17 +100,16 @@
   </div>
   {% endif %}
 
-  <!-- ========================================================= -->
-  <!-- BLOQUE: RE ESTRUCTURACIÓN-->
-  <!-- ========================================================= -->
+
+
   {% if estado_actual == "Re Estructuración" %}
   <div class="card border-danger shadow-sm mb-4">
     <div class="card-header bg-danger text-white fw-semibold">
-      🛠 Documento en Re-Estructuración (por rechazo)
+      🛠 documento en Re–Estructuración (rechazado)
     </div>
     <div class="card-body">
 
-      <p class="mb-1"><strong>Último comentario del revisor:</strong></p>
+      <p class="fw-semibold mb-1">Último comentario del revisor:</p>
 
       {% with mostrado=0 %}
         {% for h in historial_estados reversed %}
@@ -124,20 +132,18 @@
         <p>Fecha: {{ archivo_revision.fecha|date:"d-m-Y H:i" }}</p>
 
         <div class="d-flex gap-2">
-          <a class="btn btn-outline-primary btn-sm" target="_blank" href="{{ archivo_revision.url }}">Ver archivo</a>
+          <a class="btn btn-outline-primary btn-sm" target="_blank" href="{{ archivo_revision.url }}">Ver</a>
           <a class="btn btn-outline-secondary btn-sm" href="{{ archivo_revision.url }}" download>⬇ Descargar</a>
         </div>
       {% else %}
         <p class="text-muted">No hay archivo rechazado disponible.</p>
       {% endif %}
-
     </div>
   </div>
   {% endif %}
 
-  <!-- ========================================================= -->
-  <!-- BLOQUE: EN APROBACIÓN -->
-  <!-- ========================================================= -->
+
+
   {% if estado_actual == "En Aprobación" %}
   <div class="card border-primary shadow-sm mb-4">
     <div class="card-header bg-primary text-white fw-semibold">
@@ -145,23 +151,13 @@
     </div>
     <div class="card-body">
 
-      <p><strong>Versión revisada aceptada:</strong>
-        {% if archivo_revision %}
-          {{ archivo_revision.version }}
-        {% else %}
-          <span class="text-muted">No registrada</span>
-        {% endif %}
-      </p>
-
-      <hr>
-
       <h6 class="fw-semibold">Archivo enviado a aprobación:</h6>
-
       {% if archivo_revision %}
-        <p>Fecha: {{ archivo_revision.fecha|date:"d-m-Y H:i" }}</p>
+        <p><strong>Versión:</strong> {{ archivo_revision.version }}</p>
+        <p><strong>Fecha:</strong> {{ archivo_revision.fecha|date:"d-m-Y H:i" }}</p>
 
         <div class="d-flex gap-2">
-          <a class="btn btn-outline-light btn-sm" target="_blank" href="{{ archivo_revision.url }}">Ver archivo</a>
+          <a class="btn btn-outline-light btn-sm" target="_blank" href="{{ archivo_revision.url }}">Ver</a>
           <a class="btn btn-outline-dark btn-sm" href="{{ archivo_revision.url }}" download>⬇ Descargar</a>
         </div>
       {% else %}
@@ -171,64 +167,8 @@
   </div>
   {% endif %}
 
-  <!-- ========================================================= -->
-  <!-- BLOQUE: APROBADO (Opción B) -->
-  <!-- ========================================================= -->
-  {% if estado_actual == "Aprobado. Listo para Publicicación" or estado_actual == "Aprobado. Listo para Publicación" %}
-  <div class="card border-success shadow-sm mb-4">
-    <div class="card-header bg-success text-white fw-semibold">
-      ✔ Documento Aprobado (Listo para Publicación)
-    </div>
 
-    <div class="card-body">
-      <p><strong>Última versión aprobada:</strong>
-        {% with v=historial_versiones|last %}
-          {{ v.version }} — {{ v.fecha|date:"d-m-Y H:i" }}
-        {% endwith %}
-      </p>
 
-      <button class="btn btn-outline-success btn-sm mb-3" data-bs-toggle="collapse" data-bs-target="#detalleAprobado">
-        Mostrar detalles
-      </button>
-
-      <div class="collapse" id="detalleAprobado">
-        <div class="p-3 border rounded bg-light">
-
-          <h6 class="fw-semibold">Historial de aprobación:</h6>
-          {% for log in historial_estados reversed %}
-            {% if "Aprobado" in log.estado_destino %}
-            <div class="mb-2 small">
-              <strong>Fecha:</strong> {{ log.fecha_cambio|date:"d-m-Y H:i" }} <br>
-              <strong>Usuario:</strong> {{ log.usuario_nombre }} <br>
-              <strong>Comentario:</strong> {{ log.comentario|default:"-" }}
-            </div>
-            {% endif %}
-          {% endfor %}
-
-          <hr>
-
-          <h6 class="fw-semibold">Archivo aprobado:</h6>
-          {% with v=historial_versiones|last %}
-            {% if v.signed_url %}
-            <div class="d-flex gap-2">
-              <a class="btn btn-outline-primary btn-sm" href="{{ v.signed_url }}" target="_blank">Ver archivo</a>
-              <a class="btn btn-outline-secondary btn-sm" href="{{ v.signed_url }}" download>⬇ Descargar</a>
-            </div>
-            {% else %}
-              <p class="text-muted">No existe archivo aprobado aún.</p>
-            {% endif %}
-          {% endwith %}
-
-        </div>
-      </div>
-
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- ========================================================= -->
-  <!-- BLOQUE: PUBLICADO -->
-  <!-- ========================================================= -->
   {% if estado_actual == "Publicado" %}
   <div class="card border-dark shadow-sm mb-4">
     <div class="card-header bg-dark text-white fw-semibold">
@@ -236,66 +176,21 @@
     </div>
 
     <div class="card-body">
+      {% with v=historial_versiones|last %}
+        <p><strong>Versión publicada:</strong> {{ v.version }} — {{ v.fecha|date:"d-m-Y H:i" }}</p>
 
-      <p><strong>Versión publicada:</strong>
-        {% with v=historial_versiones|last %}
-          {{ v.version }} — {{ v.fecha|date:"d-m-Y H:i" }}
-        {% endwith %}
-      </p>
-
-      <button class="btn btn-outline-dark btn-sm mb-3" data-bs-toggle="collapse" data-bs-target="#detallePublicado">
-        Mostrar detalles
-      </button>
-
-      <div class="collapse" id="detallePublicado">
-        <div class="p-3 border rounded bg-light">
-
-          <h6 class="fw-semibold">Datos de publicación:</h6>
-          {% for log in historial_estados reversed %}
-            {% if "Publicado" in log.estado_destino %}
-            <div class="mb-2 small">
-              <strong>Fecha:</strong> {{ log.fecha_cambio|date:"d-m-Y H:i" }} <br>
-              <strong>Usuario:</strong> {{ log.usuario_nombre }} <br>
-              <strong>Comentario:</strong> {{ log.comentario|default:"-" }}
-            </div>
-            {% endif %}
-          {% endfor %}
-
-          <hr>
-
-          <h6 class="fw-semibold">Archivo publicado:</h6>
-          {% with v=historial_versiones|last %}
-            {% if v.signed_url %}
-            <div class="d-flex gap-2">
-              <a class="btn btn-outline-primary btn-sm" href="{{ v.signed_url }}" target="_blank">Ver archivo</a>
-              <a class="btn btn-outline-secondary btn-sm" href="{{ v.signed_url }}" download>⬇ Descargar</a>
-            </div>
-            {% else %}
-              <p class="text-muted">No existe archivo final publicado.</p>
-            {% endif %}
-          {% endwith %}
-
+        {% if v.signed_url %}
+        <div class="d-flex gap-2">
+          <a class="btn btn-outline-primary btn-sm" target="_blank" href="{{ v.signed_url }}">Ver archivo</a>
+          <a class="btn btn-outline-secondary btn-sm" href="{{ v.signed_url }}" download>⬇ Descargar</a>
         </div>
-      </div>
-
+        {% endif %}
+      {% endwith %}
     </div>
   </div>
   {% endif %}
 
-  <!-- ========================================================= -->
-  <!-- BLOQUE: COMPARACIÓN CONTROLES (FLUJO A, PASO 1 VISUAL) -->
-  <!-- ========================================================= -->
-  <div id="comparacion-controles" class="card border-info shadow-sm mb-4 d-none">
-    <div class="card-header bg-info text-white fw-semibold">
-      🔍 Comparación de controles de contenido 
-    </div>
-    <div class="card-body small" id="comparacion-contenido">
-      <p class="text-muted mb-0">
-        Selecciona un archivo en el formulario de abajo para comparar sus controles de contenido
-        con las plantillas usadas al crear este requerimiento.
-      </p>
-    </div>
-  </div>
+
 
   <!-- ========================================================= -->
   <!-- FORMULARIO EVENTOS -->
@@ -304,7 +199,6 @@
   <form method="post" enctype="multipart/form-data" class="mb-5">
     {% csrf_token %}
 
-    <!-- Necesario para AJAX de validación -->
     <input type="hidden" id="requerimiento-id" name="requerimiento_id" value="{{ documento.requerimiento_id }}">
 
     <div class="mb-3">
@@ -324,9 +218,6 @@
     <div class="mb-3" id="archivo-div" style="display:none;">
       <label for="archivo" class="form-label">Archivo del Documento:</label>
       <input type="file" name="archivo" id="archivo" class="form-control">
-      <div class="form-text">
-        Primero se mostrará la comparación de controles contra las plantillas de portada y cuerpo usadas al crear el requerimiento.
-      </div>
     </div>
 
     <button type="submit" class="btn btn-primary">Ejecutar Evento</button>
@@ -336,6 +227,8 @@
     ⚙️ No hay eventos disponibles para tu rol en este estado.
   </div>
   {% endif %}
+
+
 
   <!-- ========================================================= -->
   <!-- HISTORIAL DE ESTADOS -->
@@ -363,9 +256,8 @@
     </div>
     {% endfor %}
   </div>
-  {% else %}
-  <p class="text-muted text-center mt-3">Sin registros de estado aún.</p>
   {% endif %}
+
 
   <!-- ========================================================= -->
   <!-- HISTORIAL VERSIONES -->
@@ -383,6 +275,7 @@
           <th>Archivo</th>
         </tr>
       </thead>
+
       <tbody>
         {% for v in historial_versiones %}
         <tr>
@@ -413,17 +306,23 @@
             {% endif %}
           </td>
         </tr>
+
         {% empty %}
         <tr>
           <td colspan="6" class="text-center text-muted">Sin versiones registradas.</td>
         </tr>
         {% endfor %}
       </tbody>
+
     </table>
   </div>
 
   {% endif %}
+
 </div>
+
+
+<!-- ======================= ESTILOS EXTRA ======================= -->
 
 <style>
 :root {
@@ -437,6 +336,8 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
+.card { border-radius: var(--metso-border-radius); }
+
 .btn-primary {
   background-color: var(--metso-orange);
   border: none;
@@ -445,8 +346,6 @@ body {
 .btn-primary:hover {
   background-color: #d65c1a;
 }
-
-.card { border-radius: var(--metso-border-radius); }
 
 /* Timeline */
 .horizontal-timeline {
@@ -466,6 +365,9 @@ body {
 }
 .timeline-dot:hover { transform: scale(1.3); }
 </style>
+
+
+<!-- ======================= SCRIPTS ======================= -->
 <script>
 document.addEventListener("DOMContentLoaded", function() {
 
@@ -479,12 +381,7 @@ document.addEventListener("DOMContentLoaded", function() {
   const requerimientoIdInput = document.getElementById("requerimiento-id");
 
   const eventosConComentario = {{ eventos_con_comentario|safe }};
-  const eventosConArchivo = [
-    "enviar_revision",
-    "reenviar_revision",
-    "rechazar_revision",
-    "rechazar_aprobacion"
-  ];
+  const eventosConArchivo = ["enviar_revision","reenviar_revision","rechazar_revision","rechazar_aprobacion"];
 
   function actualizar() {
     const ev = eventoSelect.value;
@@ -504,9 +401,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }
 
-  /* ============================================================
-     🔍 COMPARACIÓN PREVIA AJAX (CORREGIDO COMPLETO)
-     ============================================================ */
+  /* AJAX comparación previa */
   if (archivoInput && comparacionCard && comparacionContenido && requerimientoIdInput) {
 
     archivoInput.addEventListener("change", function() {
@@ -534,8 +429,7 @@ document.addEventListener("DOMContentLoaded", function() {
           Comparando controles de contenido, por favor espera...
         </p>`;
 
-      fetch("{% url 'documentos:validar_controles_ajax' documento.requerimiento_id %}", {
-
+      fetch("{% url 'documentos:validar_controles_doc_ajax' documento.requerimiento_id %}", {
         method: "POST",
         headers: { "X-CSRFToken": csrftoken },
         body: formData
@@ -545,14 +439,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
         if (data.error) {
           comparacionContenido.innerHTML = `
-            <div class="alert alert-danger mb-0">${data.error}</div>
-          `;
+            <div class="alert alert-danger mb-0">${data.error}</div>`;
           return;
         }
 
-        /* ================================
-           1) COMBINA PORTADA + CUERPO
-           ================================ */
         const coincidencias = [
           ...(data.coincidencias_portada || []),
           ...(data.coincidencias_cuerpo || [])
@@ -568,17 +458,11 @@ document.addEventListener("DOMContentLoaded", function() {
           ...(data.sobrantes_cuerpo || [])
         ];
 
-        /* ================================
-           2) Texto de resumen
-           ================================ */
-        let resumen = "El archivo respeta las plantillas de referencia .";
+        let resumen = "El archivo respeta las plantillas de referencia.";
         if (faltantes.length || sobrantes.length) {
           resumen = "El archivo presenta diferencias respecto a las plantillas de referencia.";
         }
 
-        /* ================================
-           3) Construcción HTML
-           ================================ */
         let html = `
           <p class="mb-2"><strong>Resumen:</strong> ${resumen}</p>
 
@@ -586,8 +470,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             <div class="col-md-4 mb-2">
               <strong>✔ Controles coincidentes</strong>
-              <ul class="mb-0">
-        `;
+              <ul class="mb-0">`;
 
         if (coincidencias.length) {
           coincidencias.forEach(c => html += `<li>${c}</li>`);
@@ -595,14 +478,11 @@ document.addEventListener("DOMContentLoaded", function() {
           html += `<li class="text-muted">Sin coincidencias o sin controles definidos.</li>`;
         }
 
-        html += `
-              </ul>
-            </div>
+        html += `</ul></div>
 
             <div class="col-md-4 mb-2">
               <strong>⚠ Controles faltantes</strong>
-              <ul class="mb-0">
-        `;
+              <ul class="mb-0">`;
 
         if (faltantes.length) {
           faltantes.forEach(c => html += `<li>${c}</li>`);
@@ -610,14 +490,11 @@ document.addEventListener("DOMContentLoaded", function() {
           html += `<li class="text-muted">No se detectaron faltantes.</li>`;
         }
 
-        html += `
-              </ul>
-            </div>
+        html += `</ul></div>
 
             <div class="col-md-4 mb-2">
               <strong>ℹ Controles adicionales</strong>
-              <ul class="mb-0">
-        `;
+              <ul class="mb-0">`;
 
         if (sobrantes.length) {
           sobrantes.forEach(c => html += `<li>${c}</li>`);
@@ -625,9 +502,7 @@ document.addEventListener("DOMContentLoaded", function() {
           html += `<li class="text-muted">No se detectaron controles adicionales.</li>`;
         }
 
-        html += `
-              </ul>
-            </div>
+        html += `</ul></div>
           </div>
 
           <p class="mt-2 text-muted">

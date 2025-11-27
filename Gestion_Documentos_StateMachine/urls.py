@@ -13,6 +13,6 @@ urlpatterns = [
     path(
         "validar-controles/<int:requerimiento_id>/",
         views.validar_controles_doc_ajax,
-        name="validar_controles_ajax"
+        name="validar_controles_doc_ajax"
     ),
 ]

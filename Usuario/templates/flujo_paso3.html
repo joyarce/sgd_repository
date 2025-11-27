@@ -1,59 +1,24 @@
-<!-- flujo_paso3.html -->
-<div class="step-inner">
-  <h2> Paso 3 — Documentos Técnicos del Proyecto</h2>
-  <p class="subtexto-paso">
-    Selecciona los documentos requeridos y asigna los responsables por rol.
-  </p>
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet" />
 
-  <hr style="margin:20px 0; border-color:#e0e0e0;">
-
-  <!--  Buscador + Filtros -->
-  <div class="filtros">
-    <input type="text" id="filtroBusqueda" placeholder="Buscar documento...">
-    <select id="filtroGrupo">
-      <option value="">Todos los grupos</option>
-      {% for grupo in grupos_maestros %}
-        <option value="{{ grupo.nombre }}">{{ grupo.nombre }}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <!--  Lista de documentos -->
-  <div id="listaDocumentos" class="lista-documentos">
-    {% for grupo in grupos_maestros %}
-      {% for doc in grupo.documentos %}
-      <label class="doc-item {% if not doc.tiene_plantilla %} sin-plantilla {% endif %}"
-             data-grupo="{{ grupo.nombre }}"
-             data-tiene-plantilla="{{ doc.tiene_plantilla }}"
-             data-tiene-version="{{ doc.tiene_version }}">
-        
-        <input type="checkbox" class="doc-checkbox"
-               name="documentos_ids[]" value="{{ doc.id }}"
-               data-nombre="{{ doc.nombre }}"
-               {% if not doc.tiene_plantilla %} disabled {% endif %}
-        >
-
-        <span class="doc-nombre">{{ doc.nombre }}</span>
-
-        {% if doc.tiene_plantilla %}
-            <small class="doc-grupo text-success">(Plantilla disponible)</small>
-        {% else %}
-            <small class="doc-grupo text-danger">(SIN plantilla)</small>
-        {% endif %}
-      </label>
-      {% endfor %}
-    {% endfor %}
-  </div>
-
-  <!--  Contenedor dinámico -->
-  <div id="contenedorAsignaciones" class="contenedor-asignaciones" style="display:none;">
-    <h4> Documentos Seleccionados</h4>
-    <div id="cardsContainer"></div>
-  </div>
-</div>
-
-<!-- === ESTILOS === -->
 <style>
+
+:root {
+  --metso-dark-gray: #333;
+  --metso-light-gray: #f7f7f7;
+  --metso-orange: #f36f21;
+  --metso-orange-hover: #d65c1a;
+  --metso-white: #fff;
+  --metso-border-radius: 10px;
+}
+
+/* Fuente global */
+body {
+  background-color: var(--metso-light-gray);
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+}
+
 .step-inner {
   background:#fff;
   border-radius:8px;
@@ -73,10 +38,11 @@
   border-color:#999 !important;
 }
 
-/* resto igual */
+/* TITULOS */
 h2 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
 .subtexto-paso { color:#555; margin-bottom:15px; }
 
+/* FILTROS */
 .filtros {
   display:flex; gap:10px; margin-bottom:15px;
 }
@@ -85,55 +51,176 @@ h2 { color:#2F2F8C; font-weight:600; margin-bottom:8px; }
   border-radius:6px; font-size:.9rem; flex:1;
 }
 
+/* LISTA DOCUMENTOS */
 .lista-documentos {
-  display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-  gap:8px; margin-bottom:25px; max-height:260px; overflow-y:auto;
-  background:#fafafa; border:1px solid #eee; padding:10px; border-radius:8px;
+  display:grid; 
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:8px; margin-bottom:25px;
+  max-height:260px; overflow-y:auto;
+  background:#fafafa; 
+  border:1px solid #eee; padding:10px; 
+  border-radius:8px;
 }
-
 .doc-item {
-  display:flex; flex-direction:column; background:#fff;
-  border:1px solid #e0e0e0; border-radius:6px; padding:10px;
-  font-size:.9rem; cursor:pointer; transition:all .15s ease;
+  display:flex; flex-direction:column;
+  background:#fff; border:1px solid #e0e0e0;
+  border-radius:6px; padding:10px;
+  font-size:.9rem; cursor:pointer;
+  transition:all .15s ease;
 }
 .doc-item:hover {
   background:#fdf7f3; border-color:#f36f21;
 }
 
 .doc-item input { margin-bottom:4px; }
-.doc-grupo { color:#777; font-size:.8rem; }
 
-/* --- tarjetas --- */
+/* 🔥 TEXTO DE PLANTILLA — CORRECTO, SIN NEGRITA */
+.doc-grupo { 
+  color:#777; 
+  font-size:.8rem; 
+  font-weight:400 !important; 
+}
+
+/* TARJETAS */
 .card-doc {
-  border:1px solid #ddd; border-radius:10px;
-  padding:15px 20px; margin-bottom:20px; background:#fafafa;
+  border:1px solid #ddd; 
+  border-radius:10px;
+  padding:15px 20px; 
+  margin-bottom:20px; 
+  background:#fafafa;
   box-shadow:0 2px 5px rgba(0,0,0,0.05);
-  transition:transform 0.2s;
+  transition:transform .2s;
 }
 .card-doc:hover { transform:scale(1.01); }
 
 .card-header {
-  display:flex; justify-content:space-between; align-items:center;
-  margin-bottom:12px;
+  display:flex; justify-content:space-between;
+  align-items:center; margin-bottom:12px;
 }
 .card-header h5 { margin:0; font-weight:600; color:#333; }
+
 .btn-remove {
   background:#f8d7da; border:none; color:#721c24;
-  border-radius:6px; padding:4px 10px; cursor:pointer; font-size:.8rem;
+  border-radius:6px; padding:4px 10px;
+  cursor:pointer; font-size:.8rem;
 }
 .btn-remove:hover { background:#f5c6cb; }
 
-/* TOM SELECT STYLES */
+/* ROLES */
+.roles-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:10px;
+  margin-bottom:15px;
+}
+.roles-grid label {
+  font-weight:500;
+  color:#444;
+  font-size:.9rem;
+  margin-bottom:4px;
+  display:block;
+}
+
+/* OBSERVACIONES */
+.observaciones-block { margin-bottom:15px; }
+.observaciones-block textarea {
+  width:100%; resize:vertical;
+  border-radius:6px;
+  border:1px solid #ccc;
+  padding:8px; font-size:.9rem;
+  background:#fff;
+}
+
+/* HITOS */
+.hitos-card {
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:12px 15px;
+}
+.hitos-card h6 {
+  color:#2F2F8C; font-weight:600;
+  margin-bottom:10px;
+}
+.hitos-card .row {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:10px; margin-bottom:10px;
+}
+.hitos-card label {
+  font-size:0.85rem; color:#444;
+}
+.hitos-card input {
+  width:100%; border:1px solid #ccc;
+  border-radius:6px; padding:6px 8px;
+  font-size:0.85rem;
+}
+
+/* TOM SELECT */
 .ts-control { border-radius:6px !important; border-color:#ccc !important; }
 .ts-control .item { background:#f36f21 !important; color:#fff !important; border-radius:12px; }
 .ts-dropdown { border-radius:8px !important; z-index:9999 !important; }
+
 </style>
+{% endblock %}
 
-<!-- === LIBRERÍAS === -->
+
+{% block content %}
+<div class="step-inner">
+  <h2>Paso 3 — Documentos Técnicos del Proyecto</h2>
+  <p class="subtexto-paso">
+    Selecciona los documentos requeridos y asigna los responsables por rol.
+  </p>
+
+  <hr style="margin:20px 0; border-color:#e0e0e0;">
+
+  <!-- Buscador + Filtros -->
+  <div class="filtros">
+    <input type="text" id="filtroBusqueda" placeholder="Buscar documento...">
+    <select id="filtroGrupo">
+      <option value="">Todos los grupos</option>
+      {% for grupo in grupos_maestros %}
+        <option value="{{ grupo.nombre }}">{{ grupo.nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <!-- Lista documentos -->
+  <div id="listaDocumentos" class="lista-documentos">
+    {% for grupo in grupos_maestros %}
+      {% for doc in grupo.documentos %}
+      <label class="doc-item {% if not doc.tiene_plantilla %} sin-plantilla {% endif %}"
+             data-grupo="{{ grupo.nombre }}"
+             data-tiene-plantilla="{{ doc.tiene_plantilla }}"
+             data-tiene-version="{{ doc.tiene_version }}">
+
+        <input type="checkbox" class="doc-checkbox"
+               name="documentos_ids[]" value="{{ doc.id }}"
+               data-nombre="{{ doc.nombre }}"
+               {% if not doc.tiene_plantilla %} disabled {% endif %}>
+
+        <span class="doc-nombre">{{ doc.nombre }}</span>
+
+        {% if doc.tiene_plantilla %}
+          <small class="doc-grupo text-success">(Plantilla disponible)</small>
+        {% else %}
+          <small class="doc-grupo text-danger">(SIN plantilla)</small>
+        {% endif %}
+      </label>
+      {% endfor %}
+    {% endfor %}
+  </div>
+
+  <!-- Contenedor dinámico -->
+  <div id="contenedorAsignaciones" class="contenedor-asignaciones" style="display:none;">
+    <h4>Documentos Seleccionados</h4>
+    <div id="cardsContainer"></div>
+  </div>
+</div>
+
+<!-- libs -->
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
 
-<!-- === SCRIPT === -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -151,26 +238,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const seleccionados = {};
 
-  // ============================================
-  // 🚫 BLOQUEAR CLICK EN DOCUMENTOS SIN PLANTILLA
-  // ============================================
+  // 🚫 BLOQUEAR CLICK DOCUMENTOS SIN PLANTILLA
   lista.addEventListener("click", e => {
-    const item = e.target.closest(".doc-item");
-    if (!item) return;
+      const item = e.target.closest(".doc-item");
+      if (!item) return;
 
-    const tienePlantilla = item.dataset.tienePlantilla === "True" || item.dataset.tienePlantilla === "1";
+      const tienePlantilla = item.dataset.tienePlantilla === "True" ||
+                             item.dataset.tienePlantilla === "1";
 
-    if (!tienePlantilla) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      alert("❌ Este documento no tiene plantilla disponible.");
-      return false;
-    }
+      if (!tienePlantilla) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          alert("❌ Este documento no tiene plantilla disponible.");
+          return false;
+      }
   });
 
-  // -------------------------------------------
-  // SELECCIÓN DE DOCUMENTOS
-  // -------------------------------------------
+  // ✔ Manejo selección documentos
   lista.addEventListener("change", e => {
     if (!e.target.classList.contains("doc-checkbox")) return;
 
@@ -184,9 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
     contenedor.style.display = Object.keys(seleccionados).length ? "block" : "none";
   });
 
-  // -------------------------------------------
-  // CREAR TARJETA
-  // -------------------------------------------
+  // ✔ Crear tarjeta (actualizada con roles + hitos)
   function addCard(id, nombre) {
     if (seleccionados[id]) return;
 
@@ -236,16 +318,51 @@ document.addEventListener("DOMContentLoaded", () => {
         <textarea name="observaciones_${id}" rows="2"
           placeholder="Describa consideraciones para este documento..."></textarea>
       </div>
+
+      <div class="hitos-card">
+        <h6>Planificación de Hitos</h6>
+
+        <div class="row">
+          <div>
+            <label>Inicio de Elaboración</label>
+            <input type="date" name="fecha_inicio_elaboracion_${id}">
+          </div>
+          <div>
+            <label>Notificar días antes</label>
+            <input type="number" name="alertar_dias_inicio_${id}" min="1" placeholder="Ej: 1">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Primera Revisión Técnica</label>
+            <input type="date" name="fecha_primera_revision_${id}">
+          </div>
+          <div>
+            <label>Notificar días antes</label>
+            <input type="number" name="alertar_dias_revision_${id}" min="1" placeholder="Ej: 3">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Entrega / Aprobación Final</label>
+            <input type="date" name="fecha_entrega_${id}">
+          </div>
+          <div>
+            <label>Notificar días antes</label>
+            <input type="number" name="alertar_dias_entrega_${id}" min="1" placeholder="Ej: 5">
+          </div>
+        </div>
+      </div>
     `;
 
     cardsContainer.appendChild(card);
 
-    // Selects dinámicos
     crearSelector(`#selRed-${id}`, "redactores", `hidden-redactor-${id}`, id);
     crearSelector(`#selRev-${id}`, "revisores", `hidden-revisor-${id}`, id);
     crearSelector(`#selApr-${id}`, "aprobadores", `hidden-aprobador-${id}`, id);
 
-    // Botón de quitar
     card.querySelector(".btn-remove").addEventListener("click", () => {
       document.querySelector(`.doc-checkbox[value="${id}"]`).checked = false;
       removeCard(id);
@@ -253,8 +370,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function crearSelector(selectId, role, hiddenDivId, docId) {
-    const ts = new TomSelect(selectId, {
+  function crearSelector(idSel, role, hiddenId, docId) {
+    const ts = new TomSelect(idSel, {
       plugins: ["remove_button"],
       options: usuarios,
       hideSelected: true,
@@ -264,7 +381,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ts.on("change", () => {
       const valores = ts.getValue();
       seleccionados[docId][role] = valores;
-      syncHidden(hiddenDivId, role, docId, valores);
+      syncHidden(hiddenId, role, docId, valores);
     });
   }
 
@@ -272,16 +389,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const host = document.getElementById(hiddenDivId);
     host.innerHTML = "";
 
-    const roleMap = {
-      redactores: "redactor",
-      revisores: "revisor",
-      aprobadores: "aprobador"
-    };
+    const map = { redactores:"redactor", revisores:"revisor", aprobadores:"aprobador" };
 
     valores.forEach(v => {
       const input = document.createElement("input");
       input.type = "hidden";
-      input.name = `${roleMap[role]}_id_${docId}[]`;
+      input.name = `${map[role]}_id_${docId}[]`;
       input.value = v;
       host.appendChild(input);
     });
@@ -293,9 +406,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (card) card.remove();
   }
 
-  // -------------------------------------------
-  // FILTROS
-  // -------------------------------------------
   function filtrar() {
     const texto = filtroTxt.value.toLowerCase();
     const grupoSel = filtroGrupo.value;
@@ -315,3 +425,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 </script>
+{% endblock %}
