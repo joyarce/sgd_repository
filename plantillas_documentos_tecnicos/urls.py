@@ -25,7 +25,7 @@ urlpatterns = [
 
     # DESCARGA / ELIMINACIÓN
     path("descargar/<path:path>/", views.descargar_gcs, name="descargar_gcs"),
-    path("eliminar-plantilla/<int:tipo_id>/", views.eliminar_plantilla, name="eliminar_plantilla"),
+
     path("version/<int:version_id>/eliminar/", views.eliminar_version, name="eliminar_version"),
     path("ajax/detectar-controles/", views.detectar_controles_ajax, name="ajax_detectar_controles"),
 

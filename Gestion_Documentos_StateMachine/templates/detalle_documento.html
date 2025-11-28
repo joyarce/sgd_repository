@@ -59,6 +59,37 @@
   {% endif %}
 
 
+  {% if estado_actual == "En Elaboración" %}
+  <div class="card border-info shadow-sm mb-4">
+      <div class="card-header bg-info text-white fw-semibold">
+          📄 Plantilla del Documento Técnico
+      </div>
+      <div class="card-body">
+      
+          {% if plantilla_cuerpo %}
+              <p><strong>Versión de plantilla usada:</strong> {{ plantilla_cuerpo.version }}</p>
+      
+              <div class="d-flex gap-2">
+                  <a class="btn btn-outline-primary btn-sm" 
+                     target="_blank" 
+                     href="{% url 'documentos:descargar_plantilla_rq' documento.requerimiento_id %}">
+                      Ver Plantilla
+                  </a>
+                
+                  <a class="btn btn-outline-secondary btn-sm"
+                     href="{% url 'documentos:descargar_plantilla_rq' documento.requerimiento_id %}"
+                     download>
+                      ⬇ Descargar
+                  </a>
+              </div>
+            
+          {% else %}
+              <p class="text-muted">⚠ No se encontró la plantilla copiada al RQ.</p>
+          {% endif %}
+            
+      </div>
+  </div>
+  {% endif %}
 
 
 

@@ -375,6 +375,41 @@ def generar_signed_url(documento_id, version):
     # Por ahora podemos simular
     return f"https://storage.simulado.com/doc_{documento_id}_{version}.pdf"
 
+@login_required
+def descargar_plantilla_rq(request, requerimiento_id):
+    """
+    Devuelve la plantilla copiada al RQ generando una signed URL temporal.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT ruta_gcs
+            FROM documentos_generados
+            WHERE ruta_gcs LIKE %s
+            ORDER BY fecha_generacion DESC, id DESC
+            LIMIT 1
+            """,
+            [f"%RQ-{requerimiento_id}/%"]
+        )
+        row = cursor.fetchone()
+
+    if not row:
+        messages.error(request, "No se encontró la plantilla en el RQ.")
+        return redirect("documentos:detalle_documento", requerimiento_id=requerimiento_id)
+
+    ruta = row[0]
+
+    from google.cloud import storage
+    storage_client = storage.Client()
+    bucket = storage_client.bucket("sgdmtso_jova")
+    blob = bucket.blob(ruta)
+
+    signed_url = blob.generate_signed_url(
+        version="v4",
+        expiration=timedelta(minutes=15),
+    )
+
+    return redirect(signed_url)
 
 class VersionManager:
     """

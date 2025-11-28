@@ -395,11 +395,22 @@ def tipo_detalle(request, tipo_id):
     for v in versiones:
         entrada = v.copy()
         gp = v.get("gcs_path")
+
         if gp and gcs_exists(gp):
             prev = generar_url_previa(gp)
             entrada["office_url"] = office_or_download_url(prev) if prev else None
         else:
             entrada["office_url"] = None
+
+        # 🔥 NUEVO: saber si está en uso
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM documentos_generados
+                WHERE plantilla_documento_tecnico_version_id = %s
+            """, [v["id"]])
+            entrada["en_uso"] = cursor.fetchone()[0] > 0
+
         versiones_proc.append(entrada)
 
     # ======================================================
@@ -726,57 +737,6 @@ def versionar_plantilla(version_actual, controles_antes, controles_despues):
     return f"{major}.{minor + 1}"
 
 
-# =============================================================================
-# ELIMINAR PLANTILLA COMPLETA (CUERPO)
-# =============================================================================
-
-@login_required
-def eliminar_plantilla(request, tipo_id):
-
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT t.id, t.nombre, c.nombre AS categoria
-            FROM tipo_documentos_tecnicos t
-            JOIN categoria_documentos_tecnicos c ON c.id = t.categoria_id
-            WHERE t.id = %s
-        """, [tipo_id])
-        tipo = dictfetchone(cursor)
-
-    if not tipo:
-        messages.error(request, "Tipo no encontrado.")
-        return redirect("plantillas:lista_plantillas")
-
-    categoria = clean(tipo["categoria"])
-    tipo_nom = clean(tipo["nombre"])
-
-    base_path = f"Plantillas/Documentos_Tecnicos/{categoria}/{tipo_nom}/"
-
-    client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
-    bucket = client.bucket(settings.GCP_BUCKET_NAME)
-
-    blobs = list(bucket.list_blobs(prefix=base_path))
-    for b in blobs:
-        try:
-            b.delete()
-        except:
-            pass
-
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            DELETE FROM plantilla_tipo_doc_versiones
-            WHERE plantilla_id IN (
-                SELECT id FROM plantilla_tipo_doc WHERE tipo_documento_id = %s
-            )
-        """, [tipo_id])
-
-        cursor.execute("""
-            DELETE FROM plantilla_tipo_doc
-            WHERE tipo_documento_id = %s
-        """, [tipo_id])
-
-    messages.success(request, "✔ Todas las versiones fueron eliminadas.")
-    return redirect("plantillas:detalle_tipo", tipo_id=tipo_id)
-
 
 # =============================================================================
 # EDITAR TIPO DOCUMENTO
@@ -907,6 +867,26 @@ def eliminar_version(request, version_id):
     base_folder = "/".join(version_folder.split("/")[:-2]) + "/"
 
     client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
+
+    # 0) Verificar si esta versión está siendo usada en algún requerimiento técnico
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM documentos_generados 
+            WHERE plantilla_documento_tecnico_version_id = %s
+        """, [version_id])
+        usada_en_requerimientos = cursor.fetchone()[0]
+
+    if usada_en_requerimientos > 0:
+        messages.error(
+            request,
+            "❌ No se puede eliminar esta versión porque está siendo utilizada "
+            "por uno o más requerimientos técnicos."
+        )
+        return redirect("plantillas:detalle_tipo", tipo_id=tipo_id)
+
+
+
     bucket = client.bucket(settings.GCP_BUCKET_NAME)
 
     # 1) Borrar archivos de la versión en GCS

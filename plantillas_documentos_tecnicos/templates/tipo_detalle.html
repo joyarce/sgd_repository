@@ -152,13 +152,7 @@
 
                     <a href="{% url 'plantillas:subir_plantilla' tipo.id %}"
                        class="btn btn-sm btn-metso-replace">
-                        Reemplazar plantilla
-                    </a>
-
-                    <a href="{% url 'plantillas:eliminar_plantilla' tipo.id %}"
-                       class="btn btn-sm btn-danger"
-                       onclick="return confirm('¿Eliminar TODAS las versiones de esta plantilla?');">
-                        <i class="bi bi-trash"></i> Eliminar plantilla
+                        Nueva versión plantilla
                     </a>
 
                 </div>
@@ -173,6 +167,13 @@
 
         <h5 class="fw-semibold mt-2">Historial de versiones</h5>
 
+        <div class="alert alert-info small mt-2" role="alert">
+            <strong>Importante:</strong>
+            Las versiones que están siendo utilizadas por requerimientos técnicos 
+            <strong>no pueden eliminarse</strong>. El sistema las usa para comparar 
+            controles de contenido y asegurar la trazabilidad.
+        </div>
+
         {% if versiones %}
         <table class="table table-sm align-middle small mt-3">
             <thead>
@@ -184,9 +185,21 @@
             </thead>
             <tbody>
                 {% for v in versiones %}
-                <tr>
-                    <td>{{ v.version }}</td>
+                <tr class="{% if v.en_uso %}table-light{% endif %}">
+                    <td>
+                        {{ v.version }}
+
+                        {% if v.en_uso %}
+                            <span class="ms-2 text-muted"
+                                  data-bs-toggle="tooltip"
+                                  title="Esta versión está en uso por uno o más requerimientos técnicos. No puede eliminarse.">
+                                <i class="bi bi-lock-fill"></i>
+                            </span>
+                        {% endif %}
+                    </td>
+
                     <td>{{ v.creado_en|date:"Y-m-d H:i" }}</td>
+
                     <td class="text-end">
 
                         {% if v.office_url %}
@@ -195,11 +208,23 @@
                         {% endif %}
 
                         <a href="{% url 'plantillas:descargar_gcs' v.gcs_path %}"
-                           class="btn btn-sm btn-metso-download">Descargar</a>
+                           class="btn btn-sm btn-metso-download">
+                            Descargar
+                        </a>
 
-                        <a href="{% url 'plantillas:eliminar_version' v.id %}"
-                           onclick="return confirm('¿Eliminar esta versión?');"
-                           class="btn btn-sm btn-danger">Eliminar</a>
+                        {% if v.en_uso %}
+                            <button class="btn btn-sm btn-secondary" disabled
+                                    data-bs-toggle="tooltip"
+                                    title="No se puede eliminar esta versión porque está siendo utilizada por requerimientos técnicos.">
+                                <i class="bi bi-lock-fill"></i> En uso
+                            </button>
+                        {% else %}
+                            <a href="{% url 'plantillas:eliminar_version' v.id %}"
+                               onclick="return confirm('¿Eliminar esta versión?');"
+                               class="btn btn-sm btn-danger">
+                                Eliminar
+                            </a>
+                        {% endif %}
 
                     </td>
                 </tr>
@@ -209,6 +234,15 @@
         {% else %}
             <p class="text-muted small">No hay versiones registradas.</p>
         {% endif %}
+
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+          tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+          })
+        })
+        </script>
 
         <hr class="my-4">
 

@@ -15,4 +15,9 @@ urlpatterns = [
         views.validar_controles_doc_ajax,
         name="validar_controles_doc_ajax"
     ),
+
+    path("descargar-plantilla/<int:requerimiento_id>/", 
+     views.descargar_plantilla_rq, 
+     name="descargar_plantilla_rq"),
+
 ]
