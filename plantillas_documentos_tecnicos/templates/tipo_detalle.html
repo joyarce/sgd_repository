@@ -22,9 +22,9 @@
 
     <div class="card shadow-sm border-0 p-3 rounded-3">
 
-        <!-- ============================== -->
-        <!--   PANEL DE ESTADÍSTICAS        -->
-        <!-- ============================== -->
+        <!-- ================================================= -->
+        <!--   PANEL DE ESTADO / ESTADÍSTICAS                -->
+        <!-- ================================================= -->
         {% if plantilla %}
         <div class="mb-4 p-3 border rounded bg-light small">
 
@@ -42,7 +42,7 @@
                 </div>
 
                 <div class="col-6 mb-2">
-                    <strong>Calidad controles:</strong>
+                    <strong>Calidad de estructura:</strong>
                     {% if calidad == "alta" %}
                         <span class="text-success fw-semibold">Alta</span>
                     {% elif calidad == "media" %}
@@ -54,37 +54,98 @@
 
                 <div class="col-6 mb-2">
                     <strong>Total versiones:</strong>
-                    {{ stats_versiones.total_versiones }}
+                    {{ total_versiones }}
                 </div>
 
                 <div class="col-6 mb-2">
-                    <strong>Versiones sanas:</strong>
-                    <span class="text-success fw-semibold">{{ stats_versiones.versiones_ok }}</span>
+                    <strong>Versiones utilizables:</strong>
+                    {{ versiones_utilizables }}
                 </div>
-
-                <div class="col-6 mb-2">
-                    <strong>Versiones dañadas:</strong>
-                    <span class="text-danger fw-semibold">{{ stats_versiones.versiones_rotas }}</span>
-                </div>
-
-                <div class="col-6 mb-2">
-                    <strong>Controles detectados:</strong>
-                    {{ stats_controles.controles_total }} ({{ stats_controles.controles_unicos }} únicos)
-                </div>
-
             </div>
 
-            {% if stats_diferencias.controles_nuevos or stats_diferencias.controles_eliminados %}
-            <div class="mt-3">
-                <strong class="d-block mb-1">Cambios vs versión anterior:</strong>
+            <!-- =========================================================== -->
+            <!-- PANEL DE CAMBIOS ESTRUCTURALES                             -->
+            <!-- =========================================================== -->
+            {% if estructura_anterior %}
+            <div class="mt-4">
 
-                {% if stats_diferencias.controles_nuevos %}
-                    <div class="text-success">+ Nuevos: {{ stats_diferencias.controles_nuevos|join:", " }}</div>
+                <h6 class="fw-semibold mb-2">Cambios estructurales respecto a la versión anterior</h6>
+
+                {% if stats_diferencias.firma_cambiada %}
+                    <div class="alert alert-warning small">
+                        <strong>⚠ Cambio mayor detectado:</strong>
+                        La firma estructural del documento es distinta.
+                    </div>
                 {% endif %}
 
-                {% if stats_diferencias.controles_eliminados %}
-                    <div class="text-danger">– Eliminados: {{ stats_diferencias.controles_eliminados|join:", " }}</div>
-                {% endif %}
+                <!-- CONTROLES -->
+                <div class="mb-2">
+                    <strong>Controles:</strong>
+                    <ul class="mt-1 small">
+                        {% if stats_diferencias.controles.nuevos %}
+                            <li class="text-success">
+                                + Nuevos: {{ stats_diferencias.controles.nuevos|join:", " }}
+                            </li>
+                        {% endif %}
+                        {% if stats_diferencias.controles.eliminados %}
+                            <li class="text-danger">
+                                – Eliminados: {{ stats_diferencias.controles.eliminados|join:", " }}
+                            </li>
+                        {% endif %}
+                        {% if not stats_diferencias.controles.nuevos and not stats_diferencias.controles.eliminados %}
+                            <li class="text-muted">Sin cambios</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- TABLAS WORD -->
+                <div class="mb-2">
+                    <strong>Tablas Word:</strong>
+                    <ul class="mt-1 small">
+                        {% if stats_diferencias.tablas_word.nuevas %}
+                            <li class="text-success">+ Nuevas ({{ stats_diferencias.tablas_word.nuevas|length }})</li>
+                        {% endif %}
+                        {% if stats_diferencias.tablas_word.eliminadas %}
+                            <li class="text-danger">– Eliminadas ({{ stats_diferencias.tablas_word.eliminadas|length }})</li>
+                        {% endif %}
+                        {% if not stats_diferencias.tablas_word.nuevas and not stats_diferencias.tablas_word.eliminadas %}
+                            <li class="text-muted">Sin cambios</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- EXCELS -->
+                <div class="mb-2">
+                    <strong>Excels embebidos:</strong>
+                    <ul class="mt-1 small">
+                        {% if stats_diferencias.excels.nuevos %}
+                            <li class="text-success">+ Nuevos ({{ stats_diferencias.excels.nuevos|length }})</li>
+                        {% endif %}
+                        {% if stats_diferencias.excels.eliminados %}
+                            <li class="text-danger">– Eliminados ({{ stats_diferencias.excels.eliminados|length }})</li>
+                        {% endif %}
+                        {% if not stats_diferencias.excels.nuevos and not stats_diferencias.excels.eliminados %}
+                            <li class="text-muted">Sin cambios</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- IMÁGENES -->
+                <div class="mb-2">
+                    <strong>Imágenes:</strong>
+                    <ul class="mt-1 small">
+                        {% if stats_diferencias.imagenes.nuevas %}
+                            <li class="text-success">+ Nuevas ({{ stats_diferencias.imagenes.nuevas|length }})</li>
+                        {% endif %}
+                        {% if stats_diferencias.imagenes.eliminadas %}
+                            <li class="text-danger">– Eliminadas ({{ stats_diferencias.imagenes.eliminadas|length }})</li>
+                        {% endif %}
+                        {% if not stats_diferencias.imagenes.nuevas and not stats_diferencias.imagenes.eliminadas %}
+                            <li class="text-muted">Sin cambios</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
             </div>
             {% endif %}
 
@@ -92,7 +153,7 @@
         {% endif %}
 
         <!-- ========================== -->
-        <!--     INFO DEL TIPO         -->
+        <!--   INFO DEL TIPO            -->
         <!-- ========================== -->
         <div class="mb-3 small text-muted">
             <div><strong>Categoría:</strong> {{ tipo.categoria_nombre }}</div>
@@ -114,6 +175,7 @@
         <!-- ========================== -->
         <!--  CASOS SIN PLANTILLA       -->
         <!-- ========================== -->
+
         {% if not plantilla %}
             <div class="alert alert-warning shadow-sm border-0">
                 No existe plantilla cargada para este tipo de documento.
@@ -141,9 +203,7 @@
                 <div class="d-flex flex-wrap gap-2 mb-3">
 
                     <a href="{{ office_url }}" target="_blank"
-                       class="btn btn-sm btn-metso-view">
-                        Ver archivo
-                    </a>
+                       class="btn btn-sm btn-metso-view">Ver archivo</a>
 
                     <a href="{% url 'plantillas:descargar_gcs' plantilla.gcs_path %}"
                        class="btn btn-sm btn-metso-download">
@@ -169,9 +229,8 @@
 
         <div class="alert alert-info small mt-2" role="alert">
             <strong>Importante:</strong>
-            Las versiones que están siendo utilizadas por requerimientos técnicos 
-            <strong>no pueden eliminarse</strong>. El sistema las usa para comparar 
-            controles de contenido y asegurar la trazabilidad.
+            Las versiones utilizadas en documentos técnicos
+            <strong>no pueden eliminarse</strong>.
         </div>
 
         {% if versiones %}
@@ -192,7 +251,7 @@
                         {% if v.en_uso %}
                             <span class="ms-2 text-muted"
                                   data-bs-toggle="tooltip"
-                                  title="Esta versión está en uso por uno o más requerimientos técnicos. No puede eliminarse.">
+                                  title="Esta versión está en uso.">
                                 <i class="bi bi-lock-fill"></i>
                             </span>
                         {% endif %}
@@ -213,9 +272,7 @@
                         </a>
 
                         {% if v.en_uso %}
-                            <button class="btn btn-sm btn-secondary" disabled
-                                    data-bs-toggle="tooltip"
-                                    title="No se puede eliminar esta versión porque está siendo utilizada por requerimientos técnicos.">
+                            <button class="btn btn-sm btn-secondary" disabled>
                                 <i class="bi bi-lock-fill"></i> En uso
                             </button>
                         {% else %}
@@ -231,35 +288,51 @@
                 {% endfor %}
             </tbody>
         </table>
+
         {% else %}
             <p class="text-muted small">No hay versiones registradas.</p>
         {% endif %}
 
         <script>
         document.addEventListener("DOMContentLoaded", function () {
-          var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-          tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-          })
+          const tooltips = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+          tooltips.map(el => new bootstrap.Tooltip(el))
         })
         </script>
 
         <hr class="my-4">
 
         <!-- ================================================= -->
-        <!--      CONTROLES DETECTADOS EN VERSIÓN ACTUAL       -->
+        <!--      JSON ESTRUCTURAL DE LA VERSIÓN ACTUAL        -->
         <!-- ================================================= -->
 
-        <h5 class="fw-semibold text-dark mb-3">Controles de contenido detectados</h5>
+        <h5 class="fw-semibold text-dark mb-3">JSON estructural de la plantilla</h5>
 
-        {% if controles %}
-        <ul class="small ps-3 mb-0">
-            {% for c in controles %}
-            <li class="mb-1">{{ c }}</li>
-            {% endfor %}
-        </ul>
+        {% if estructura_json %}
+        <div class="border rounded bg-light p-3" style="height: 450px;">
+            <div id="json_output" style="height: 100%;"></div>
+        </div>
+
+        <link href="https://cdn.jsdelivr.net/npm/jsoneditor@9.10.0/dist/jsoneditor.min.css"
+              rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/jsoneditor@9.10.0/dist/jsoneditor.min.js"></script>
+
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const cont = document.getElementById("json_output");
+            const editor = new JSONEditor(cont, {
+                mode: "view",
+                navigationBar: true,
+                statusBar: false,
+                mainMenuBar: false,
+                indentation: 4
+            });
+            editor.set(JSON.parse('{{ estructura_json|escapejs }}'));
+        });
+        </script>
+
         {% else %}
-        <p class="text-muted small mb-0">No se detectaron controles.</p>
+        <p class="text-muted small mb-0">Sin estructura registrada para esta versión.</p>
         {% endif %}
 
     </div>

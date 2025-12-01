@@ -1,284 +1,242 @@
-<!-- lista_documentos_asignados.html C:\Users\jonat\Documents\gestion_docs\Gestion_Documentos_StateMachine\templates\lista_documentos_asignados.html --> 
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Mis Documentos Asignados{% endblock %}
 
 {% block extra_head %}
 <style>
-:root {
-  --metso-dark-gray: #333;
-  --metso-light-gray: #f7f7f7;
-  --metso-orange: #f36f21;
-  --metso-orange-hover: #d65c1a;
-  --metso-white: #fff;
-  --metso-border-radius: 10px;
+:root{
+  --metso-orange:#f36f21;
+  --metso-bg:#f7f7f7;
+  --metso-gray:#333;
+}
+body{ background:var(--metso-bg); font-family:'Inter',sans-serif; }
+
+.clickable-row:hover{ background:#fff4ed !important; cursor:pointer; }
+
+/* KPI Cards */
+.kpi-card{
+  padding:20px;
+  border-radius:10px;
+  background:white;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  border:1px solid #eee;
+  text-align:center;
+}
+.kpi-value{
+  font-size:28px;
+  font-weight:700;
+  color:var(--metso-orange);
 }
 
-body {
-  background-color: var(--metso-light-gray);
-  font-family: 'Inter', sans-serif;
-  margin: 0;
-}
-
-.container {
-  max-width: 1100px;
-  margin: 40px auto;
-  padding: 0 20px;
-  color: var(--metso-dark-gray);
-}
-
-/* --- Títulos --- */
-h2 {
-  font-size: 1.9rem;
-  font-weight: 700;
-  color: var(--metso-dark-gray);
-  margin-bottom: 25px;
-}
-
-/* --- Tarjetas KPI --- */
-.kpi-card {
-  background: var(--metso-white);
-  padding: 20px;
-  border-radius: var(--metso-border-radius);
-  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
-  border: 1px solid #eee;
-}
-.kpi-value { font-size: 28px; font-weight: 700; color: var(--metso-orange); }
-.small-muted { color: #6c757d; font-size: 12px; }
-
-/* --- Tablas --- */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--metso-white);
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
-}
-thead {
-  background-color: var(--metso-orange);
-  color: var(--metso-white);
-}
-thead th {
-  padding: 10px 14px;
-  font-weight: 600;
-  text-align: left;
-}
-tbody td {
-  padding: 10px 14px;
-  border-top: 1px solid #eee;
-}
-tr.clickable-row {
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-tr.clickable-row:hover {
-  background-color: #fff4ed !important;
-}
-
-/* --- Tarjetas de gráficos --- */
-.card {
-  background: var(--metso-white);
-  border-radius: var(--metso-border-radius);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  padding: 15px;
-  margin-bottom: 20px;
+/* Chart Cards */
+.card-chart{
+  padding:15px;
+  background:white;
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.05);
+  margin-bottom:22px;
 }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-  <h2>Documentos Asignados a {{ request.user.nombre }}</h2>
 
-  <!-- KPIs -->
-  <div class="row g-3 mt-4">
+  <h2 class="fw-bold mt-3">Documentos Asignados a {{request.user.nombre}}</h2>
+
+  <!-- ========================================================= -->
+  <!-- KPI RESUMEN -->
+  <!-- ========================================================= -->
+  <div class="row mt-4 g-3">
+
     <div class="col-md-3">
-      <div class="kpi-card text-center">
+      <div class="kpi-card">
         <div class="kpi-value">{{ total_docs }}</div>
-        <div class="small-muted">Documentos totales</div>
+        <div class="text-muted small">Documentos totales</div>
       </div>
     </div>
+
     <div class="col-md-3">
-      <div class="kpi-card text-center">
+      <div class="kpi-card">
         <div class="kpi-value">{{ cumplimiento }}%</div>
-        <div class="small-muted">Cumplimiento estimado</div>
+        <div class="text-muted small">Cumplimiento estimado</div>
       </div>
     </div>
+
     <div class="col-md-3">
-      <div class="kpi-card text-center">
+      <div class="kpi-card">
         <div class="kpi-value">{{ chart_actividad|length }}</div>
-        <div class="small-muted">Días en periodo</div>
+        <div class="text-muted small">Días analizados</div>
       </div>
     </div>
+
     <div class="col-md-3">
-      <div class="kpi-card text-center">
+      <div class="kpi-card">
         <div class="kpi-value">
           {% if total_docs > 0 %}
-            {{ total_docs|divisibleby:1 }}
+            {{ total_docs }}
           {% else %}
             0
           {% endif %}
         </div>
-        <div class="small-muted">Indicador rápido</div>
+        <div class="text-muted small">Indicador rápido</div>
       </div>
     </div>
+
   </div>
 
-  <!-- Tabla por proyecto -->
+  <!-- ========================================================= -->
+  <!-- TABLAS POR PROYECTO -->
+  <!-- ========================================================= -->
   {% if documentos_por_proyecto %}
     {% for proyecto, docs in documentos_por_proyecto.items %}
-      <h4 class="mt-5" style="color:var(--metso-orange); font-weight:600;">{{ proyecto }}</h4>
+      <h4 class="mt-5" style="color:var(--metso-orange);">{{ proyecto }}</h4>
+
       <div class="table-responsive">
-        <table class="table table-hover align-middle">
-          <thead>
+        <table class="table table-hover align-middle bg-white shadow-sm">
+          <thead class="table-light">
             <tr>
               <th>ID</th>
               <th>Tipo</th>
-              <th>Categoría</th>
               <th>Estado</th>
               <th>Rol</th>
-              <th>Fecha Registro</th>
-              <th>Observaciones</th>
+              <th>Registro</th>
+              <th>Obs</th>
             </tr>
           </thead>
+
           <tbody>
-            {% for doc in docs %}
-            <tr class="clickable-row" data-href="{% url 'documentos:detalle_documento' doc.requerimiento_id %}">
-              <td>{{ doc.requerimiento_id }}</td>
-              <td>{{ doc.tipo_documento }}</td>
-              <td>{{ doc.categoria_documento }}</td>
+          {% for d in docs %}
+            <tr class="clickable-row"
+                data-href="{% url 'documentos:detalle_documento' d.requerimiento_id %}">
+              <td>{{ d.requerimiento_id }}</td>
+              <td>{{ d.tipo_documento }}</td>
+
               <td>
                 <span class="badge
-                  {% if doc.estado_actual == 'Pendiente de Inicio' %}bg-secondary
-                  {% elif doc.estado_actual == 'En Revisión' %}bg-info
-                  {% elif doc.estado_actual == 'En Aprobación' %}bg-warning
-                  {% elif doc.estado_actual == 'Aprobado' %}bg-success
-                  {% elif doc.estado_actual == 'Publicado' %}bg-primary
-                  {% elif doc.estado_actual == 'Re Estructuración' or 'Rechaz' in doc.estado_actual %}bg-danger
-                  {% else %}bg-light text-dark{% endif %}">
-                  {{ doc.estado_actual }}
+                  {% if d.estado_actual == 'Pendiente de Inicio' %}bg-secondary
+                  {% elif d.estado_actual == 'En Elaboración' %}bg-info
+                  {% elif d.estado_actual == 'En Revisión' %}bg-warning
+                  {% elif d.estado_actual == 'En Aprobación' %}bg-primary
+                  {% elif 'Publicado' in d.estado_actual %}bg-success
+                  {% elif 'Estructuración' in d.estado_actual %}bg-danger
+                  {% endif %}">
+                  {{ d.estado_actual }}
                 </span>
               </td>
-              <td>{{ doc.rol_asignado }}</td>
-              <td>{{ doc.fecha_registro|date:"d-m-Y H:i" }}</td>
-              <td>{{ doc.observaciones|default:"-" }}</td>
+
+              <td>{{ d.rol_asignado }}</td>
+              <td>{{ d.fecha_registro|date:"d-m-Y" }}</td>
+              <td>{{ d.observaciones|default:"-" }}</td>
             </tr>
-            {% endfor %}
+          {% endfor %}
           </tbody>
         </table>
       </div>
+
     {% endfor %}
   {% else %}
-    <p>No tienes documentos técnicos asignados actualmente.</p>
+    <p class="mt-4">No tienes documentos asignados.</p>
   {% endif %}
 
-  <!-- Gráficos -->
-  <div class="row mt-4">
+
+  <!-- ========================================================= -->
+  <!-- GRÁFICOS (siempre que existan datos) -->
+  <!-- ========================================================= -->
+  <div class="row mt-5">
     <div class="col-md-4">
-      <div class="card">
+      <div class="card-chart">
         <h6>Distribución por Estado</h6>
         <canvas id="chartEstado"></canvas>
       </div>
     </div>
+
     <div class="col-md-4">
-      <div class="card">
+      <div class="card-chart">
         <h6>Por Rol Asignado</h6>
         <canvas id="chartRol"></canvas>
       </div>
     </div>
+
     <div class="col-md-4">
-      <div class="card">
-        <h6>Actividad Últimos 7 Días</h6>
+      <div class="card-chart">
+        <h6>Actividad 7 días</h6>
         <canvas id="chartActividad"></canvas>
       </div>
     </div>
   </div>
 
-  <div class="row mt-4">
+  <div class="row mt-4 mb-5">
     <div class="col-md-6">
-      <div class="card">
+      <div class="card-chart">
         <h6>Tiempo promedio por etapa (hrs)</h6>
         <canvas id="chartTiempos"></canvas>
       </div>
     </div>
+
     <div class="col-md-6">
-      <div class="card">
+      <div class="card-chart">
         <h6>Rendimiento por etapa</h6>
         <canvas id="chartRadar"></canvas>
       </div>
     </div>
   </div>
+
 </div>
 
-<!-- Chart.js -->
+
+<!-- ========================================================= -->
+<!-- JAVASCRIPT -->
+<!-- ========================================================= -->
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- Construcción de gráficos -->
 <script>
-function buildBar(ctxId, data_json, label) {
+// Helpers gráficos
+function buildBar(id, data_json, label){
   const d = JSON.parse(data_json || '{"labels":[],"values":[]}');
-  return new Chart(document.getElementById(ctxId), {
-    type: 'bar',
-    data: { labels: d.labels, datasets: [{ label: label, data: d.values, borderWidth: 1, backgroundColor: '#f36f21' }] },
-    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+  return new Chart(document.getElementById(id), {
+    type:'bar',
+    data:{labels:d.labels, datasets:[{label:label,data:d.values,backgroundColor:'#f36f21'}]},
+    options:{responsive:true,scales:{y:{beginAtZero:true}}}
   });
 }
-function buildPie(ctxId, data_json) {
+function buildPie(id, data_json){
   const d = JSON.parse(data_json || '{"labels":[],"values":[]}');
-  return new Chart(document.getElementById(ctxId), {
-    type: 'pie',
-    data: { labels: d.labels, datasets: [{ data: d.values, backgroundColor: ['#f36f21','#ffb84d','#ffd580','#ccc'] }] },
-    options: { responsive: true }
+  return new Chart(document.getElementById(id), {
+    type:'pie',
+    data:{labels:d.labels, datasets:[{data:d.values,backgroundColor:['#f36f21','#ffd7b5','#ffc27a','#cfcfcf']}]}
   });
 }
-function buildLine(ctxId, data_json) {
+function buildLine(id, data_json){
   const d = JSON.parse(data_json || '{"labels":[],"values":[]}');
-  return new Chart(document.getElementById(ctxId), {
-    type: 'line',
-    data: { labels: d.labels, datasets: [{ label: 'Actividad', data: d.values, fill: false, borderColor: '#f36f21', tension: 0.3 }] },
-    options: { responsive: true }
+  return new Chart(document.getElementById(id), {
+    type:'line',
+    data:{labels:d.labels, datasets:[{label:'Actividad',data:d.values,borderColor:'#f36f21',tension:.3}]}
   });
 }
-function buildRadar(ctxId, data_json) {
+function buildRadar(id, data_json){
   const d = JSON.parse(data_json || '{"labels":[],"values":[]}');
-  return new Chart(document.getElementById(ctxId), {
-    type: 'radar',
-    data: { labels: d.labels, datasets: [{ label: 'Rendimiento', data: d.values, fill: true, backgroundColor: 'rgba(243,111,33,0.2)', borderColor: '#f36f21' }] },
-    options: { responsive: true }
+  return new Chart(document.getElementById(id), {
+    type:'radar',
+    data:{labels:d.labels, datasets:[{label:'Rendimiento',data:d.values,backgroundColor:'rgba(243,111,33,0.2)',borderColor:'#f36f21'}]}
   });
 }
-document.addEventListener("DOMContentLoaded", function() {
-  buildPie('chartEstado', '{{ chart_estado|safe|escapejs }}');
-  buildBar('chartRol', '{{ chart_rol|safe|escapejs }}', 'Documentos por Rol');
-  buildLine('chartActividad', '{{ chart_actividad|safe|escapejs }}');
-  buildBar('chartTiempos', '{{ chart_tiempos|safe|escapejs }}', 'Horas promedio');
-  buildRadar('chartRadar', '{{ chart_radar|safe|escapejs }}');
-});
-</script>
-{% endblock %}
 
-{% block extra_js %}
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-  document.querySelectorAll(".clickable-row").forEach(function(row) {
-    row.addEventListener("click", function(e) {
-      if (e.target.closest("a, button")) return;
+document.addEventListener("DOMContentLoaded",function(){
+  buildPie('chartEstado','{{chart_estado|safe|escapejs}}');
+  buildBar('chartRol','{{chart_rol|safe|escapejs}}','Documentos por Rol');
+  buildLine('chartActividad','{{chart_actividad|safe|escapejs}}');
+  buildBar('chartTiempos','{{chart_tiempos|safe|escapejs}}','Horas promedio');
+  buildRadar('chartRadar','{{chart_radar|safe|escapejs}}');
 
-      const href = this.dataset.href;
-      if (!href) return;
-
-      console.log("Redirigiendo a:", href);
-
-      this.style.backgroundColor = "#fff4ed";
-
-      //  Redirección inmediata sin setTimeout
-      window.location.href = href;
+  document.querySelectorAll(".clickable-row").forEach(row=>{
+    row.addEventListener("click",function(e){
+      if(e.target.closest("a,button")) return;
+      window.location.href = this.dataset.href;
     });
   });
 });
 </script>
+
 {% endblock %}
-
-
-

@@ -1,10 +1,13 @@
-# C:\Users\jonat\Documents\gestion_docs\plantillas_documentos_tecnicos\views.py
+# plantillas_documentos_tecnicos/views.py
+
 from django.http import HttpResponse, JsonResponse, Http404
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.db import connection
 from django.contrib import messages
 from django.conf import settings
+
+from psycopg.types.json import Json
 
 import urllib.parse
 import re
@@ -18,52 +21,95 @@ from google.cloud import storage
 from unidecode import unidecode
 from lxml import etree
 
-
-# =============================================================================
-# UTILIDADES
-# =============================================================================
-# --- AJAX: detectar controles sin subir la plantilla ---
-
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
-import tempfile, os
-
-@csrf_exempt
-@require_POST
-def detectar_controles_ajax(request):
-    file = request.FILES.get("archivo")
-    if not file:
-        return JsonResponse({"ok": False, "error": "No se recibió archivo"})
-
-    if not file.name.lower().endswith(".docx"):
-        return JsonResponse({"ok": False, "error": "Formato inválido"})
-
-    # Guardar temporalmente
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
-        for chunk in file.chunks():
-            tmp.write(chunk)
-        local_path = tmp.name
-
-    # EXTRAER CONTROLES (ya tienes esta función)
-    controles = extraer_controles_contenido_desde_file(local_path)
-
-    os.remove(local_path)
-
-    return JsonResponse({
-        "ok": True,
-        "controles": controles
-    })
 
 
-def gcs_exists(path):
+# =============================================================================
+# UTILIDADES BÁSICAS
+# =============================================================================
+
+def dictfetchall(cursor):
+    columns = [col[0] for col in cursor.description]
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+
+def dictfetchone(cursor):
+    row = cursor.fetchone()
+    if row is None:
+        return None
+    columns = [col[0] for col in cursor.description]
+    return dict(zip(columns, row))
+
+
+def clean(texto):
+    """
+    Normaliza nombres para usarlos como parte de rutas en GCS.
+    """
+    return unidecode(texto).replace(" ", "_").replace("/", "_")
+
+
+def gcs_exists(path: str) -> bool:
+    """
+    Verifica existencia de un blob en GCS.
+    """
     client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
     bucket = client.bucket(settings.GCP_BUCKET_NAME)
     blob = bucket.blob(path)
     return blob.exists()
 
+
+def generar_url_previa(blob_path: str) -> str | None:
+    """
+    Genera URL temporal firmada (3 horas) para visualizar/descargar el archivo.
+    """
+    client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
+    bucket = client.bucket(settings.GCP_BUCKET_NAME)
+    blob = bucket.blob(blob_path)
+
+    try:
+        url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(hours=3),
+            method="GET",
+        )
+        return url
+    except Exception:
+        return None
+
+
+def office_or_download_url(preview_url: str) -> str:
+    """
+    Envuelve una URL firmada de GCS dentro del visor de Office.
+    """
+    encoded = urllib.parse.quote(preview_url, safe='')
+    return f"https://view.officeapps.live.com/op/view.aspx?src={encoded}"
+
+
+def mover_carpeta_gcs(old_prefix: str, new_prefix: str) -> bool:
+    """
+    Mueve (copia + borra) todos los blobs cuyo nombre parte con old_prefix a new_prefix.
+    """
+    client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
+    bucket = client.bucket(settings.GCP_BUCKET_NAME)
+
+    blobs = list(bucket.list_blobs(prefix=old_prefix))
+    for b in blobs:
+        old_name = b.name
+        new_name = old_name.replace(old_prefix, new_prefix, 1)
+        bucket.copy_blob(b, bucket, new_name)
+        b.delete()
+
+    return True
+
+
+# =============================================================================
+# UTILIDADES DE ESTADÍSTICAS / ESTRUCTURA
+# =============================================================================
+
 def calcular_stats_versiones(versiones):
     """
-    versiones = lista de dicts: {id, gcs_path, version, creado_en}
+    versiones: lista de dicts {id, gcs_path, version, creado_en}
     """
     total = len(versiones)
     disponibles = 0
@@ -80,77 +126,285 @@ def calcular_stats_versiones(versiones):
         "versiones_ok": disponibles,
         "versiones_rotas": rotas,
     }
+
+
 def calcular_stats_controles(lista_controles):
     """
-    lista_controles = controles detectados en versión ACTUAL (lista simple)
+    lista_controles = lista simple de alias/tag de controles
+    (Utilidad genérica, por ahora no usada en la UI principal)
     """
-    total = len(lista_controles)
-    unicos = len(set(lista_controles))
+    total = len(lista_controles or [])
+    unicos = len(set(lista_controles or []))
 
     return {
         "controles_total": total,
         "controles_unicos": unicos,
     }
-def evaluar_calidad_controles(unicos):
-    if unicos >= 10:
+
+
+def evaluar_calidad_estructura(estructura: dict | None) -> str:
+    """
+    Evalúa un JSON estructural completo de la plantilla Word.
+
+    Criterio:
+        - Alta: contiene controles, tablas Word y excels embebidos
+        - Media: contiene solo una o dos de las anteriores
+        - Baja: estructura mínima o inexistente
+    """
+
+    if not isinstance(estructura, dict):
+        return "baja"
+
+    bloques = 0
+
+    # Claves coherentes con generar_estructura() en leer_estructura_plantilla_word.py
+    if estructura.get("controles"):
+        bloques += 1
+    if estructura.get("tablas_word"):
+        bloques += 1
+    if estructura.get("excels"):
+        bloques += 1
+
+    if bloques >= 3:
         return "alta"
-    if unicos >= 3:
+    if bloques == 2:
         return "media"
     return "baja"
-def comparar_controles(controles_actual, controles_anterior):
-    set_actual = set(controles_actual or [])
-    set_anterior = set(controles_anterior or [])
 
-    nuevos = list(set_actual - set_anterior)
-    eliminados = list(set_anterior - set_actual)
 
-    return {
-        "controles_nuevos": sorted(nuevos),
-        "controles_eliminados": sorted(eliminados),
+def comparar_estructuras(estructura_actual, estructura_anterior):
+    """
+    Compara estructuras JSON profundas:
+    - controles
+    - tablas_word
+    - excels
+    - imagenes
+    - firma estructural
+
+    Devuelve una estructura ALINEADA con el template:
+      stats_diferencias = {
+        "controles": {"nuevos": [...], "eliminados": [...]},
+        "tablas_word": {"nuevas": [...], "eliminadas": [...]},
+        "excels": {"nuevos": [...], "eliminados": [...]},
+        "imagenes": {"nuevas": [...], "eliminadas": [...]},
+        "signature_cambios": True/False,
+      }
+    """
+
+    # =============================
+    # NORMALIZACIÓN ROBUSTA
+    # =============================
+    def normalize(e):
+        if isinstance(e, dict):
+            return e
+        if isinstance(e, str):
+            try:
+                return json.loads(e)
+            except Exception:
+                return {}
+        return {}
+
+    ea = normalize(estructura_actual)
+    eb = normalize(estructura_anterior)
+
+    # ===================================================
+    # FUNCIONES AUXILIARES SEGURO-ROBUSTAS
+    # ===================================================
+
+    def safe_list(value):
+        """Siempre devuelve lista."""
+        if isinstance(value, list):
+            return value
+        return []
+
+    def hash_dict(d):
+        """Convierte un dict → string hash estable."""
+        if not isinstance(d, dict):
+            return None
+        try:
+            return json.dumps(d, sort_keys=True)
+        except Exception:
+            return str(d)
+
+    # ---------- CONTROLES ----------
+
+    def get_aliases(e):
+        """Extrae alias/tag de forma resiliente."""
+        if not isinstance(e, dict):
+            return []
+        controles = e.get("controles", [])
+        if isinstance(controles, str):
+            return []
+        if not isinstance(controles, list):
+            return []
+
+        out = []
+        for item in controles:
+            if isinstance(item, dict):
+                alias = item.get("alias") or item.get("tag")
+                if alias:
+                    out.append(alias)
+            elif isinstance(item, str):
+                if item.strip():
+                    out.append(item.strip())
+        return out
+
+    a_controles = set(get_aliases(ea))
+    b_controles = set(get_aliases(eb))
+
+    # ---------- TABLAS WORD ----------
+    def key_tabla_word(t):
+        """Hash para tabla_word (dict)."""
+        return hash_dict(t)
+
+    a_tablas = {
+        key_tabla_word(t) for t in safe_list(ea.get("tablas_word"))
+        if key_tabla_word(t)
+    }
+    b_tablas = {
+        key_tabla_word(t) for t in safe_list(eb.get("tablas_word"))
+        if key_tabla_word(t)
     }
 
-def dictfetchall(cursor):
-    columns = [col[0] for col in cursor.description]
-    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+    # ---------- EXCELS ----------
+    def key_excel(e):
+        return hash_dict(e)
+
+    a_excels = {
+        key_excel(x) for x in safe_list(ea.get("excels"))
+        if key_excel(x)
+    }
+    b_excels = {
+        key_excel(x) for x in safe_list(eb.get("excels"))
+        if key_excel(x)
+    }
+
+    # ---------- IMÁGENES ----------
+    def key_imagen(img):
+        return hash_dict(img)
+
+    a_imgs = {
+        key_imagen(i) for i in safe_list(ea.get("imagenes"))
+        if key_imagen(i)
+    }
+    b_imgs = {
+        key_imagen(i) for i in safe_list(eb.get("imagenes"))
+        if key_imagen(i)
+    }
+
+    # ---------- FIRMA ESTRUCTURAL ----------
+    from plantillas_documentos_tecnicos.leer_estructura_plantilla_word import (
+        extract_structural_signature
+    )
+
+    sig_a = extract_structural_signature(ea)
+    sig_b = extract_structural_signature(eb)
+
+    firma_cambiada = (
+        json.dumps(sig_a, sort_keys=True) != json.dumps(sig_b, sort_keys=True)
+    )
+
+    # ===================================================
+    # RESULTADO FINAL ALINEADO CON EL TEMPLATE
+    # ===================================================
+    return {
+        "controles": {
+            "nuevos": sorted(a_controles - b_controles),
+            "eliminados": sorted(b_controles - a_controles),
+        },
+        "tablas_word": {
+            "nuevas": sorted(a_tablas - b_tablas),
+            "eliminadas": sorted(b_tablas - a_tablas),
+        },
+        "excels": {
+            "nuevos": sorted(a_excels - b_excels),
+            "eliminados": sorted(b_excels - a_excels),
+        },
+        "imagenes": {
+            "nuevas": sorted(a_imgs - b_imgs),
+            "eliminadas": sorted(b_imgs - a_imgs),
+        },
+        "signature_cambios": firma_cambiada,
+    }
 
 
-def dictfetchone(cursor):
-    row = cursor.fetchone()
-    if row is None:
-        return None
-    columns = [col[0] for col in cursor.description]
-    return dict(zip(columns, row))
+def extract_aliases_from_estructura(estructura) -> list[str]:
+    """
+    Extrae alias/tag de controles de una estructura JSON de plantilla.
 
+    Soporta:
+        - estructura = dict con clave "controles": [ {alias, tag, ...}, ... ]
+        - estructuras antiguas donde "controles" pueda ser lista de strings
+        - ignora valores corruptos sin lanzar excepción
+    """
+    aliases: list[str] = []
 
-def clean(texto):
-    return unidecode(texto).replace(" ", "_").replace("/", "_")
+    if not isinstance(estructura, dict):
+        return aliases
 
+    lista = estructura.get("controles", [])
+    if not isinstance(lista, list):
+        return aliases
 
-def siguiente_version(version_actual):
-    if not version_actual:
-        return "1.0"
-    try:
-        partes = str(version_actual).split(".")
-        if len(partes) == 2:
-            major = int(partes[0])
-            minor = int(partes[1])
-            return f"{major}.{minor + 1}"
-        v = float(version_actual)
-        return f"{v + 0.1:.1f}"
-    except Exception:
-        return "1.0"
+    for c in lista:
+        if isinstance(c, dict):
+            alias = c.get("alias") or c.get("tag")
+            if alias:
+                aliases.append(alias)
+        elif isinstance(c, str):
+            # Formato antiguo: ya es alias directamente
+            if c:
+                aliases.append(c)
+
+    return aliases
 
 
 # =============================================================================
-# LISTADO GENERAL
+# AJAX: DETECTAR CONTROLES SIN SUBIR PLANTILLA (preview)
+# =============================================================================
+
+@csrf_exempt
+@require_POST
+def detectar_controles_ajax(request):
+    file = request.FILES.get("archivo")
+    if not file:
+        return JsonResponse({"ok": False, "error": "No se recibió archivo"})
+
+    if not file.name.lower().endswith(".docx"):
+        return JsonResponse({"ok": False, "error": "Formato inválido"})
+
+    # Guardar temporal
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
+        for chunk in file.chunks():
+            tmp.write(chunk)
+        local_path = tmp.name
+
+    try:
+        from plantillas_documentos_tecnicos.leer_estructura_plantilla_word import generar_estructura
+        estructura = generar_estructura(local_path)
+    finally:
+        if os.path.exists(local_path):
+            os.remove(local_path)
+
+    controles_alias = extract_aliases_from_estructura(estructura)
+
+    return JsonResponse({
+        "ok": True,
+        "controles": sorted(controles_alias),
+        "estructura_json": estructura,  # dict serializable
+    })
+
+
+# =============================================================================
+# LISTADO GENERAL DE TIPOS
 # =============================================================================
 
 def lista_plantillas(request):
     categorias = []
 
-    # ======================================================
-    #      ARMAR LISTA COMPLETA DE CATEGORÍAS Y TIPOS
-    # ======================================================
+    # -----------------------------
+    # Lista de categorías + tipos
+    # -----------------------------
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT id, nombre, descripcion, abreviatura
@@ -167,13 +421,11 @@ def lista_plantillas(request):
                     t.nombre,
                     t.abreviatura,
                     t.descripcion,
-
                     EXISTS (
                         SELECT 1
                         FROM plantilla_tipo_doc p
                         WHERE p.tipo_documento_id = t.id
                     ) AS tiene_plantilla
-
                 FROM tipo_documentos_tecnicos t
                 WHERE t.categoria_id = %s
                 ORDER BY t.nombre
@@ -189,10 +441,9 @@ def lista_plantillas(request):
                 "tipos": tipos_raw
             })
 
-    # ======================================================
-    #      ESTADÍSTICAS GLOBALES DEL SISTEMA
-    # ======================================================
-
+    # -----------------------------
+    # Estadísticas globales
+    # -----------------------------
     total_tipos = 0
     con_plantilla = 0
     sin_plantilla = 0
@@ -200,19 +451,16 @@ def lista_plantillas(request):
 
     with connection.cursor() as cursor:
 
-        # N° total de tipos
         cursor.execute("SELECT id FROM tipo_documentos_tecnicos")
         tipos_all = [r[0] for r in cursor.fetchall()]
         total_tipos = len(tipos_all)
 
-        # Tipos con plantilla
         cursor.execute("SELECT tipo_documento_id FROM plantilla_tipo_doc")
         p = [r[0] for r in cursor.fetchall()]
         con_plantilla = len(p)
 
         sin_plantilla = total_tipos - con_plantilla
 
-        # Plantillas rotas
         cursor.execute("""
             SELECT v.gcs_path
             FROM plantilla_tipo_doc_versiones v
@@ -230,13 +478,11 @@ def lista_plantillas(request):
         "plantillas_rotas": rotas,
     }
 
-    # ======================================================
-    # RENDER
-    # ======================================================
     return render(request, "lista_plantillas.html", {
         "categorias": categorias,
         "stats_globales": stats_globales,
     })
+
 
 # =============================================================================
 # DETALLES DE CATEGORÍA
@@ -293,7 +539,7 @@ def editar_categoria(request, categoria_id):
 
         nuevo_clean = clean(nombre)
 
-        # mover carpetas si cambia nombre
+        # Renombrar carpeta en GCS si cambia el nombre
         if nuevo_clean != nombre_original_clean:
             old_prefix = f"Plantillas/Documentos_Tecnicos/{nombre_original_clean}/"
             new_prefix = f"Plantillas/Documentos_Tecnicos/{nuevo_clean}/"
@@ -324,13 +570,15 @@ def editar_categoria(request, categoria_id):
 
 
 # =============================================================================
-# DETALLE TIPO
+# DETALLE TIPO DOCUMENTO
 # =============================================================================
 
 def tipo_detalle(request, tipo_id):
 
+    # ============================================================
+    # 1) Obtener datos del tipo de documento y su plantilla actual
+    # ============================================================
     with connection.cursor() as cursor:
-        # Datos del tipo
         cursor.execute("""
             SELECT 
                 t.id, t.categoria_id, t.nombre, t.descripcion,
@@ -345,7 +593,7 @@ def tipo_detalle(request, tipo_id):
         if not tipo:
             return render(request, "404.html", status=404)
 
-        # Plantilla actual (si existe)
+        # Plantilla actual
         cursor.execute("""
             SELECT 
                 v.id, v.plantilla_id, v.gcs_path, v.version, v.creado_en
@@ -357,7 +605,7 @@ def tipo_detalle(request, tipo_id):
         """, [tipo_id])
         plantilla = dictfetchone(cursor)
 
-        # Historial completo
+        # Historial de versiones (todas)
         if plantilla:
             cursor.execute("""
                 SELECT id, gcs_path, version, creado_en
@@ -369,101 +617,131 @@ def tipo_detalle(request, tipo_id):
         else:
             versiones = []
 
-    # ======================================================
-    #      EXISTENCIA ARCHIVO + CONTROLES DE CONTENIDO
-    # ======================================================
-
+    # ============================================================
+    # 2) Obtener archivo actual + estructura JSON
+    # ============================================================
     archivo_existe = False
     preview_url = None
-    controles = []
+    estructura_actual = {}
+    estructura_anterior = {}
 
     if plantilla:
         ruta = plantilla["gcs_path"]
+
         if gcs_exists(ruta):
             archivo_existe = True
             preview_url = generar_url_previa(ruta)
-            controles = extraer_controles_contenido_desde_gcs(ruta)
+
+            # JSON estructural asociado a esta versión
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT estructura_json
+                    FROM plantilla_estructura_version
+                    WHERE version_id = %s
+                    ORDER BY id DESC LIMIT 1
+                """, [plantilla["id"]])
+                row = cursor.fetchone()
+
+            estructura_actual = row[0] if row else {}
         else:
-            plantilla = None  # Archivo perdido → eliminar visual
+            # No existe el archivo en GCS
+            plantilla = None
 
     office_url = office_or_download_url(preview_url) if preview_url else None
 
-    # ======================================================
-    #      PROCESAR VERSIONES PARA TABLA
-    # ======================================================
+    # ============================================================
+    # 3) Obtener estructura anterior (para comparar)
+    # ============================================================
+    if len(versiones) >= 2:
+        penult = versiones[1]
+
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT estructura_json
+                FROM plantilla_estructura_version
+                WHERE version_id = %s
+                ORDER BY id DESC LIMIT 1
+            """, [penult["id"]])
+            row_prev = cursor.fetchone()
+
+        estructura_anterior = row_prev[0] if row_prev else {}
+
+    else:
+        estructura_anterior = {}
+
+    # ============================================================
+    # 4) Comparación profunda de estructura (NUEVO)
+    # ============================================================
+    stats_diferencias = comparar_estructuras(
+        estructura_actual,
+        estructura_anterior
+    )
+
+    # ============================================================
+    # 5) Estadísticas generales de versiones
+    # ============================================================
+    stats_versiones = (
+        calcular_stats_versiones(versiones)
+        if versiones else {"total_versiones": 0, "versiones_ok": 0, "versiones_rotas": 0}
+    )
+
+    # ============================================================
+    # 6) Estadísticas de calidad de la estructura
+    # ============================================================
+    calidad = evaluar_calidad_estructura(estructura_actual)
+
+    # ============================================================
+    # 7) Procesar historial para UI
+    # ============================================================
     versiones_proc = []
     for v in versiones:
-        entrada = v.copy()
-        gp = v.get("gcs_path")
+        data = v.copy()
+        gp = v["gcs_path"]
 
         if gp and gcs_exists(gp):
             prev = generar_url_previa(gp)
-            entrada["office_url"] = office_or_download_url(prev) if prev else None
+            data["office_url"] = office_or_download_url(prev) if prev else None
         else:
-            entrada["office_url"] = None
+            data["office_url"] = None
 
-        # 🔥 NUEVO: saber si está en uso
+        # Verificar si la versión está en uso
         with connection.cursor() as cursor:
             cursor.execute("""
                 SELECT COUNT(*)
                 FROM documentos_generados
                 WHERE plantilla_documento_tecnico_version_id = %s
             """, [v["id"]])
-            entrada["en_uso"] = cursor.fetchone()[0] > 0
+            data["en_uso"] = cursor.fetchone()[0] > 0
 
-        versiones_proc.append(entrada)
+        versiones_proc.append(data)
 
-    # ======================================================
-    #      ESTADÍSTICAS
-    # ======================================================
-
-    # A) Stats de versiones
-    if versiones:
-        stats_versiones = calcular_stats_versiones(versiones)
-    else:
-        stats_versiones = {
-            "total_versiones": 0,
-            "versiones_ok": 0,
-            "versiones_rotas": 0
-        }
-
-    # B) Stats de controles
-    stats_controles = calcular_stats_controles(controles)
-
-    # C) Diferencias con penúltima versión
-    controles_anterior = []
-    if len(versiones) >= 2:
-        penult = versiones[1]
-        if penult["gcs_path"] and gcs_exists(penult["gcs_path"]):
-            controles_anterior = extraer_controles_contenido_desde_gcs(penult["gcs_path"])
-
-    stats_diferencias = comparar_controles(controles, controles_anterior)
-
-    # D) Calidad estructural
-    calidad = evaluar_calidad_controles(stats_controles["controles_unicos"])
-
-    # ======================================================
-    # RENDER
-    # ======================================================
+    # ============================================================
+    # 8) Render final
+    # ============================================================
     return render(request, "tipo_detalle.html", {
         "tipo": tipo,
         "plantilla": plantilla,
+
         "archivo_existe": archivo_existe,
         "preview_url": preview_url,
         "office_url": office_url,
 
-        "controles": controles,
-        "versiones": versiones_proc,
+        # Estructura profunda
+        "estructura_json": estructura_actual,
+        "estructura_anterior": estructura_anterior,
 
-        # --- NUEVAS ESTADÍSTICAS ---
-        "stats_versiones": stats_versiones,
-        "stats_controles": stats_controles,
+        # Comparación avanzada
         "stats_diferencias": stats_diferencias,
+        "stats_versiones": stats_versiones,
         "calidad": calidad,
+
+        # Historial
+        "versiones": versiones_proc,
     })
 
+
 # =============================================================================
-# CREAR CATEGORÍA
+# CREAR CATEGORÍA / TIPO DOCUMENTO
 # =============================================================================
 
 def generar_abreviatura(nombre, tipo="categoria"):
@@ -511,10 +789,6 @@ def crear_categoria(request):
         "abreviatura": abreviatura_generada
     })
 
-
-# =============================================================================
-# CREAR TIPO DOCUMENTO
-# =============================================================================
 
 def crear_tipo_documento(request):
 
@@ -568,15 +842,47 @@ def crear_tipo_documento(request):
 
 
 # =============================================================================
-# SUBIR PLANTILLA (CUERPO)
+# SUBIR PLANTILLA (VERSIONADO REAL POR JSON)
 # =============================================================================
+
+def versionar_plantilla_json(version_actual, estructura_antes, estructura_despues):
+    """
+    Versionamiento real basado en diferencias profundas del JSON estructural.
+
+    Usa extract_structural_signature() definido en leer_estructura_plantilla_word.py
+    para comparar solo la “forma” de la plantilla.
+    """
+    from plantillas_documentos_tecnicos.leer_estructura_plantilla_word import (
+        extract_structural_signature
+    )
+
+    # Primera versión
+    if not version_actual:
+        return "1.0"
+
+    try:
+        major, minor = map(int, str(version_actual).split("."))
+    except Exception:
+        major, minor = 1, 0
+
+    sig1 = extract_structural_signature(estructura_antes or {})
+    sig2 = extract_structural_signature(estructura_despues or {})
+
+    if json.dumps(sig1, sort_keys=True) != json.dumps(sig2, sort_keys=True):
+        # Cambios estructurales → major
+        return f"{major + 1}.0"
+
+    # Cambios menores → minor
+    return f"{major}.{minor + 1}"
+
 
 @login_required
 def subir_plantilla(request, tipo_id):
 
+    # 1) Datos del tipo
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT t.id, t.nombre, c.nombre as categoria
+            SELECT t.id, t.nombre, c.nombre AS categoria
             FROM tipo_documentos_tecnicos t
             JOIN categoria_documentos_tecnicos c ON c.id = t.categoria_id
             WHERE t.id = %s
@@ -594,17 +900,18 @@ def subir_plantilla(request, tipo_id):
             messages.error(request, "Selecciona un archivo DOCX.")
             return redirect(request.path)
 
-        categoria = clean(tipo["categoria"])
-        tipo_nom = clean(tipo["nombre"])
-        base_path = f"Plantillas/Documentos_Tecnicos/{categoria}/{tipo_nom}/"
+        categoria_clean = clean(tipo["categoria"])
+        tipo_clean = clean(tipo["nombre"])
+
+        base_path = f"Plantillas/Documentos_Tecnicos/{categoria_clean}/{tipo_clean}/"
 
         client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
         bucket = client.bucket(settings.GCP_BUCKET_NAME)
 
-        # buscar registro maestro
+        # 2) Buscar maestro existente
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT p.id AS plantilla_id, v.version, v.gcs_path
+                SELECT p.id AS plantilla_id, v.id AS version_id, v.version
                 FROM plantilla_tipo_doc p
                 LEFT JOIN plantilla_tipo_doc_versiones v
                     ON v.id = p.version_actual_id
@@ -616,9 +923,21 @@ def subir_plantilla(request, tipo_id):
         if anterior:
             plantilla_id = anterior["plantilla_id"]
             version_anterior = anterior["version"]
-            ruta_anterior = anterior["gcs_path"]
-            controles_antes = extraer_controles_contenido_desde_gcs(ruta_anterior) if ruta_anterior else []
+            version_actual_id = anterior["version_id"]
+
+            # Obtener JSON estructural anterior (dict)
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT estructura_json
+                    FROM plantilla_estructura_version
+                    WHERE version_id = %s
+                    ORDER BY id DESC LIMIT 1
+                """, [version_actual_id])
+                row = cursor.fetchone()
+
+            estructura_antes = row[0] if row else None
         else:
+            # Crear maestro si no existe
             with connection.cursor() as cursor:
                 cursor.execute("""
                     INSERT INTO plantilla_tipo_doc (tipo_documento_id)
@@ -626,19 +945,26 @@ def subir_plantilla(request, tipo_id):
                     RETURNING id
                 """, [tipo_id])
                 plantilla_id = cursor.fetchone()[0]
-            version_anterior = None
-            controles_antes = []
 
-        # guardar archivo temporal
+            version_anterior = None
+            estructura_antes = None
+
+        # 3) Guardar archivo local temporalmente
         with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
             for chunk in archivo.chunks():
                 tmp.write(chunk)
             nuevo_local = tmp.name
 
-        controles_despues = extraer_controles_contenido_desde_file(nuevo_local)
+        # 4) Generar nueva estructura JSON (dict)
+        from plantillas_documentos_tecnicos.leer_estructura_plantilla_word import generar_estructura
+        estructura_despues = generar_estructura(nuevo_local)
 
-        # versionado
-        nueva_version = versionar_plantilla(version_anterior, controles_antes, controles_despues)
+        # 5) Calcular nueva versión (major/minor real)
+        nueva_version = versionar_plantilla_json(
+            version_anterior,
+            estructura_antes,
+            estructura_despues
+        )
 
         version_folder = f"{base_path}V{nueva_version}/"
         bucket.blob(version_folder).upload_from_string("")
@@ -648,13 +974,18 @@ def subir_plantilla(request, tipo_id):
 
         bucket.blob(blob_name).upload_from_filename(nuevo_local)
 
-        # insertar versión
+        # Limpieza temp
+        if os.path.exists(nuevo_local):
+            os.remove(nuevo_local)
+
+        # 6) Registrar nueva versión en BD (SIN COLUMNA controles)
         with connection.cursor() as cursor:
+
             cursor.execute("""
-                INSERT INTO plantilla_tipo_doc_versiones (plantilla_id, version, gcs_path, controles)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO plantilla_tipo_doc_versiones (plantilla_id, version, gcs_path)
+                VALUES (%s, %s, %s)
                 RETURNING id
-            """, [plantilla_id, nueva_version, blob_name, json.dumps(controles_despues)])
+            """, [plantilla_id, nueva_version, blob_name])
             new_version_id = cursor.fetchone()[0]
 
             cursor.execute("""
@@ -663,6 +994,16 @@ def subir_plantilla(request, tipo_id):
                 WHERE id = %s
             """, [new_version_id, plantilla_id])
 
+            # 7) Guardar JSON estructural profundo
+            cursor.execute("""
+                INSERT INTO plantilla_estructura_version
+                (version_id, estructura_json)
+                VALUES (%s, %s)
+            """, [
+                new_version_id,
+                Json(estructura_despues)   # dict → JSONB
+            ])
+
         messages.success(request, f"✔ Plantilla subida (versión {nueva_version}).")
         return redirect("plantillas:detalle_tipo", tipo_id=tipo_id)
 
@@ -670,7 +1011,7 @@ def subir_plantilla(request, tipo_id):
 
 
 # =============================================================================
-# DESCARGAR GCS
+# DESCARGAR ARCHIVO DESDE GCS
 # =============================================================================
 
 @login_required
@@ -686,56 +1027,6 @@ def descargar_gcs(request, path):
     response = HttpResponse(contenido, content_type="application/octet-stream")
     response['Content-Disposition'] = f'attachment; filename="{os.path.basename(path)}"'
     return response
-
-
-def generar_url_previa(blob_path):
-    """
-    Genera URL temporal para el archivo (3 horas).
-    """
-    client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
-    bucket = client.bucket(settings.GCP_BUCKET_NAME)
-    blob = bucket.blob(blob_path)
-
-    try:
-        url = blob.generate_signed_url(
-            version="v4",
-            expiration=timedelta(hours=3),
-            method="GET",
-        )
-        return url
-    except Exception:
-        return None
-
-
-def office_or_download_url(preview_url):
-    encoded = urllib.parse.quote(preview_url, safe='')
-    return f"https://view.officeapps.live.com/op/view.aspx?src={encoded}"
-
-
-# =============================================================================
-# VERSIONAMIENTO
-# =============================================================================
-
-def versionar_plantilla(version_actual, controles_antes, controles_despues):
-
-    if not version_actual:
-        return "1.0"
-
-    try:
-        partes = str(version_actual).split(".")
-        major = int(partes[0])
-        minor = int(partes[1])
-    except:
-        major, minor = 1, 0
-
-    set_antes = set(controles_antes or [])
-    set_despues = set(controles_despues or [])
-
-    if set_antes != set_despues:
-        return f"{major + 1}.0"
-
-    return f"{major}.{minor + 1}"
-
 
 
 # =============================================================================
@@ -839,6 +1130,7 @@ def editar_tipo_documento(request, tipo_id):
 # =============================================================================
 # ELIMINAR VERSIÓN INDIVIDUAL
 # =============================================================================
+
 @login_required
 def eliminar_version(request, version_id):
 
@@ -862,13 +1154,13 @@ def eliminar_version(request, version_id):
     plantilla_id = reg["plantilla_id"]
     version_actual_id = reg["version_actual_id"]
 
-    # Carpetas GCS
     version_folder = "/".join(gcs_path.split("/")[:-1]) + "/"
     base_folder = "/".join(version_folder.split("/")[:-2]) + "/"
 
     client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
+    bucket = client.bucket(settings.GCP_BUCKET_NAME)
 
-    # 0) Verificar si esta versión está siendo usada en algún requerimiento técnico
+    # Verificar si esta versión está en uso por documentos_generados
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT COUNT(*) 
@@ -885,15 +1177,11 @@ def eliminar_version(request, version_id):
         )
         return redirect("plantillas:detalle_tipo", tipo_id=tipo_id)
 
-
-
-    bucket = client.bucket(settings.GCP_BUCKET_NAME)
-
     # 1) Borrar archivos de la versión en GCS
     for blob in list(bucket.list_blobs(prefix=version_folder)):
         try:
             blob.delete()
-        except:
+        except Exception:
             pass
 
     with connection.cursor() as cursor:
@@ -901,7 +1189,7 @@ def eliminar_version(request, version_id):
         # 2) Borrar versión en BD
         cursor.execute("DELETE FROM plantilla_tipo_doc_versiones WHERE id = %s", [version_id])
 
-        # 3) Ver cuántas versiones quedan
+        # 3) Consultar cuántas versiones quedan
         cursor.execute("""
             SELECT COUNT(*)
             FROM plantilla_tipo_doc_versiones
@@ -909,20 +1197,15 @@ def eliminar_version(request, version_id):
         """, [plantilla_id])
         quedan = cursor.fetchone()[0]
 
-        # ========================================================
-        #     ⚠⚠ REGLA TUYA: SOLO eliminar plantilla_tipo_doc
-        #       cuando NO QUEDA NINGUNA versión (quedan = 0)
-        # ========================================================
+        # Si no queda ninguna versión, eliminar maestro + carpeta
         if quedan == 0:
 
-            # Borrar carpeta padre (Vacía)
             for blob in list(bucket.list_blobs(prefix=base_folder)):
                 try:
                     blob.delete()
-                except:
+                except Exception:
                     pass
 
-            # Eliminar registro maestro
             cursor.execute("""
                 DELETE FROM plantilla_tipo_doc
                 WHERE id = %s
@@ -954,142 +1237,3 @@ def eliminar_version(request, version_id):
 
     messages.success(request, "✔ Versión eliminada.")
     return redirect("plantillas:detalle_tipo", tipo_id=tipo_id)
-
-
-# =============================================================================
-# MOVER CARPETA EN GCS
-# =============================================================================
-
-def mover_carpeta_gcs(old_prefix, new_prefix):
-    client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
-    bucket = client.bucket(settings.GCP_BUCKET_NAME)
-
-    blobs = list(bucket.list_blobs(prefix=old_prefix))
-    for b in blobs:
-        old_name = b.name
-        new_name = old_name.replace(old_prefix, new_prefix, 1)
-        bucket.copy_blob(b, bucket, new_name)
-        b.delete()
-
-    return True
-
-
-# =============================================================================
-# EXTRACCIÓN DE CONTROLES CONTENIDO DOCX (CUERPO)
-# =============================================================================
-
-NS = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
-
-
-def _normalizar_control(nombre):
-    if not nombre:
-        return None
-    s = str(nombre)
-    s = s.replace("\u00A0", " ")
-    s = unidecode(s)
-    s = s.strip()
-    s = re.sub(r"\s+", "_", s)
-    s = s.lower()
-    s = re.sub(r"[^a-z0-9_.]+", "_", s)
-    s = re.sub(r"_+", "_", s)
-    return s.strip("_") or None
-
-
-def _extraer_tag_o_alias(sdt_node):
-    tag_node = sdt_node.xpath(".//w:tag", namespaces=NS)
-    if tag_node:
-        val = tag_node[0].get(f"{{{NS['w']}}}val")
-        if val:
-            return str(val).strip()
-
-    alias_node = sdt_node.xpath(".//w:alias", namespaces=NS)
-    if alias_node:
-        val = alias_node[0].get(f"{{{NS['w']}}}val")
-        if val:
-            return str(val).strip()
-
-    return None
-
-
-def _agregar_control(mapa, nombre_crudo):
-    norm = _normalizar_control(nombre_crudo)
-    if not norm:
-        return
-    if norm not in mapa:
-        mapa[norm] = nombre_crudo.strip()
-
-
-def _procesar_docx_zip(docx, mapa, log_prefix=""):
-
-    def _scan(part, etiqueta="document"):
-        try:
-            xml = etree.fromstring(docx.read(part))
-            encontrados = xml.xpath("//w:sdt", namespaces=NS)
-            for sdt in encontrados:
-                raw = _extraer_tag_o_alias(sdt)
-                if raw:
-                    _agregar_control(mapa, raw)
-        except Exception:
-            pass
-
-    # Documento principal
-    if "word/document.xml" in docx.namelist():
-        _scan("word/document.xml", "document")
-
-    # Encabezados
-    for name in docx.namelist():
-        if name.startswith("word/header") and name.endswith(".xml"):
-            _scan(name, "header")
-
-    # Pies de página
-    for name in docx.namelist():
-        if name.startswith("word/footer") and name.endswith(".xml"):
-            _scan(name, "footer")
-
-
-def extraer_controles_contenido_desde_gcs(gcs_path):
-    """
-    Descarga DOCX desde GCS y extrae controles w:sdt.
-    Devuelve lista sin duplicados.
-    """
-    client = storage.Client.from_service_account_json(settings.GCP_SERVICE_ACCOUNT_JSON)
-    bucket = client.bucket(settings.GCP_BUCKET_NAME)
-    blob = bucket.blob(gcs_path)
-
-    if not blob.exists():
-        return []
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
-        blob.download_to_filename(tmp.name)
-        local_path = tmp.name
-
-    if not os.path.exists(local_path):
-        return []
-
-    mapa = {}
-
-    try:
-        with ZipFile(local_path, "r") as docx:
-            _procesar_docx_zip(docx, mapa, log_prefix="[GCS] ")
-    except Exception:
-        return []
-
-    return sorted(mapa.values(), key=lambda x: x.lower())
-
-
-def extraer_controles_contenido_desde_file(local_path):
-    """
-    Extrae controles desde un DOCX local.
-    """
-    if not os.path.exists(local_path):
-        return []
-
-    mapa = {}
-
-    try:
-        with ZipFile(local_path, "r") as docx:
-            _procesar_docx_zip(docx, mapa, log_prefix="[LOCAL] ")
-    except Exception:
-        return []
-
-    return sorted(mapa.values(), key=lambda x: x.lower())

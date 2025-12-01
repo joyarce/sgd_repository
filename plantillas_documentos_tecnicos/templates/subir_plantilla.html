@@ -18,13 +18,16 @@
                        class="form-control" accept=".docx" required>
             </div>
 
-            <!-- 📌 CONTROLES DETECTADOS -->
-            <div id="panel_controles" class="mt-3" style="display:none;">
-                <h6 class="fw-bold mb-2">Controles detectados:</h6>
 
-                <ul id="lista_controles"
-                    class="list-group list-group-flush border rounded"></ul>
+            <!-- ⭐ JSON EDITOR -->
+            <div id="panel_json" class="mt-4" style="display:none;">
+                <h6 class="fw-bold mb-2">JSON estructural detectado:</h6>
+
+                <div id="json_output"
+                     style="height: 450px; border: 1px solid #ccc; border-radius: 5px;">
+                </div>
             </div>
+
 
             <button class="btn btn-metso-replace mt-3">Subir plantilla</button>
         </form>
@@ -34,10 +37,11 @@
 </div>
 
 <!-- ============================
-     AJAX: detectar controles
+     AJAX: pre-cargar JSON
 =============================== -->
 <script>
 document.getElementById("input_plantilla").addEventListener("change", function() {
+
     let file = this.files[0];
     if (!file) return;
 
@@ -50,23 +54,31 @@ document.getElementById("input_plantilla").addEventListener("change", function()
     })
     .then(r => r.json())
     .then(data => {
-        let panel = document.getElementById("panel_controles");
-        let lista = document.getElementById("lista_controles");
-        lista.innerHTML = "";
+
+        let panelJson = document.getElementById("panel_json");
+        let contenedor = document.getElementById("json_output");
 
         if (!data.ok) {
-            panel.style.display = "none";
+            panelJson.style.display = "none";
             return;
         }
 
-        data.controles.forEach(c => {
-            let li = document.createElement("li");
-            li.className = "list-group-item py-1";
-            li.textContent = c;
-            lista.appendChild(li);
+        // Limpiar previa instancia
+        contenedor.innerHTML = "";
+
+        // Crear JSONEditor
+        const editor = new JSONEditor(contenedor, {
+            mode: "view",
+            navigationBar: true,
+            statusBar: false,
+            mainMenuBar: false,
+            indentation: 4
         });
 
-        panel.style.display = "block";
+        // Cargar JSON estructural
+        editor.set(data.estructura_json);
+
+        panelJson.style.display = "block";
     });
 });
 </script>
