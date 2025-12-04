@@ -4,7 +4,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'tu-secret-key'
+SECRET_KEY = '#-#-#'
 DEBUG = True
 ALLOWED_HOSTS = []
 
@@ -31,7 +31,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'Gestion_Doc.urls'
+ROOT_URLCONF = '#.urls'
 
 TEMPLATES = [
     {
@@ -48,9 +48,9 @@ TEMPLATES = [
     }
 ]
 
-WSGI_APPLICATION = 'Gestion_Doc.wsgi.application'
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/usuario/inicio'
+WSGI_APPLICATION = '#.wsgi.application'
+LOGIN_URL = '/#/'
+LOGIN_REDIRECT_URL = '/#/#'
 
 
 STATIC_URL = 'static/'
@@ -66,25 +66,25 @@ STATICFILES_DIRS = [
 GCP_SERVICE_ACCOUNT_JSON = os.path.join(BASE_DIR, 'Usuario', 'service_account.json')
 
 # Nombre de tu bucket en GCS
-GCP_BUCKET_NAME = "sgdmtso_jova"
+GCP_BUCKET_NAME = "#"
 
 
 # Credenciales del service account
 GOOGLE_DRIVE_SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, 'Usuario', 'service_account.json')
-GOOGLE_DRIVE_FOLDER_ID = "1pu5aVJtVbsaGqKrTb1avUoO4m2G83ipM"
+GOOGLE_DRIVE_FOLDER_ID = "#"
 
 # Microsoft OAuth
-MICROSOFT_CLIENT_ID = "c4601061-a49f-478a-ad5c-654e3cca3868"
-MICROSOFT_CLIENT_SECRET = "fgy8Q~KXD3foDHVQunLEKODHYG4jNB3QxKNCKaW4"
-MICROSOFT_AUTHORITY = "https://login.microsoftonline.com/common"
-MICROSOFT_REDIRECT_URI = "http://localhost:8000/callback/"
+MICROSOFT_CLIENT_ID = "#"
+MICROSOFT_CLIENT_SECRET = "#"
+MICROSOFT_AUTHORITY = "#"
+MICROSOFT_REDIRECT_URI = "#"
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.office365.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'alertas_sgd@outlook.com'
-EMAIL_HOST_PASSWORD = 'tu_contraseña_o_app_password'
+EMAIL_BACKEND = '#'
+EMAIL_HOST = '#'
+EMAIL_PORT = #
+EMAIL_USE_TLS = #
+EMAIL_HOST_USER = '#'
+EMAIL_HOST_PASSWORD = #'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
@@ -92,12 +92,12 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'django_db',
-        'USER': 'django_user',
-        'PASSWORD': 'django_pass',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
+        'ENGINE': '#',
+        'NAME': '#',
+        'USER': '#',
+        'PASSWORD': '#',
+        'HOST': '#',
+        'PORT': '#',
     }
 }
 
