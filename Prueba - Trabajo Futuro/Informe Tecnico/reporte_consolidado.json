@@ -1,0 +1,2889 @@
+[
+    {
+        "content_controls": {
+            "nombre_proyecto": "Cambio Coraza Molino Bolas 26x38",
+            "referencia_turno": "CH-002",
+            "ubicacion_turno": "CHANCADORA SECUNDARIA - ZONA SUR",
+            "fecha_turno": "2025-01-01",
+            "num_reporte_diario": "1",
+            "tipo_jornada": "Noche",
+            "hora_inicio": "22:00",
+            "hora_termino": "10:00",
+            "bloque_imagen_evidencia": "3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 1.3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 1.3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 1.",
+            "imagen_evidencia": "",
+            "num_imagen_evidencia": "3",
+            "descripcion_imagen_evidencia": "Registro fotográfico 3 de 3 correspondiente al Reporte Diario 1.",
+            "nombre_representante_reporte_diario": "Ana Villalobos",
+            "cargo_representante_reporte_diario": "Jefa HSE",
+            "fecha_representante_metso_reporte_diario": "2025-01-01",
+            "nombre_representante_cliente_reporte_diario": "Francisca Rivas",
+            "cargo_representante_cliente_reporte_diario": "Superintendente Mantención",
+            "fecha_representante_cliente_reporte_diario": "2025-01-01"
+        },
+        "excel_tables": {
+            "personal_indirecto": {
+                "headers": [
+                    "CANT",
+                    "CARGO",
+                    "CANT. PLAN.",
+                    "HH PLAN.",
+                    "CANT. REAL",
+                    "HH REAL"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Prevencionista HSE",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Bodeguero / Logística",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Planificador",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Ingeniero de Proyecto",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Administrador de Contrato",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    }
+                ]
+            },
+            "act_realizadas": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Chequeo de holguras y alineamiento"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Revisión estructural de bastidor"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Izaje y retiro de componente crítico"
+                    }
+                ]
+            },
+            "hitos_relevantes_turno": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Cierre de inspección y pruebas funcionales"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Montaje de componente crítico en próximo turno"
+                    }
+                ]
+            },
+            "avance_turno": {
+                "headers": [
+                    "N° REPORTE DIARIO",
+                    "% AVANCE DIARIO PLANIFICADO",
+                    "% AVANCE DIARIO REAL",
+                    "AVANCE PLANIFICADO (ACUMULADO)",
+                    "AVANCE REAL (ACUMULADO)"
+                ],
+                "rows": [
+                    {
+                        "N° REPORTE DIARIO": 1,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0209341542187218,
+                        "% AVANCE DIARIO REAL": 0.01263936822077703,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0209341542187218,
+                        "AVANCE REAL (ACUMULADO)": 0.01263936822077703
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    }
+                ]
+            },
+            "personal_directo": {
+                "headers": [
+                    "CANT",
+                    "CARGO",
+                    "CANT. PLAN.",
+                    "HH PLAN.",
+                    "CANT. REAL",
+                    "HH REAL"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Supervisor Mecánico",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Senior Mecánico",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "96:00:00",
+                        "CARGO": "Téc. Mecánico",
+                        "CANT. PLAN.": "96:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "96:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "CARGO": "Soldador Especialista",
+                        "CANT. PLAN.": "48:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "72:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "96:00:00",
+                        "CARGO": "Ayudante Mecánico",
+                        "CANT. PLAN.": "96:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "120:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Lubricación",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "48:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Hidráulico",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "48:00:00",
+                        "HH REAL": "None"
+                    }
+                ]
+            },
+            "hallazgos_seguridad": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Zona caliente sin demarcación"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Procedimiento de bloqueo/etiquetado incompleto"
+                    }
+                ]
+            },
+            "equipos_auxiliares": {
+                "headers": [
+                    "CANT",
+                    "DESCRIPCIÓN",
+                    "H.M. ASIGN.",
+                    "H. M. OPER.",
+                    "H.M. S-BY",
+                    "DISPONIBILIDAD",
+                    "UTILIZACIÓN",
+                    "USO EFECTIVO",
+                    "STAND-BY",
+                    "OBS. / MOTIVO STAND-BY"
+                ],
+                "rows": [
+                    {
+                        "CANT": "48:00:00",
+                        "DESCRIPCIÓN": "Camión Pluma",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "11:45:36",
+                        "H.M. S-BY": "00:14:24",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Clima adverso"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Camioneta",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "12:00:00",
+                        "H.M. S-BY": "00:00:00",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "None"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "DESCRIPCIÓN": "Grúa Horquilla",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "11:18:14",
+                        "H.M. S-BY": "00:41:45",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Falta de operador"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "DESCRIPCIÓN": "Plataforma Elevadora",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "09:57:36",
+                        "H.M. S-BY": "02:02:24",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Esperando instrucciones"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Compresor",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "12:00:00",
+                        "H.M. S-BY": "00:00:00",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "None"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "DESCRIPCIÓN": "Torre de Iluminación",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "11:38:24",
+                        "H.M. S-BY": "00:21:36",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Falta de operador"
+                    }
+                ]
+            },
+            "desviaciones_turno": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN",
+                    "H. INICIO",
+                    "H. FIN",
+                    "H. TOTAL",
+                    "R. CRÍT"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Problema con perno crítico",
+                        "H. INICIO": "04:26:33",
+                        "H. FIN": "06:27:27",
+                        "H. TOTAL": "02:00:54",
+                        "R. CRÍT": "Sí"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Retraso en llegada de repuestos",
+                        "H. INICIO": "05:49:51",
+                        "H. FIN": "08:07:18",
+                        "H. TOTAL": "02:17:27",
+                        "R. CRÍT": "No"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Bloqueo de acceso por movimiento de equipos",
+                        "H. INICIO": "04:04:19",
+                        "H. FIN": "05:11:37",
+                        "H. TOTAL": "01:07:18",
+                        "R. CRÍT": "No"
+                    }
+                ]
+            }
+        },
+        "excel_names": {
+            "hh_turno_indirecto": "12:00:00",
+            "hh_turno_directo": "12:00:00"
+        },
+        "hh_turno": "12:00:00",
+        "imagenes": [
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_01.docx_image9.png",
+                "descripcion": "Registro fotográfico 1 de 3 correspondiente al Reporte Diario 1.",
+                "fecha": "2025-01-01"
+            },
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_01.docx_image10.png",
+                "descripcion": "Registro fotográfico 2 de 3 correspondiente al Reporte Diario 1.",
+                "fecha": "2025-01-01"
+            },
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_01.docx_image11.png",
+                "descripcion": "Registro fotográfico 3 de 3 correspondiente al Reporte Diario 1.",
+                "fecha": "2025-01-01"
+            }
+        ],
+        "filename": "REPORTE_01.docx"
+    },
+    {
+        "content_controls": {
+            "nombre_proyecto": "Cambio Coraza Molino Bolas 26x38",
+            "referencia_turno": "CH-002",
+            "ubicacion_turno": "CHANCADORA SECUNDARIA - ZONA SUR",
+            "fecha_turno": "2025-01-02",
+            "num_reporte_diario": "2",
+            "tipo_jornada": "Noche",
+            "hora_inicio": "21:00",
+            "hora_termino": "09:00",
+            "bloque_imagen_evidencia": "3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 2.3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 2.3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 2.",
+            "imagen_evidencia": "",
+            "num_imagen_evidencia": "3",
+            "descripcion_imagen_evidencia": "Registro fotográfico 3 de 3 correspondiente al Reporte Diario 2.",
+            "nombre_representante_reporte_diario": "Camila Rojas",
+            "cargo_representante_reporte_diario": "Supervisor Mecánico",
+            "fecha_representante_metso_reporte_diario": "2025-01-02",
+            "nombre_representante_cliente_reporte_diario": "Francisca Rivas",
+            "cargo_representante_cliente_reporte_diario": "Superintendente Mantención",
+            "fecha_representante_cliente_reporte_diario": "2025-01-02"
+        },
+        "excel_tables": {
+            "personal_indirecto": {
+                "headers": [
+                    "CANT",
+                    "CARGO",
+                    "CANT. PLAN.",
+                    "HH PLAN.",
+                    "CANT. REAL",
+                    "HH REAL"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Prevencionista HSE",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Bodeguero / Logística",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Planificador",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Ingeniero de Proyecto",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Administrador de Contrato",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    }
+                ]
+            },
+            "act_realizadas": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Revisión estructural de bastidor"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Chequeo de holguras y alineamiento"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Ajuste y torqueo de pernos"
+                    },
+                    {
+                        "N": "96:00:00",
+                        "DESCRIPCIÓN": "Limpieza y orden del área de trabajo"
+                    },
+                    {
+                        "N": "120:00:00",
+                        "DESCRIPCIÓN": "Izaje y retiro de componente crítico"
+                    },
+                    {
+                        "N": "144:00:00",
+                        "DESCRIPCIÓN": "Lubricación de componentes móviles"
+                    }
+                ]
+            },
+            "hitos_relevantes_turno": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Montaje de componente crítico en próximo turno"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Cierre de inspección y pruebas funcionales"
+                    }
+                ]
+            },
+            "avance_turno": {
+                "headers": [
+                    "N° REPORTE DIARIO",
+                    "% AVANCE DIARIO PLANIFICADO",
+                    "% AVANCE DIARIO REAL",
+                    "AVANCE PLANIFICADO (ACUMULADO)",
+                    "AVANCE REAL (ACUMULADO)"
+                ],
+                "rows": [
+                    {
+                        "N° REPORTE DIARIO": 1,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0209341542187218,
+                        "% AVANCE DIARIO REAL": 0.01263936822077703,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0209341542187218,
+                        "AVANCE REAL (ACUMULADO)": 0.01263936822077703
+                    },
+                    {
+                        "N° REPORTE DIARIO": 2,
+                        "% AVANCE DIARIO PLANIFICADO": 0.07870735136271384,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.09964150558143564,
+                        "AVANCE REAL (ACUMULADO)": 0.01263936822077703
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    }
+                ]
+            },
+            "personal_directo": {
+                "headers": [
+                    "CANT",
+                    "CARGO",
+                    "CANT. PLAN.",
+                    "HH PLAN.",
+                    "CANT. REAL",
+                    "HH REAL"
+                ],
+                "rows": [
+                    {
+                        "CANT": "48:00:00",
+                        "CARGO": "Supervisor Mecánico",
+                        "CANT. PLAN.": "48:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "48:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "72:00:00",
+                        "CARGO": "Téc. Senior Mecánico",
+                        "CANT. PLAN.": "72:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "96:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "120:00:00",
+                        "CARGO": "Téc. Mecánico",
+                        "CANT. PLAN.": "120:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "96:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "72:00:00",
+                        "CARGO": "Soldador Especialista",
+                        "CANT. PLAN.": "72:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "48:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "72:00:00",
+                        "CARGO": "Ayudante Mecánico",
+                        "CANT. PLAN.": "72:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "96:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Lubricación",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Hidráulico",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    }
+                ]
+            },
+            "hallazgos_seguridad": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Objetos en pasillos de circulación"
+                    }
+                ]
+            },
+            "equipos_auxiliares": {
+                "headers": [
+                    "CANT",
+                    "DESCRIPCIÓN",
+                    "H.M. ASIGN.",
+                    "H. M. OPER.",
+                    "H.M. S-BY",
+                    "DISPONIBILIDAD",
+                    "UTILIZACIÓN",
+                    "USO EFECTIVO",
+                    "STAND-BY",
+                    "OBS. / MOTIVO STAND-BY"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Camión Pluma",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "11:34:04",
+                        "H.M. S-BY": "00:25:55",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Clima adverso"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Camioneta",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "12:00:00",
+                        "H.M. S-BY": "00:00:00",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Grúa Horquilla",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "11:16:48",
+                        "H.M. S-BY": "00:43:12",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Interferencia de otros equipos"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Plataforma Elevadora",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "08:44:09",
+                        "H.M. S-BY": "03:15:50",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Interferencia de otros equipos"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Compresor",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "12:00:00",
+                        "H.M. S-BY": "00:00:00",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Torre de Iluminación",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "10:59:31",
+                        "H.M. S-BY": "01:00:28",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Esperando instrucciones"
+                    }
+                ]
+            },
+            "desviaciones_turno": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN",
+                    "H. INICIO",
+                    "H. FIN",
+                    "H. TOTAL",
+                    "R. CRÍT"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Problema con perno crítico",
+                        "H. INICIO": "02:43:45",
+                        "H. FIN": "03:58:58",
+                        "H. TOTAL": "01:15:13",
+                        "R. CRÍT": "No"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Interferencia de contratistas",
+                        "H. INICIO": "03:46:35",
+                        "H. FIN": "06:44:04",
+                        "H. TOTAL": "02:57:29",
+                        "R. CRÍT": "Sí"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Falla de energía en área de chancado",
+                        "H. INICIO": "04:13:52",
+                        "H. FIN": "06:58:08",
+                        "H. TOTAL": "02:44:16",
+                        "R. CRÍT": "No"
+                    },
+                    {
+                        "N": "96:00:00",
+                        "DESCRIPCIÓN": "Condiciones climáticas adversas (nieve/lluvia)",
+                        "H. INICIO": "04:27:15",
+                        "H. FIN": "07:32:19",
+                        "H. TOTAL": "03:05:04",
+                        "R. CRÍT": "No"
+                    }
+                ]
+            }
+        },
+        "excel_names": {
+            "hh_turno_indirecto": "12:00:00",
+            "hh_turno_directo": "12:00:00"
+        },
+        "hh_turno": "12:00:00",
+        "imagenes": [
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_02.docx_image9.png",
+                "descripcion": "Registro fotográfico 1 de 3 correspondiente al Reporte Diario 2.",
+                "fecha": "2025-01-02"
+            },
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_02.docx_image10.png",
+                "descripcion": "Registro fotográfico 2 de 3 correspondiente al Reporte Diario 2.",
+                "fecha": "2025-01-02"
+            },
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_02.docx_image11.png",
+                "descripcion": "Registro fotográfico 3 de 3 correspondiente al Reporte Diario 2.",
+                "fecha": "2025-01-02"
+            }
+        ],
+        "filename": "REPORTE_02.docx"
+    },
+    {
+        "content_controls": {
+            "nombre_proyecto": "Reemplazo Sistema Hidráulico HP300",
+            "referencia_turno": "SG-001",
+            "ubicacion_turno": "MOLINO SAG - ZONA ESTE",
+            "fecha_turno": "2025-01-03",
+            "num_reporte_diario": "3",
+            "tipo_jornada": "Noche",
+            "hora_inicio": "22:00",
+            "hora_termino": "10:00",
+            "bloque_imagen_evidencia": "3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 3.3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 3.3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 3.",
+            "imagen_evidencia": "",
+            "num_imagen_evidencia": "3",
+            "descripcion_imagen_evidencia": "Registro fotográfico 3 de 3 correspondiente al Reporte Diario 3.",
+            "nombre_representante_reporte_diario": "Juan Soto",
+            "cargo_representante_reporte_diario": "Administrador de Contrato",
+            "fecha_representante_metso_reporte_diario": "2025-01-03",
+            "nombre_representante_cliente_reporte_diario": "Natalia Fuentes",
+            "cargo_representante_cliente_reporte_diario": "Planificador Cliente",
+            "fecha_representante_cliente_reporte_diario": "2025-01-03"
+        },
+        "excel_tables": {
+            "personal_indirecto": {
+                "headers": [
+                    "CANT",
+                    "CARGO",
+                    "CANT. PLAN.",
+                    "HH PLAN.",
+                    "CANT. REAL",
+                    "HH REAL"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Prevencionista HSE",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Bodeguero / Logística",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Planificador",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Ingeniero de Proyecto",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Administrador de Contrato",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    }
+                ]
+            },
+            "act_realizadas": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Ajuste y torqueo de pernos"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Chequeo de holguras y alineamiento"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Lubricación de componentes móviles"
+                    }
+                ]
+            },
+            "hitos_relevantes_turno": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Cierre de inspección y pruebas funcionales"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Validación metrológica pendiente"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Montaje de componente crítico en próximo turno"
+                    }
+                ]
+            },
+            "avance_turno": {
+                "headers": [
+                    "N° REPORTE DIARIO",
+                    "% AVANCE DIARIO PLANIFICADO",
+                    "% AVANCE DIARIO REAL",
+                    "AVANCE PLANIFICADO (ACUMULADO)",
+                    "AVANCE REAL (ACUMULADO)"
+                ],
+                "rows": [
+                    {
+                        "N° REPORTE DIARIO": 1,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0209341542187218,
+                        "% AVANCE DIARIO REAL": 0.01263936822077703,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0209341542187218,
+                        "AVANCE REAL (ACUMULADO)": 0.01263936822077703
+                    },
+                    {
+                        "N° REPORTE DIARIO": 2,
+                        "% AVANCE DIARIO PLANIFICADO": 0.07870735136271384,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.09964150558143564,
+                        "AVANCE REAL (ACUMULADO)": 0.01263936822077703
+                    },
+                    {
+                        "N° REPORTE DIARIO": 3,
+                        "% AVANCE DIARIO PLANIFICADO": 0.2266863169488327,
+                        "% AVANCE DIARIO REAL": 0.204797518237562,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.3263278225302683,
+                        "AVANCE REAL (ACUMULADO)": 0.217436886458339
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    }
+                ]
+            },
+            "personal_directo": {
+                "headers": [
+                    "CANT",
+                    "CARGO",
+                    "CANT. PLAN.",
+                    "HH PLAN.",
+                    "CANT. REAL",
+                    "HH REAL"
+                ],
+                "rows": [
+                    {
+                        "CANT": "48:00:00",
+                        "CARGO": "Supervisor Mecánico",
+                        "CANT. PLAN.": "48:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "72:00:00",
+                        "CARGO": "Téc. Senior Mecánico",
+                        "CANT. PLAN.": "72:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "96:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "96:00:00",
+                        "CARGO": "Téc. Mecánico",
+                        "CANT. PLAN.": "96:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "72:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "CARGO": "Soldador Especialista",
+                        "CANT. PLAN.": "48:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "72:00:00",
+                        "CARGO": "Ayudante Mecánico",
+                        "CANT. PLAN.": "72:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "96:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Lubricación",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "48:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Hidráulico",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    }
+                ]
+            },
+            "hallazgos_seguridad": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Objetos en pasillos de circulación"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Procedimiento de bloqueo/etiquetado incompleto"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Trabajador sin línea de vida en altura"
+                    }
+                ]
+            },
+            "equipos_auxiliares": {
+                "headers": [
+                    "CANT",
+                    "DESCRIPCIÓN",
+                    "H.M. ASIGN.",
+                    "H. M. OPER.",
+                    "H.M. S-BY",
+                    "DISPONIBILIDAD",
+                    "UTILIZACIÓN",
+                    "USO EFECTIVO",
+                    "STAND-BY",
+                    "OBS. / MOTIVO STAND-BY"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Camión Pluma",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "11:47:02",
+                        "H.M. S-BY": "00:12:57",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Clima adverso"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Camioneta",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "12:00:00",
+                        "H.M. S-BY": "00:00:00",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "None"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "DESCRIPCIÓN": "Grúa Horquilla",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "10:14:52",
+                        "H.M. S-BY": "01:45:07",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Interferencia de otros equipos"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "DESCRIPCIÓN": "Plataforma Elevadora",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "08:41:16",
+                        "H.M. S-BY": "03:18:43",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Condición de terreno"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "DESCRIPCIÓN": "Compresor",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "12:00:00",
+                        "H.M. S-BY": "00:00:00",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Torre de Iluminación",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "11:51:21",
+                        "H.M. S-BY": "00:08:38",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Clima adverso"
+                    }
+                ]
+            },
+            "desviaciones_turno": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN",
+                    "H. INICIO",
+                    "H. FIN",
+                    "H. TOTAL",
+                    "R. CRÍT"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Interferencia de contratistas",
+                        "H. INICIO": "05:45:47",
+                        "H. FIN": "07:56:04",
+                        "H. TOTAL": "02:10:17",
+                        "R. CRÍT": "No"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Falla de energía en área de chancado",
+                        "H. INICIO": "02:59:41",
+                        "H. FIN": "04:41:40",
+                        "H. TOTAL": "01:41:59",
+                        "R. CRÍT": "Sí"
+                    }
+                ]
+            }
+        },
+        "excel_names": {
+            "hh_turno_indirecto": "12:00:00",
+            "hh_turno_directo": "12:00:00"
+        },
+        "hh_turno": "12:00:00",
+        "imagenes": [
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_03.docx_image9.png",
+                "descripcion": "Registro fotográfico 1 de 3 correspondiente al Reporte Diario 3.",
+                "fecha": "2025-01-03"
+            },
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_03.docx_image10.png",
+                "descripcion": "Registro fotográfico 2 de 3 correspondiente al Reporte Diario 3.",
+                "fecha": "2025-01-03"
+            },
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_03.docx_image11.png",
+                "descripcion": "Registro fotográfico 3 de 3 correspondiente al Reporte Diario 3.",
+                "fecha": "2025-01-03"
+            }
+        ],
+        "filename": "REPORTE_03.docx"
+    },
+    {
+        "content_controls": {
+            "nombre_proyecto": "Cambio Coraza Molino Bolas 26x38",
+            "referencia_turno": "CH-001",
+            "ubicacion_turno": "CHANCADORA PRIMARIA - ZONA NORTE",
+            "fecha_turno": "2025-01-04",
+            "num_reporte_diario": "4",
+            "tipo_jornada": "Día",
+            "hora_inicio": "08:00",
+            "hora_termino": "20:00",
+            "bloque_imagen_evidencia": "3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 4.3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 4.3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 4.",
+            "imagen_evidencia": "",
+            "num_imagen_evidencia": "3",
+            "descripcion_imagen_evidencia": "Registro fotográfico 3 de 3 correspondiente al Reporte Diario 4.",
+            "nombre_representante_reporte_diario": "Pedro González",
+            "cargo_representante_reporte_diario": "Ingeniero de Proyecto",
+            "fecha_representante_metso_reporte_diario": "2025-01-04",
+            "nombre_representante_cliente_reporte_diario": "Luis Arrieta",
+            "cargo_representante_cliente_reporte_diario": "Jefe Mantención Planta",
+            "fecha_representante_cliente_reporte_diario": "2025-01-04"
+        },
+        "excel_tables": {
+            "personal_indirecto": {
+                "headers": [
+                    "CANT",
+                    "CARGO",
+                    "CANT. PLAN.",
+                    "HH PLAN.",
+                    "CANT. REAL",
+                    "HH REAL"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Prevencionista HSE",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Bodeguero / Logística",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Planificador",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Ingeniero de Proyecto",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Administrador de Contrato",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    }
+                ]
+            },
+            "act_realizadas": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Revisión estructural de bastidor"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Limpieza y orden del área de trabajo"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Izaje y retiro de componente crítico"
+                    },
+                    {
+                        "N": "96:00:00",
+                        "DESCRIPCIÓN": "Chequeo de holguras y alineamiento"
+                    },
+                    {
+                        "N": "120:00:00",
+                        "DESCRIPCIÓN": "Ajuste y torqueo de pernos"
+                    },
+                    {
+                        "N": "144:00:00",
+                        "DESCRIPCIÓN": "Lubricación de componentes móviles"
+                    }
+                ]
+            },
+            "hitos_relevantes_turno": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Validación metrológica pendiente"
+                    }
+                ]
+            },
+            "avance_turno": {
+                "headers": [
+                    "N° REPORTE DIARIO",
+                    "% AVANCE DIARIO PLANIFICADO",
+                    "% AVANCE DIARIO REAL",
+                    "AVANCE PLANIFICADO (ACUMULADO)",
+                    "AVANCE REAL (ACUMULADO)"
+                ],
+                "rows": [
+                    {
+                        "N° REPORTE DIARIO": 1,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0209341542187218,
+                        "% AVANCE DIARIO REAL": 0.01263936822077703,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0209341542187218,
+                        "AVANCE REAL (ACUMULADO)": 0.01263936822077703
+                    },
+                    {
+                        "N° REPORTE DIARIO": 2,
+                        "% AVANCE DIARIO PLANIFICADO": 0.07870735136271384,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.09964150558143564,
+                        "AVANCE REAL (ACUMULADO)": 0.01263936822077703
+                    },
+                    {
+                        "N° REPORTE DIARIO": 3,
+                        "% AVANCE DIARIO PLANIFICADO": 0.2266863169488327,
+                        "% AVANCE DIARIO REAL": 0.204797518237562,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.3263278225302683,
+                        "AVANCE REAL (ACUMULADO)": 0.217436886458339
+                    },
+                    {
+                        "N° REPORTE DIARIO": 4,
+                        "% AVANCE DIARIO PLANIFICADO": 0.3473443549394634,
+                        "% AVANCE DIARIO REAL": 0.4320829654611281,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.6736721774697317,
+                        "AVANCE REAL (ACUMULADO)": 0.649519851919467
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    }
+                ]
+            },
+            "personal_directo": {
+                "headers": [
+                    "CANT",
+                    "CARGO",
+                    "CANT. PLAN.",
+                    "HH PLAN.",
+                    "CANT. REAL",
+                    "HH REAL"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Supervisor Mecánico",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "72:00:00",
+                        "CARGO": "Téc. Senior Mecánico",
+                        "CANT. PLAN.": "72:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "96:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "72:00:00",
+                        "CARGO": "Téc. Mecánico",
+                        "CANT. PLAN.": "72:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "72:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Soldador Especialista",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "CARGO": "Ayudante Mecánico",
+                        "CANT. PLAN.": "48:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "48:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Lubricación",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "48:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Hidráulico",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "48:00:00",
+                        "HH REAL": "None"
+                    }
+                ]
+            },
+            "hallazgos_seguridad": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Procedimiento de bloqueo/etiquetado incompleto"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Objetos en pasillos de circulación"
+                    }
+                ]
+            },
+            "equipos_auxiliares": {
+                "headers": [
+                    "CANT",
+                    "DESCRIPCIÓN",
+                    "H.M. ASIGN.",
+                    "H. M. OPER.",
+                    "H.M. S-BY",
+                    "DISPONIBILIDAD",
+                    "UTILIZACIÓN",
+                    "USO EFECTIVO",
+                    "STAND-BY",
+                    "OBS. / MOTIVO STAND-BY"
+                ],
+                "rows": [
+                    {
+                        "CANT": "48:00:00",
+                        "DESCRIPCIÓN": "Camión Pluma",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "10:53:45",
+                        "H.M. S-BY": "01:06:14",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Condición de terreno"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Camioneta",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "12:00:00",
+                        "H.M. S-BY": "00:00:00",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Grúa Horquilla",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "10:26:24",
+                        "H.M. S-BY": "01:33:36",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Falta de operador"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Plataforma Elevadora",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "09:12:57",
+                        "H.M. S-BY": "02:47:02",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Esperando instrucciones"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "DESCRIPCIÓN": "Compresor",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "12:00:00",
+                        "H.M. S-BY": "00:00:00",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Torre de Iluminación",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "11:09:36",
+                        "H.M. S-BY": "00:50:24",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Clima adverso"
+                    }
+                ]
+            },
+            "desviaciones_turno": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN",
+                    "H. INICIO",
+                    "H. FIN",
+                    "H. TOTAL",
+                    "R. CRÍT"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Falla de energía en área de chancado",
+                        "H. INICIO": "01:55:29",
+                        "H. FIN": "04:01:12",
+                        "H. TOTAL": "02:05:43",
+                        "R. CRÍT": "No"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Interferencia de contratistas",
+                        "H. INICIO": "05:44:33",
+                        "H. FIN": "07:39:05",
+                        "H. TOTAL": "01:54:32",
+                        "R. CRÍT": "No"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Retraso en llegada de repuestos",
+                        "H. INICIO": "02:19:32",
+                        "H. FIN": "03:39:45",
+                        "H. TOTAL": "01:20:13",
+                        "R. CRÍT": "No"
+                    },
+                    {
+                        "N": "96:00:00",
+                        "DESCRIPCIÓN": "Bloqueo de acceso por movimiento de equipos",
+                        "H. INICIO": "03:52:48",
+                        "H. FIN": "06:21:00",
+                        "H. TOTAL": "02:28:12",
+                        "R. CRÍT": "No"
+                    }
+                ]
+            }
+        },
+        "excel_names": {
+            "hh_turno_indirecto": "12:00:00",
+            "hh_turno_directo": "12:00:00"
+        },
+        "hh_turno": "12:00:00",
+        "imagenes": [
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_04.docx_image9.png",
+                "descripcion": "Registro fotográfico 1 de 3 correspondiente al Reporte Diario 4.",
+                "fecha": "2025-01-04"
+            },
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_04.docx_image10.png",
+                "descripcion": "Registro fotográfico 2 de 3 correspondiente al Reporte Diario 4.",
+                "fecha": "2025-01-04"
+            },
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_04.docx_image11.png",
+                "descripcion": "Registro fotográfico 3 de 3 correspondiente al Reporte Diario 4.",
+                "fecha": "2025-01-04"
+            }
+        ],
+        "filename": "REPORTE_04.docx"
+    },
+    {
+        "content_controls": {
+            "nombre_proyecto": "Mantención Harnero Banana DF501",
+            "referencia_turno": "SG-001",
+            "ubicacion_turno": "MOLINO SAG - ZONA ESTE",
+            "fecha_turno": "2025-01-05",
+            "num_reporte_diario": "5",
+            "tipo_jornada": "Noche",
+            "hora_inicio": "22:00",
+            "hora_termino": "10:00",
+            "bloque_imagen_evidencia": "3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 5.3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 5.3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 5.",
+            "imagen_evidencia": "",
+            "num_imagen_evidencia": "3",
+            "descripcion_imagen_evidencia": "Registro fotográfico 3 de 3 correspondiente al Reporte Diario 5.",
+            "nombre_representante_reporte_diario": "Camila Rojas",
+            "cargo_representante_reporte_diario": "Supervisor Mecánico",
+            "fecha_representante_metso_reporte_diario": "2025-01-05",
+            "nombre_representante_cliente_reporte_diario": "Natalia Fuentes",
+            "cargo_representante_cliente_reporte_diario": "Planificador Cliente",
+            "fecha_representante_cliente_reporte_diario": "2025-01-05"
+        },
+        "excel_tables": {
+            "personal_indirecto": {
+                "headers": [
+                    "CANT",
+                    "CARGO",
+                    "CANT. PLAN.",
+                    "HH PLAN.",
+                    "CANT. REAL",
+                    "HH REAL"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Prevencionista HSE",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Bodeguero / Logística",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Planificador",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Ingeniero de Proyecto",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Administrador de Contrato",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    }
+                ]
+            },
+            "act_realizadas": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Izaje y retiro de componente crítico"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Revisión estructural de bastidor"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Limpieza y orden del área de trabajo"
+                    },
+                    {
+                        "N": "96:00:00",
+                        "DESCRIPCIÓN": "Ajuste y torqueo de pernos"
+                    },
+                    {
+                        "N": "120:00:00",
+                        "DESCRIPCIÓN": "Lubricación de componentes móviles"
+                    }
+                ]
+            },
+            "hitos_relevantes_turno": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Entrega parcial de repuestos críticos"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Validación metrológica pendiente"
+                    }
+                ]
+            },
+            "avance_turno": {
+                "headers": [
+                    "N° REPORTE DIARIO",
+                    "% AVANCE DIARIO PLANIFICADO",
+                    "% AVANCE DIARIO REAL",
+                    "AVANCE PLANIFICADO (ACUMULADO)",
+                    "AVANCE REAL (ACUMULADO)"
+                ],
+                "rows": [
+                    {
+                        "N° REPORTE DIARIO": 1,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0209341542187218,
+                        "% AVANCE DIARIO REAL": 0.01263936822077703,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0209341542187218,
+                        "AVANCE REAL (ACUMULADO)": 0.01263936822077703
+                    },
+                    {
+                        "N° REPORTE DIARIO": 2,
+                        "% AVANCE DIARIO PLANIFICADO": 0.07870735136271384,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.09964150558143564,
+                        "AVANCE REAL (ACUMULADO)": 0.01263936822077703
+                    },
+                    {
+                        "N° REPORTE DIARIO": 3,
+                        "% AVANCE DIARIO PLANIFICADO": 0.2266863169488327,
+                        "% AVANCE DIARIO REAL": 0.204797518237562,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.3263278225302683,
+                        "AVANCE REAL (ACUMULADO)": 0.217436886458339
+                    },
+                    {
+                        "N° REPORTE DIARIO": 4,
+                        "% AVANCE DIARIO PLANIFICADO": 0.3473443549394634,
+                        "% AVANCE DIARIO REAL": 0.4320829654611281,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.6736721774697317,
+                        "AVANCE REAL (ACUMULADO)": 0.649519851919467
+                    },
+                    {
+                        "N° REPORTE DIARIO": 5,
+                        "% AVANCE DIARIO PLANIFICADO": 0.2266863169488326,
+                        "% AVANCE DIARIO REAL": 0.2095116623852458,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.9003584944185643,
+                        "AVANCE REAL (ACUMULADO)": 0.8590315143047128
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    }
+                ]
+            },
+            "personal_directo": {
+                "headers": [
+                    "CANT",
+                    "CARGO",
+                    "CANT. PLAN.",
+                    "HH PLAN.",
+                    "CANT. REAL",
+                    "HH REAL"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Supervisor Mecánico",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "CARGO": "Téc. Senior Mecánico",
+                        "CANT. PLAN.": "48:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "120:00:00",
+                        "CARGO": "Téc. Mecánico",
+                        "CANT. PLAN.": "120:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "120:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "CARGO": "Soldador Especialista",
+                        "CANT. PLAN.": "48:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "48:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "72:00:00",
+                        "CARGO": "Ayudante Mecánico",
+                        "CANT. PLAN.": "72:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "48:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Lubricación",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Hidráulico",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    }
+                ]
+            },
+            "hallazgos_seguridad": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Procedimiento de bloqueo/etiquetado incompleto"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Objetos en pasillos de circulación"
+                    }
+                ]
+            },
+            "equipos_auxiliares": {
+                "headers": [
+                    "CANT",
+                    "DESCRIPCIÓN",
+                    "H.M. ASIGN.",
+                    "H. M. OPER.",
+                    "H.M. S-BY",
+                    "DISPONIBILIDAD",
+                    "UTILIZACIÓN",
+                    "USO EFECTIVO",
+                    "STAND-BY",
+                    "OBS. / MOTIVO STAND-BY"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Camión Pluma",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "11:48:28",
+                        "H.M. S-BY": "00:11:31",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Condición de terreno"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Camioneta",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "12:00:00",
+                        "H.M. S-BY": "00:00:00",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Grúa Horquilla",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "10:43:40",
+                        "H.M. S-BY": "01:16:19",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Esperando instrucciones"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Plataforma Elevadora",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "09:15:50",
+                        "H.M. S-BY": "02:44:09",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Esperando instrucciones"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Compresor",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "12:00:00",
+                        "H.M. S-BY": "00:00:00",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Torre de Iluminación",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "10:52:19",
+                        "H.M. S-BY": "01:07:40",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Esperando instrucciones"
+                    }
+                ]
+            },
+            "desviaciones_turno": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN",
+                    "H. INICIO",
+                    "H. FIN",
+                    "H. TOTAL",
+                    "R. CRÍT"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Condiciones climáticas adversas (nieve/lluvia)",
+                        "H. INICIO": "02:25:43",
+                        "H. FIN": "03:34:37",
+                        "H. TOTAL": "01:08:54",
+                        "R. CRÍT": "No"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Interferencia de contratistas",
+                        "H. INICIO": "05:41:56",
+                        "H. FIN": "07:43:03",
+                        "H. TOTAL": "02:01:07",
+                        "R. CRÍT": "Sí"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Bloqueo de acceso por movimiento de equipos",
+                        "H. INICIO": "02:46:11",
+                        "H. FIN": "05:11:24",
+                        "H. TOTAL": "02:25:13",
+                        "R. CRÍT": "No"
+                    }
+                ]
+            }
+        },
+        "excel_names": {
+            "hh_turno_indirecto": "12:00:00",
+            "hh_turno_directo": "12:00:00"
+        },
+        "hh_turno": "12:00:00",
+        "imagenes": [
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_05.docx_image9.png",
+                "descripcion": "Registro fotográfico 1 de 3 correspondiente al Reporte Diario 5.",
+                "fecha": "2025-01-05"
+            },
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_05.docx_image10.png",
+                "descripcion": "Registro fotográfico 2 de 3 correspondiente al Reporte Diario 5.",
+                "fecha": "2025-01-05"
+            },
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_05.docx_image11.png",
+                "descripcion": "Registro fotográfico 3 de 3 correspondiente al Reporte Diario 5.",
+                "fecha": "2025-01-05"
+            }
+        ],
+        "filename": "REPORTE_05.docx"
+    },
+    {
+        "content_controls": {
+            "nombre_proyecto": "Reparación Molino SAG 40x22",
+            "referencia_turno": "CH-002",
+            "ubicacion_turno": "CHANCADORA SECUNDARIA - ZONA SUR",
+            "fecha_turno": "2025-01-06",
+            "num_reporte_diario": "6",
+            "tipo_jornada": "Día",
+            "hora_inicio": "08:00",
+            "hora_termino": "20:00",
+            "bloque_imagen_evidencia": "3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 6.3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 6.3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 6.",
+            "imagen_evidencia": "",
+            "num_imagen_evidencia": "3",
+            "descripcion_imagen_evidencia": "Registro fotográfico 3 de 3 correspondiente al Reporte Diario 6.",
+            "nombre_representante_reporte_diario": "Camila Rojas",
+            "cargo_representante_reporte_diario": "Supervisor Mecánico",
+            "fecha_representante_metso_reporte_diario": "2025-01-06",
+            "nombre_representante_cliente_reporte_diario": "Natalia Fuentes",
+            "cargo_representante_cliente_reporte_diario": "Planificador Cliente",
+            "fecha_representante_cliente_reporte_diario": "2025-01-06"
+        },
+        "excel_tables": {
+            "personal_indirecto": {
+                "headers": [
+                    "CANT",
+                    "CARGO",
+                    "CANT. PLAN.",
+                    "HH PLAN.",
+                    "CANT. REAL",
+                    "HH REAL"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Prevencionista HSE",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Bodeguero / Logística",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Planificador",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Ingeniero de Proyecto",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Administrador de Contrato",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    }
+                ]
+            },
+
+
+
+
+
+            
+            "act_realizadas": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Ajuste y torqueo de pernos"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Chequeo de holguras y alineamiento"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Lubricación de componentes móviles"
+                    },
+                    {
+                        "N": "96:00:00",
+                        "DESCRIPCIÓN": "Izaje y retiro de componente crítico"
+                    }
+                ]
+            },
+            "hitos_relevantes_turno": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Entrega parcial de repuestos críticos"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Validación metrológica pendiente"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Cierre de inspección y pruebas funcionales"
+                    }
+                ]
+            },
+            "avance_turno": {
+                "headers": [
+                    "N° REPORTE DIARIO",
+                    "% AVANCE DIARIO PLANIFICADO",
+                    "% AVANCE DIARIO REAL",
+                    "AVANCE PLANIFICADO (ACUMULADO)",
+                    "AVANCE REAL (ACUMULADO)"
+                ],
+                "rows": [
+                    {
+                        "N° REPORTE DIARIO": 1,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0209341542187218,
+                        "% AVANCE DIARIO REAL": 0.01263936822077703,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0209341542187218,
+                        "AVANCE REAL (ACUMULADO)": 0.01263936822077703
+                    },
+                    {
+                        "N° REPORTE DIARIO": 2,
+                        "% AVANCE DIARIO PLANIFICADO": 0.07870735136271384,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.09964150558143564,
+                        "AVANCE REAL (ACUMULADO)": 0.01263936822077703
+                    },
+                    {
+                        "N° REPORTE DIARIO": 3,
+                        "% AVANCE DIARIO PLANIFICADO": 0.2266863169488327,
+                        "% AVANCE DIARIO REAL": 0.204797518237562,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.3263278225302683,
+                        "AVANCE REAL (ACUMULADO)": 0.217436886458339
+                    },
+                    {
+                        "N° REPORTE DIARIO": 4,
+                        "% AVANCE DIARIO PLANIFICADO": 0.3473443549394634,
+                        "% AVANCE DIARIO REAL": 0.4320829654611281,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.6736721774697317,
+                        "AVANCE REAL (ACUMULADO)": 0.649519851919467
+                    },
+                    {
+                        "N° REPORTE DIARIO": 5,
+                        "% AVANCE DIARIO PLANIFICADO": 0.2266863169488326,
+                        "% AVANCE DIARIO REAL": 0.2095116623852458,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.9003584944185643,
+                        "AVANCE REAL (ACUMULADO)": 0.8590315143047128
+                    },
+                    {
+                        "N° REPORTE DIARIO": 6,
+                        "% AVANCE DIARIO PLANIFICADO": 0.07870735136271378,
+                        "% AVANCE DIARIO REAL": 0.04679929703171688,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.9790658457812781,
+                        "AVANCE REAL (ACUMULADO)": 0.9058308113364297
+                    },
+                    {
+                        "N° REPORTE DIARIO": null,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0,
+                        "AVANCE REAL (ACUMULADO)": 0.0
+                    }
+                ]
+            },
+            "personal_directo": {
+                "headers": [
+                    "CANT",
+                    "CARGO",
+                    "CANT. PLAN.",
+                    "HH PLAN.",
+                    "CANT. REAL",
+                    "HH REAL"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Supervisor Mecánico",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "72:00:00",
+                        "CARGO": "Téc. Senior Mecánico",
+                        "CANT. PLAN.": "72:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "48:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "72:00:00",
+                        "CARGO": "Téc. Mecánico",
+                        "CANT. PLAN.": "72:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "72:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Soldador Especialista",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "48:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "96:00:00",
+                        "CARGO": "Ayudante Mecánico",
+                        "CANT. PLAN.": "96:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "72:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Lubricación",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "48:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Hidráulico",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    }
+                ]
+            },
+            "hallazgos_seguridad": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "None",
+                        "DESCRIPCIÓN": "None"
+                    }
+                ]
+            },
+            "equipos_auxiliares": {
+                "headers": [
+                    "CANT",
+                    "DESCRIPCIÓN",
+                    "H.M. ASIGN.",
+                    "H. M. OPER.",
+                    "H.M. S-BY",
+                    "DISPONIBILIDAD",
+                    "UTILIZACIÓN",
+                    "USO EFECTIVO",
+                    "STAND-BY",
+                    "OBS. / MOTIVO STAND-BY"
+                ],
+                "rows": [
+                    {
+                        "CANT": "48:00:00",
+                        "DESCRIPCIÓN": "Camión Pluma",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "11:19:40",
+                        "H.M. S-BY": "00:40:19",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Condición de terreno"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "DESCRIPCIÓN": "Camioneta",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "12:00:00",
+                        "H.M. S-BY": "00:00:00",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Grúa Horquilla",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "10:16:19",
+                        "H.M. S-BY": "01:43:40",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Clima adverso"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Plataforma Elevadora",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "08:28:19",
+                        "H.M. S-BY": "03:31:40",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Esperando instrucciones"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Compresor",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "12:00:00",
+                        "H.M. S-BY": "00:00:00",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "None"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "DESCRIPCIÓN": "Torre de Iluminación",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "11:03:50",
+                        "H.M. S-BY": "00:56:09",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Clima adverso"
+                    }
+                ]
+            },
+            "desviaciones_turno": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN",
+                    "H. INICIO",
+                    "H. FIN",
+                    "H. TOTAL",
+                    "R. CRÍT"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Bloqueo de acceso por movimiento de equipos",
+                        "H. INICIO": "04:28:31",
+                        "H. FIN": "05:59:56",
+                        "H. TOTAL": "01:31:25",
+                        "R. CRÍT": "No"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Interferencia de contratistas",
+                        "H. INICIO": "05:25:59",
+                        "H. FIN": "07:48:19",
+                        "H. TOTAL": "02:22:20",
+                        "R. CRÍT": "No"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Condiciones climáticas adversas (nieve/lluvia)",
+                        "H. INICIO": "05:56:58",
+                        "H. FIN": "08:13:56",
+                        "H. TOTAL": "02:16:58",
+                        "R. CRÍT": "Sí"
+                    },
+                    {
+                        "N": "96:00:00",
+                        "DESCRIPCIÓN": "Problema con perno crítico",
+                        "H. INICIO": "02:47:04",
+                        "H. FIN": "04:05:38",
+                        "H. TOTAL": "01:18:34",
+                        "R. CRÍT": "No"
+                    }
+                ]
+            }
+        },
+        "excel_names": {
+            "hh_turno_indirecto": "12:00:00",
+            "hh_turno_directo": "12:00:00"
+        },
+        "hh_turno": "12:00:00",
+        "imagenes": [
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_06.docx_image9.png",
+                "descripcion": "Registro fotográfico 1 de 3 correspondiente al Reporte Diario 6.",
+                "fecha": "2025-01-06"
+            },
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_06.docx_image10.png",
+                "descripcion": "Registro fotográfico 2 de 3 correspondiente al Reporte Diario 6.",
+                "fecha": "2025-01-06"
+            },
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_06.docx_image11.png",
+                "descripcion": "Registro fotográfico 3 de 3 correspondiente al Reporte Diario 6.",
+                "fecha": "2025-01-06"
+            }
+        ],
+        "filename": "REPORTE_06.docx"
+    },
+    {
+        "content_controls": {
+            "nombre_proyecto": "Reparación Molino SAG 40x22",
+            "referencia_turno": "SG-001",
+            "ubicacion_turno": "MOLINO SAG - ZONA ESTE",
+            "fecha_turno": "2025-01-07",
+            "num_reporte_diario": "7",
+            "tipo_jornada": "Día",
+            "hora_inicio": "08:00",
+            "hora_termino": "20:00",
+            "bloque_imagen_evidencia": "3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 7.3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 7.3Registro fotográfico 3 de 3 correspondiente al Reporte Diario 7.",
+            "imagen_evidencia": "",
+            "num_imagen_evidencia": "3",
+            "descripcion_imagen_evidencia": "Registro fotográfico 3 de 3 correspondiente al Reporte Diario 7.",
+            "nombre_representante_reporte_diario": "Camila Rojas",
+            "cargo_representante_reporte_diario": "Supervisor Mecánico",
+            "fecha_representante_metso_reporte_diario": "2025-01-07",
+            "nombre_representante_cliente_reporte_diario": "Luis Arrieta",
+            "cargo_representante_cliente_reporte_diario": "Jefe Mantención Planta",
+            "fecha_representante_cliente_reporte_diario": "2025-01-07"
+        },
+        "excel_tables": {
+            "personal_indirecto": {
+                "headers": [
+                    "CANT",
+                    "CARGO",
+                    "CANT. PLAN.",
+                    "HH PLAN.",
+                    "CANT. REAL",
+                    "HH REAL"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Prevencionista HSE",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Bodeguero / Logística",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Planificador",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Ingeniero de Proyecto",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Administrador de Contrato",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "24:00:00",
+                        "HH REAL": "None"
+                    }
+                ]
+            },
+            "act_realizadas": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Chequeo de holguras y alineamiento"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Izaje y retiro de componente crítico"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Lubricación de componentes móviles"
+                    }
+                ]
+            },
+            "hitos_relevantes_turno": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Entrega parcial de repuestos críticos"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Validación metrológica pendiente"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Montaje de componente crítico en próximo turno"
+                    }
+                ]
+            },
+            "avance_turno": {
+                "headers": [
+                    "N° REPORTE DIARIO",
+                    "% AVANCE DIARIO PLANIFICADO",
+                    "% AVANCE DIARIO REAL",
+                    "AVANCE PLANIFICADO (ACUMULADO)",
+                    "AVANCE REAL (ACUMULADO)"
+                ],
+                "rows": [
+                    {
+                        "N° REPORTE DIARIO": 1,
+                        "% AVANCE DIARIO PLANIFICADO": 0.0209341542187218,
+                        "% AVANCE DIARIO REAL": 0.01263936822077703,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.0209341542187218,
+                        "AVANCE REAL (ACUMULADO)": 0.01263936822077703
+                    },
+                    {
+                        "N° REPORTE DIARIO": 2,
+                        "% AVANCE DIARIO PLANIFICADO": 0.07870735136271384,
+                        "% AVANCE DIARIO REAL": 0.0,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.09964150558143564,
+                        "AVANCE REAL (ACUMULADO)": 0.01263936822077703
+                    },
+                    {
+                        "N° REPORTE DIARIO": 3,
+                        "% AVANCE DIARIO PLANIFICADO": 0.2266863169488327,
+                        "% AVANCE DIARIO REAL": 0.204797518237562,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.3263278225302683,
+                        "AVANCE REAL (ACUMULADO)": 0.217436886458339
+                    },
+                    {
+                        "N° REPORTE DIARIO": 4,
+                        "% AVANCE DIARIO PLANIFICADO": 0.3473443549394634,
+                        "% AVANCE DIARIO REAL": 0.4320829654611281,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.6736721774697317,
+                        "AVANCE REAL (ACUMULADO)": 0.649519851919467
+                    },
+                    {
+                        "N° REPORTE DIARIO": 5,
+                        "% AVANCE DIARIO PLANIFICADO": 0.2266863169488326,
+                        "% AVANCE DIARIO REAL": 0.2095116623852458,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.9003584944185643,
+                        "AVANCE REAL (ACUMULADO)": 0.8590315143047128
+                    },
+                    {
+                        "N° REPORTE DIARIO": 6,
+                        "% AVANCE DIARIO PLANIFICADO": 0.07870735136271378,
+                        "% AVANCE DIARIO REAL": 0.04679929703171688,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 0.9790658457812781,
+                        "AVANCE REAL (ACUMULADO)": 0.9058308113364297
+                    },
+                    {
+                        "N° REPORTE DIARIO": 7,
+                        "% AVANCE DIARIO PLANIFICADO": 0.02093415421872191,
+                        "% AVANCE DIARIO REAL": 0.09416918866357028,
+                        "AVANCE PLANIFICADO (ACUMULADO)": 1.0,
+                        "AVANCE REAL (ACUMULADO)": 1.0
+                    }
+                ]
+            },
+            "personal_directo": {
+                "headers": [
+                    "CANT",
+                    "CARGO",
+                    "CANT. PLAN.",
+                    "HH PLAN.",
+                    "CANT. REAL",
+                    "HH REAL"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Supervisor Mecánico",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Senior Mecánico",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "120:00:00",
+                        "CARGO": "Téc. Mecánico",
+                        "CANT. PLAN.": "120:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "96:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "CARGO": "Soldador Especialista",
+                        "CANT. PLAN.": "48:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "48:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "72:00:00",
+                        "CARGO": "Ayudante Mecánico",
+                        "CANT. PLAN.": "72:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "72:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "CARGO": "Téc. Lubricación",
+                        "CANT. PLAN.": "48:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "72:00:00",
+                        "HH REAL": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "CARGO": "Téc. Hidráulico",
+                        "CANT. PLAN.": "24:00:00",
+                        "HH PLAN.": "None",
+                        "CANT. REAL": "00:00:00",
+                        "HH REAL": "None"
+                    }
+                ]
+            },
+            "hallazgos_seguridad": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Uso incorrecto de EPP en área de izaje"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Procedimiento de bloqueo/etiquetado incompleto"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Objetos en pasillos de circulación"
+                    }
+                ]
+            },
+            "equipos_auxiliares": {
+                "headers": [
+                    "CANT",
+                    "DESCRIPCIÓN",
+                    "H.M. ASIGN.",
+                    "H. M. OPER.",
+                    "H.M. S-BY",
+                    "DISPONIBILIDAD",
+                    "UTILIZACIÓN",
+                    "USO EFECTIVO",
+                    "STAND-BY",
+                    "OBS. / MOTIVO STAND-BY"
+                ],
+                "rows": [
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Camión Pluma",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "11:48:28",
+                        "H.M. S-BY": "00:11:31",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Clima adverso"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "DESCRIPCIÓN": "Camioneta",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "12:00:00",
+                        "H.M. S-BY": "00:00:00",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Grúa Horquilla",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "10:49:26",
+                        "H.M. S-BY": "01:10:33",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Falta de operador"
+                    },
+                    {
+                        "CANT": "48:00:00",
+                        "DESCRIPCIÓN": "Plataforma Elevadora",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "08:54:14",
+                        "H.M. S-BY": "03:05:45",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Esperando instrucciones"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Compresor",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "12:00:00",
+                        "H.M. S-BY": "00:00:00",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "None"
+                    },
+                    {
+                        "CANT": "24:00:00",
+                        "DESCRIPCIÓN": "Torre de Iluminación",
+                        "H.M. ASIGN.": "12:00:00",
+                        "H. M. OPER.": "10:53:45",
+                        "H.M. S-BY": "01:06:14",
+                        "DISPONIBILIDAD": "None",
+                        "UTILIZACIÓN": "None",
+                        "USO EFECTIVO": "None",
+                        "STAND-BY": "None",
+                        "OBS. / MOTIVO STAND-BY": "Clima adverso"
+                    }
+                ]
+            },
+            "desviaciones_turno": {
+                "headers": [
+                    "N",
+                    "DESCRIPCIÓN",
+                    "H. INICIO",
+                    "H. FIN",
+                    "H. TOTAL",
+                    "R. CRÍT"
+                ],
+                "rows": [
+                    {
+                        "N": "24:00:00",
+                        "DESCRIPCIÓN": "Interferencia de contratistas",
+                        "H. INICIO": "01:18:29",
+                        "H. FIN": "04:07:10",
+                        "H. TOTAL": "02:48:41",
+                        "R. CRÍT": "No"
+                    },
+                    {
+                        "N": "48:00:00",
+                        "DESCRIPCIÓN": "Falla de energía en área de chancado",
+                        "H. INICIO": "05:10:52",
+                        "H. FIN": "06:45:13",
+                        "H. TOTAL": "01:34:21",
+                        "R. CRÍT": "No"
+                    },
+                    {
+                        "N": "72:00:00",
+                        "DESCRIPCIÓN": "Condiciones climáticas adversas (nieve/lluvia)",
+                        "H. INICIO": "02:22:47",
+                        "H. FIN": "04:17:17",
+                        "H. TOTAL": "01:54:30",
+                        "R. CRÍT": "No"
+                    }
+                ]
+            }
+        },
+        "excel_names": {
+            "hh_turno_indirecto": "12:00:00",
+            "hh_turno_directo": "12:00:00"
+        },
+        "hh_turno": "12:00:00",
+        "imagenes": [
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_07.docx_image9.png",
+                "descripcion": "Registro fotográfico 1 de 3 correspondiente al Reporte Diario 7.",
+                "fecha": "2025-01-07"
+            },
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_07.docx_image10.png",
+                "descripcion": "Registro fotográfico 2 de 3 correspondiente al Reporte Diario 7.",
+                "fecha": "2025-01-07"
+            },
+            {
+                "img": "imagenes_reportes\\reporte_REPORTE_07.docx_image11.png",
+                "descripcion": "Registro fotográfico 3 de 3 correspondiente al Reporte Diario 7.",
+                "fecha": "2025-01-07"
+            }
+        ],
+        "filename": "REPORTE_07.docx"
+    }
+]

@@ -1,0 +1,1543 @@
+{
+    "plantilla": "REPORTE.docx",
+    "controles": [
+        {
+            "alias": "nombre_proyecto",
+            "tag": "nombre_proyecto",
+            "id": "-1078818708",
+            "tipo": "text",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": "Nombre Proyecto"
+        },
+        {
+            "alias": "referencia_turno",
+            "tag": "referencia_turno",
+            "id": "6412748",
+            "tipo": "text",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": "Ingrese aquí la referencia del turno."
+        },
+        {
+            "alias": "ubicacion_turno",
+            "tag": "ubicacion_turno",
+            "id": "260965832",
+            "tipo": "text",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": "Ingrese aquí la ubicación donde se realizaron los trabajos."
+        },
+        {
+            "alias": "fecha_turno",
+            "tag": "fecha_turno",
+            "id": "-1271383332",
+            "tipo": "date",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "date",
+            "texto_actual": "Ingrese aquí la fecha en que se realizó el turno."
+        },
+        {
+            "alias": "num_reporte_diario",
+            "tag": "num_reporte_diario",
+            "id": "-606427240",
+            "tipo": "text",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": "Ingrese aquí el número del reporte diario."
+        },
+        {
+            "alias": "tipo_jornada",
+            "tag": "tipo_jornada",
+            "id": "-684206717",
+            "tipo": "dropDownList",
+            "valores": [
+                "Día",
+                "Noche"
+            ],
+            "checked": null,
+            "inferred_type": "dropdown",
+            "texto_actual": "Elija un elemento."
+        },
+        {
+            "alias": "hora_inicio",
+            "tag": "hora_inicio",
+            "id": "671226963",
+            "tipo": "text",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": "Ingrese aquí la hora de inicio del turno."
+        },
+        {
+            "alias": "hora_termino",
+            "tag": "hora_termino",
+            "id": "-205338484",
+            "tipo": "text",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": "Ingrese aquí la hora de término del turno."
+        },
+        {
+            "alias": "bloque_imagen_evidencia",
+            "tag": "bloque_imagen_evidencia",
+            "id": "-1808919449",
+            "tipo": "text",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": "Numero Haga clic o pulse aquí para escribir texto.Descripcion Haga clic o pulse aquí para escribir texto.Numero Haga clic o pulse aquí para escribir texto.Descripcion Haga clic o pulse aquí para escribir texto.Haga clic o pulse aquí para escribir texto.Haga clic o pulse aquí para escribir texto."
+        },
+        {
+            "alias": null,
+            "tag": null,
+            "id": "-381634592",
+            "tipo": "text",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": "Numero Haga clic o pulse aquí para escribir texto.Descripcion Haga clic o pulse aquí para escribir texto.Haga clic o pulse aquí para escribir texto.Haga clic o pulse aquí para escribir texto."
+        },
+        {
+            "alias": "imagen_evidencia",
+            "tag": "imagen_evidencia",
+            "id": "-8678450",
+            "tipo": "picture",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": null
+        },
+        {
+            "alias": "num_imagen_evidencia",
+            "tag": "num_imagen_evidencia",
+            "id": "1235049352",
+            "tipo": "text",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": "Haga clic o pulse aquí para escribir texto."
+        },
+        {
+            "alias": "descripcion_imagen_evidencia",
+            "tag": "descripcion_imagen_evidencia",
+            "id": "2104761415",
+            "tipo": "text",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": "Haga clic o pulse aquí para escribir texto."
+        },
+        {
+            "alias": "nombre_representante_metso_reporte_diario",
+            "tag": "nombre_representante_reporte_diario",
+            "id": "-724060545",
+            "tipo": "text",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": "Ingrese aquí el nombre del representante Metso del turno."
+        },
+        {
+            "alias": "cargo_representante_reporte_diario",
+            "tag": "cargo_representante_reporte_diario",
+            "id": "1087569544",
+            "tipo": "text",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": "Ingrese aquí el cargo del representante Metso del turno."
+        },
+        {
+            "alias": "fecha_representante_metso_reporte_diario",
+            "tag": "fecha_representante_metso_reporte_diario",
+            "id": "-534975398",
+            "tipo": "date",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "date",
+            "texto_actual": "Haga clic aquí o pulse para escribir una fecha."
+        },
+        {
+            "alias": "nombre_representante_cliente_reporte_diario",
+            "tag": "nombre_representante_cliente_reporte_diario",
+            "id": "-1161540996",
+            "tipo": "text",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": "Ingrese aquí el nombre del representante del Cliente para el turno."
+        },
+        {
+            "alias": "cargo_representante_cliente_reporte_diario",
+            "tag": "cargo_representante_cliente_reporte_diario",
+            "id": "937946547",
+            "tipo": "text",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "text",
+            "texto_actual": "Ingrese aquí el cargo del representante del Cliente para el turno."
+        },
+        {
+            "alias": "fecha_representante_cliente_reporte_diario",
+            "tag": "fecha_representante_cliente_reporte_diario",
+            "id": "-1299843440",
+            "tipo": "date",
+            "valores": null,
+            "checked": null,
+            "inferred_type": "date",
+            "texto_actual": "Haga clic aquí o pulse para escribir una fecha."
+        }
+    ],
+    "controles_header": [],
+    "controles_footer": [],
+    "tablas_word": [
+        {
+            "index": 1,
+            "filas": [
+                [
+                    "REPORTE DIARIO - Nombre Proyecto."
+                ],
+                [
+                    "DETALLES TURNO"
+                ],
+                [
+                    "REFERENCIA",
+                    "Ingrese aquí la referencia del turno."
+                ],
+                [
+                    "ÚBICACIÓN"
+                ],
+                [
+                    "FECHA",
+                    "Ingrese aquí la fecha en que se realizó el turno."
+                ],
+                [
+                    "N° REPORTE",
+                    "Ingrese aquí el número del reporte diario."
+                ],
+                [
+                    "TIPO JORNADA",
+                    "Elija un elemento."
+                ],
+                [
+                    "HORA INICIO",
+                    "Ingrese aquí la hora de inicio del turno."
+                ],
+                [
+                    "HORA TÉRMINO"
+                ]
+            ],
+            "origen": "document"
+        },
+        {
+            "index": 2,
+            "filas": [
+                [
+                    "DOTACIÓN DE PERSONAL: DIRECTO",
+                    "DOTACIÓN DE PERSONAL: INDIRECTO"
+                ],
+                [
+                    "EQUIPOS AUXILIARES"
+                ],
+                [
+                    "ACTIVIDADES REALIZADAS E HITOS RELEVANTES DEL TURNO"
+                ],
+                [
+                    "DESVIACIONES DEL TURNO"
+                ],
+                [
+                    "HALLAZGOS DE SEGURIDAD"
+                ],
+                [
+                    "HITOS RELEVANTES DEL TURNO ENTRANTE"
+                ],
+                [
+                    "Numero Haga clic o pulse aquí para escribir texto.Descripcion Haga clic o pulse aquí para escribir texto."
+                ],
+                [
+                    "ANÁLISIS DE AVANCE DEL TURNO"
+                ]
+            ],
+            "origen": "document"
+        },
+        {
+            "index": 3,
+            "filas": [
+                [
+                    "TOMA CONOCIMIENTO CLIENTE"
+                ],
+                [
+                    "METSONombreIngrese aquí el nombre del representante Metso del turno.FirmaCargoIngrese aquí el cargo del representante Metso del turno.FechaHaga clic aquí o pulse para escribir una fecha."
+                ],
+                [
+                    "CLIENTENombreIngrese aquí el nombre del representante del Cliente para el turno.FirmaCargoIngrese aquí el cargo del representante del Cliente para el turno.FechaHaga clic aquí o pulse para escribir una fecha."
+                ]
+            ],
+            "origen": "document"
+        },
+        {
+            "index": 4,
+            "filas": [
+                [
+                    "METSO"
+                ],
+                [
+                    "Nombre",
+                    "Ingrese aquí el nombre del representante Metso del turno.",
+                    "Firma"
+                ],
+                [
+                    "Cargo",
+                    "Ingrese aquí el cargo del representante Metso del turno.",
+                    ""
+                ],
+                [
+                    "Fecha",
+                    ""
+                ],
+                [
+                    "",
+                    "",
+                    ""
+                ]
+            ],
+            "origen": "document"
+        },
+        {
+            "index": 5,
+            "filas": [
+                [
+                    "CLIENTE"
+                ],
+                [
+                    "Nombre",
+                    "Ingrese aquí el nombre del representante del Cliente para el turno.",
+                    "Firma"
+                ],
+                [
+                    "Cargo",
+                    "Ingrese aquí el cargo del representante del Cliente para el turno.",
+                    ""
+                ],
+                [
+                    "Fecha",
+                    ""
+                ],
+                [
+                    "",
+                    "",
+                    ""
+                ]
+            ],
+            "origen": "document"
+        }
+    ],
+    "excels": [
+        {
+            "excel": "word/embeddings/Microsoft_Excel_Worksheet.xlsx",
+            "tablas": [
+                {
+                    "worksheet": "Hoja1",
+                    "tabla": "personal_directo",
+                    "rango": "A2:F3",
+                    "columnas": [
+                        "CANT",
+                        "CARGO",
+                        "CANT. PLAN.",
+                        "HH PLAN.",
+                        "CANT. REAL",
+                        "HH REAL"
+                    ],
+                    "registros": [
+                        [
+                            null,
+                            null,
+                            null,
+                            "=IF(personal_directo[[#This Row],[CANT. PLAN.]]=\"\",\"\",hh_turno_directo*personal_directo[[#This Row],[CANT. PLAN.]])",
+                            null,
+                            "=IF(personal_directo[[#This Row],[CANT. REAL]]=\"\",\"\",personal_directo[[#This Row],[CANT. REAL]]*hh_turno_directo)"
+                        ]
+                    ],
+                    "cell_styles": {
+                        "A2": {
+                            "coordinate": "A2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "B2": {
+                            "coordinate": "B2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "C2": {
+                            "coordinate": "C2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "0",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "D2": {
+                            "coordinate": "D2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "0",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "E2": {
+                            "coordinate": "E2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "0",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "F2": {
+                            "coordinate": "F2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "0",
+                            "data_type": "s",
+                            "is_formula": false
+                        }
+                    }
+                }
+            ],
+            "nombres_definidos": [
+                {
+                    "nombre": "hh_turno_directo",
+                    "ref": "Hoja1!$C$1",
+                    "valor": "1900-01-01T00:00:00"
+                }
+            ]
+        },
+        {
+            "excel": "word/embeddings/Microsoft_Excel_Worksheet1.xlsx",
+            "tablas": [
+                {
+                    "worksheet": "Hoja1",
+                    "tabla": "personal_indirecto",
+                    "rango": "A2:F3",
+                    "columnas": [
+                        "CANT",
+                        "CARGO",
+                        "CANT. PLAN.",
+                        "HH PLAN.",
+                        "CANT. REAL",
+                        "HH REAL"
+                    ],
+                    "registros": [
+                        [
+                            null,
+                            null,
+                            null,
+                            "=IF(personal_indirecto[[#This Row],[CANT. PLAN.]]=\"\",\"\",hh_turno_indirecto*personal_indirecto[[#This Row],[CANT. PLAN.]])",
+                            null,
+                            "=IF(personal_indirecto[[#This Row],[CANT. REAL]]=\"\",\"\",personal_indirecto[[#This Row],[CANT. REAL]]*hh_turno_indirecto)"
+                        ]
+                    ],
+                    "cell_styles": {
+                        "A2": {
+                            "coordinate": "A2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "B2": {
+                            "coordinate": "B2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "C2": {
+                            "coordinate": "C2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "D2": {
+                            "coordinate": "D2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "E2": {
+                            "coordinate": "E2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "F2": {
+                            "coordinate": "F2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        }
+                    }
+                }
+            ],
+            "nombres_definidos": [
+                {
+                    "nombre": "hh_turno_indirecto",
+                    "ref": "Hoja1!$C$1",
+                    "valor": "1900-01-01T00:00:00"
+                }
+            ]
+        },
+        {
+            "excel": "word/embeddings/Microsoft_Excel_Worksheet2.xlsx",
+            "tablas": [
+                {
+                    "worksheet": "Hoja1",
+                    "tabla": "equipos_auxiliares",
+                    "rango": "A1:J2",
+                    "columnas": [
+                        "CANT",
+                        "DESCRIPCIÓN",
+                        "H.M. ASIGN.",
+                        "H. M. OPER.",
+                        "H.M. S-BY",
+                        "DISPONIBILIDAD",
+                        "UTILIZACIÓN",
+                        "USO EFECTIVO",
+                        "STAND-BY",
+                        "OBS. / MOTIVO STAND-BY"
+                    ],
+                    "registros": [
+                        [
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            "=IF(OR(C2=\"\", D2=\"\", E2=\"\"), \"\", IF(C2=0, 0, (D2 + E2) / C2))",
+                            "=IF(OR(D2=\"\", E2=\"\"), \"\", IF((D2 + E2)=0, 0, D2 / (D2 + E2)))",
+                            "=IF(OR(C2=\"\", D2=\"\"), \"\", IF(C2=0, 0, D2 / C2))",
+                            "=IF(OR(C2=\"\", E2=\"\"), \"\", IF((C2 + E2)=0, 0, E2 / C2))",
+                            null
+                        ]
+                    ],
+                    "cell_styles": {
+                        "A1": {
+                            "coordinate": "A1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "B1": {
+                            "coordinate": "B1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "C1": {
+                            "coordinate": "C1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "D1": {
+                            "coordinate": "D1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "E1": {
+                            "coordinate": "E1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "F1": {
+                            "coordinate": "F1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "G1": {
+                            "coordinate": "G1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "H1": {
+                            "coordinate": "H1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "I1": {
+                            "coordinate": "I1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "J1": {
+                            "coordinate": "J1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        }
+                    }
+                }
+            ],
+            "nombres_definidos": []
+        },
+        {
+            "excel": "word/embeddings/Microsoft_Excel_Worksheet3.xlsx",
+            "tablas": [
+                {
+                    "worksheet": "Hoja1",
+                    "tabla": "act_realizadas",
+                    "rango": "A1:B2",
+                    "columnas": [
+                        "N",
+                        "DESCRIPCIÓN"
+                    ],
+                    "registros": [
+                        [
+                            null,
+                            null
+                        ]
+                    ],
+                    "cell_styles": {
+                        "A1": {
+                            "coordinate": "A1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "B1": {
+                            "coordinate": "B1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        }
+                    }
+                }
+            ],
+            "nombres_definidos": []
+        },
+        {
+            "excel": "word/embeddings/Microsoft_Excel_Worksheet4.xlsx",
+            "tablas": [
+                {
+                    "worksheet": "Hoja1",
+                    "tabla": "desviaciones_turno",
+                    "rango": "A1:F2",
+                    "columnas": [
+                        "N",
+                        "DESCRIPCIÓN",
+                        "H. INICIO",
+                        "H. FIN",
+                        "H. TOTAL",
+                        "R. CRÍT"
+                    ],
+                    "registros": [
+                        [
+                            null,
+                            null,
+                            null,
+                            null,
+                            "=desviaciones_turno[[#This Row],[H. FIN]]-desviaciones_turno[[#This Row],[H. INICIO]]",
+                            null
+                        ]
+                    ],
+                    "cell_styles": {
+                        "A1": {
+                            "coordinate": "A1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "B1": {
+                            "coordinate": "B1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "C1": {
+                            "coordinate": "C1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 7.0,
+                            "font_bold": true,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "D1": {
+                            "coordinate": "D1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 7.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "E1": {
+                            "coordinate": "E1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 7.0,
+                            "font_bold": true,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "F1": {
+                            "coordinate": "F1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 7.0,
+                            "font_bold": true,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        }
+                    }
+                }
+            ],
+            "nombres_definidos": []
+        },
+        {
+            "excel": "word/embeddings/Microsoft_Excel_Worksheet7.xlsx",
+            "tablas": [
+                {
+                    "worksheet": "Hoja1",
+                    "tabla": "avance_turno",
+                    "rango": "A2:E3",
+                    "columnas": [
+                        "N° REPORTE DIARIO",
+                        "% AVANCE DIARIO PLANIFICADO",
+                        "% AVANCE DIARIO REAL ",
+                        "AVANCE PLANIFICADO (ACUMULADO)",
+                        "AVANCE REAL (ACUMULADO)"
+                    ],
+                    "registros": [
+                        [
+                            null,
+                            null,
+                            null,
+                            null,
+                            null
+                        ]
+                    ],
+                    "cell_styles": {
+                        "A2": {
+                            "coordinate": "A2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": "medium",
+                            "fill_color": "00000000",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "B2": {
+                            "coordinate": "B2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": "medium",
+                            "fill_color": "00000000",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "C2": {
+                            "coordinate": "C2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": "medium",
+                            "fill_color": "00000000",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "D2": {
+                            "coordinate": "D2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": "medium",
+                            "fill_color": "00000000",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "E2": {
+                            "coordinate": "E2",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": "medium",
+                            "fill_color": "00000000",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        }
+                    }
+                }
+            ],
+            "nombres_definidos": []
+        },
+        {
+            "excel": "word/embeddings/Microsoft_Excel_Worksheet5.xlsx",
+            "tablas": [
+                {
+                    "worksheet": "Hoja1",
+                    "tabla": "hallazgos_seguridad",
+                    "rango": "A1:B2",
+                    "columnas": [
+                        "N",
+                        "DESCRIPCIÓN"
+                    ],
+                    "registros": [
+                        [
+                            null,
+                            null
+                        ]
+                    ],
+                    "cell_styles": {
+                        "A1": {
+                            "coordinate": "A1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "B1": {
+                            "coordinate": "B1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        }
+                    }
+                }
+            ],
+            "nombres_definidos": []
+        },
+        {
+            "excel": "word/embeddings/Microsoft_Excel_Worksheet6.xlsx",
+            "tablas": [
+                {
+                    "worksheet": "Hoja1",
+                    "tabla": "hitos_relevantes_turno",
+                    "rango": "A1:B2",
+                    "columnas": [
+                        "N",
+                        "DESCRIPCIÓN"
+                    ],
+                    "registros": [
+                        [
+                            null,
+                            null
+                        ]
+                    ],
+                    "cell_styles": {
+                        "A1": {
+                            "coordinate": "A1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        },
+                        "B1": {
+                            "coordinate": "B1",
+                            "font_name": "Segoe UI Semibold",
+                            "font_size": 8.0,
+                            "font_bold": false,
+                            "font_italic": false,
+                            "font_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=0, tint=0.0, type='theme'",
+                            "alignment_horizontal": "center",
+                            "alignment_vertical": "center",
+                            "border_left": null,
+                            "border_right": null,
+                            "border_top": null,
+                            "border_bottom": null,
+                            "fill_color": "<openpyxl.styles.colors.Color object>\nParameters:\nrgb=None, indexed=None, auto=None, theme=1, tint=0.0, type='theme'",
+                            "number_format": "General",
+                            "data_type": "s",
+                            "is_formula": false
+                        }
+                    }
+                }
+            ],
+            "nombres_definidos": []
+        }
+    ],
+    "imagenes": [
+        {
+            "nombre": "image1.emf",
+            "ruta": "word/media/image1.emf",
+            "content_type": null
+        },
+        {
+            "nombre": "image2.emf",
+            "ruta": "word/media/image2.emf",
+            "content_type": null
+        },
+        {
+            "nombre": "image3.emf",
+            "ruta": "word/media/image3.emf",
+            "content_type": null
+        },
+        {
+            "nombre": "image4.emf",
+            "ruta": "word/media/image4.emf",
+            "content_type": null
+        },
+        {
+            "nombre": "image5.emf",
+            "ruta": "word/media/image5.emf",
+            "content_type": null
+        },
+        {
+            "nombre": "image7.png",
+            "ruta": "word/media/image7.png",
+            "content_type": null
+        },
+        {
+            "nombre": "image8.emf",
+            "ruta": "word/media/image8.emf",
+            "content_type": null
+        },
+        {
+            "nombre": "image6.emf",
+            "ruta": "word/media/image6.emf",
+            "content_type": null
+        }
+    ],
+    "campos_word": [],
+    "parrafos": [
+        {
+            "index": 1,
+            "estilo": null,
+            "texto": "REPORTE DIARIO - Nombre Proyecto."
+        },
+        {
+            "index": 2,
+            "estilo": null,
+            "texto": "DETALLES TURNO"
+        },
+        {
+            "index": 3,
+            "estilo": null,
+            "texto": "REFERENCIA"
+        },
+        {
+            "index": 4,
+            "estilo": null,
+            "texto": "Ingrese aquí la referencia del turno."
+        },
+        {
+            "index": 5,
+            "estilo": null,
+            "texto": "ÚBICACIÓN"
+        },
+        {
+            "index": 6,
+            "estilo": null,
+            "texto": "Ingrese aquí la ubicación donde se realizaron los trabajos."
+        },
+        {
+            "index": 7,
+            "estilo": null,
+            "texto": "FECHA"
+        },
+        {
+            "index": 8,
+            "estilo": null,
+            "texto": "Ingrese aquí la fecha en que se realizó el turno."
+        },
+        {
+            "index": 9,
+            "estilo": null,
+            "texto": "N° REPORTE"
+        },
+        {
+            "index": 10,
+            "estilo": null,
+            "texto": "Ingrese aquí el número del reporte diario."
+        },
+        {
+            "index": 11,
+            "estilo": null,
+            "texto": "TIPO JORNADA"
+        },
+        {
+            "index": 12,
+            "estilo": null,
+            "texto": "Elija un elemento."
+        },
+        {
+            "index": 13,
+            "estilo": null,
+            "texto": "HORA INICIO"
+        },
+        {
+            "index": 14,
+            "estilo": null,
+            "texto": "Ingrese aquí la hora de inicio del turno."
+        },
+        {
+            "index": 15,
+            "estilo": null,
+            "texto": "HORA TÉRMINO"
+        },
+        {
+            "index": 16,
+            "estilo": null,
+            "texto": "Ingrese aquí la hora de término del turno."
+        },
+        {
+            "index": 18,
+            "estilo": null,
+            "texto": "DOTACIÓN DE PERSONAL: DIRECTO"
+        },
+        {
+            "index": 19,
+            "estilo": null,
+            "texto": "DOTACIÓN DE PERSONAL: INDIRECTO"
+        },
+        {
+            "index": 20,
+            "estilo": null,
+            "texto": "EQUIPOS AUXILIARES"
+        },
+        {
+            "index": 22,
+            "estilo": null,
+            "texto": "ACTIVIDADES REALIZADAS E HITOS RELEVANTES DEL TURNO"
+        },
+        {
+            "index": 24,
+            "estilo": null,
+            "texto": "DESVIACIONES DEL TURNO"
+        },
+        {
+            "index": 25,
+            "estilo": null,
+            "texto": "HALLAZGOS DE SEGURIDAD"
+        },
+        {
+            "index": 27,
+            "estilo": null,
+            "texto": "HITOS RELEVANTES DEL TURNO ENTRANTE"
+        },
+        {
+            "index": 33,
+            "estilo": null,
+            "texto": "Numero Haga clic o pulse aquí para escribir texto.Descripcion Haga clic o pulse aquí para escribir texto."
+        },
+        {
+            "index": 36,
+            "estilo": null,
+            "texto": "ANÁLISIS DE AVANCE DEL TURNO"
+        },
+        {
+            "index": 40,
+            "estilo": null,
+            "texto": "TOMA CONOCIMIENTO CLIENTE"
+        },
+        {
+            "index": 41,
+            "estilo": null,
+            "texto": "METSO"
+        },
+        {
+            "index": 42,
+            "estilo": null,
+            "texto": "Nombre"
+        },
+        {
+            "index": 43,
+            "estilo": null,
+            "texto": "Ingrese aquí el nombre del representante Metso del turno."
+        },
+        {
+            "index": 44,
+            "estilo": null,
+            "texto": "Firma"
+        },
+        {
+            "index": 45,
+            "estilo": null,
+            "texto": "Cargo"
+        },
+        {
+            "index": 46,
+            "estilo": null,
+            "texto": "Ingrese aquí el cargo del representante Metso del turno."
+        },
+        {
+            "index": 48,
+            "estilo": null,
+            "texto": "Fecha"
+        },
+        {
+            "index": 49,
+            "estilo": null,
+            "texto": "Haga clic aquí o pulse para escribir una fecha."
+        },
+        {
+            "index": 55,
+            "estilo": null,
+            "texto": "CLIENTE"
+        },
+        {
+            "index": 56,
+            "estilo": null,
+            "texto": "Nombre"
+        },
+        {
+            "index": 57,
+            "estilo": null,
+            "texto": "Ingrese aquí el nombre del representante del Cliente para el turno."
+        },
+        {
+            "index": 58,
+            "estilo": null,
+            "texto": "Firma"
+        },
+        {
+            "index": 59,
+            "estilo": null,
+            "texto": "Cargo"
+        },
+        {
+            "index": 60,
+            "estilo": null,
+            "texto": "Ingrese aquí el cargo del representante del Cliente para el turno."
+        },
+        {
+            "index": 62,
+            "estilo": null,
+            "texto": "Fecha"
+        },
+        {
+            "index": 63,
+            "estilo": null,
+            "texto": "Haga clic aquí o pulse para escribir una fecha."
+        }
+    ]
+}

@@ -542,6 +542,41 @@ def extract_paragraphs(docx_path, max_chars_por_parrafo=500):
 
     return parrafos
 
+# ======================================================================
+# SANITIZADOR JSON UNIVERSAL — ELIMINA ArrayFormula y cualquier objeto
+# ======================================================================
+
+def json_sanitize_deep(obj):
+    """
+    Convierte una estructura compleja (dict/list) a una estructura 100%
+    JSON-serializable sin perder información.
+    """
+    # Tipos básicos OK
+    if isinstance(obj, (str, int, float, bool)) or obj is None:
+        return obj
+
+    # Fecha/hora
+    if isinstance(obj, (datetime.datetime, datetime.date)):
+        return obj.isoformat()
+
+    # Bytes → string
+    if isinstance(obj, bytes):
+        return obj.decode("utf-8", errors="ignore")
+
+    # ArrayFormula u otros objetos no serializables
+    if isinstance(obj, ArrayFormula):
+        return str(obj)  # normalmente devuelve algo como "{=A1+A2}"
+
+    # Diccionario
+    if isinstance(obj, dict):
+        return {k: json_sanitize_deep(v) for k, v in obj.items()}
+
+    # Iterables (listas, tuplas, sets…)
+    if isinstance(obj, (list, tuple, set)):
+        return [json_sanitize_deep(v) for v in obj]
+
+    # CUALQUIER OTRO TIPO → convertir a str
+    return str(obj)
 
 # ======================================================================
 # 🚀 FUNCIÓN PRINCIPAL — ¡VERSIÓN DEFINITIVA 2025!
@@ -588,10 +623,13 @@ def generar_estructura(docx_path):
     }
 
     # 8. RETORNO FINAL — FORMATO ESTÁNDAR
-    return {
+    estructura_final =  {
         "controles": controles_unificados,
         "tablas_word": tablas_word,
         "excels": excels,
         "imagenes": imagenes,
         "metadata": metadata,
     }
+
+    return json_sanitize_deep(estructura_final)   
+
